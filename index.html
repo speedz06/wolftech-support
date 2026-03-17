@@ -129,9 +129,26 @@
         // --- Init ---
         async function init() {
             lucide.createIcons();
+            createGrid();
+            createKeyboard();
             
-            // Firebase Config safe access
-            const config = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { projectId: "demo" };
+            // --- Firebase Initialisierung mit Fallback-Check ---
+            let config;
+            try {
+                // Versuche die bereitgestellte Config zu lesen
+                config = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+            } catch (e) {
+                console.error("Config Parse Error", e);
+            }
+
+            // Wenn keine Config da ist oder der Key fehlt, Abbruch mit Warnung
+            if (!config || !config.apiKey || config.apiKey === "YOUR_API_KEY") {
+                console.error("Firebase API Key fehlt!");
+                showToast("Firebase nicht konfiguriert!", "error");
+                const list = document.getElementById("leaderboard");
+                list.innerHTML = "<li class='text-red-400 text-xs text-center'>API Key fehlt</li>";
+                return; // Beendet init, damit der Auth-Fehler gar nicht erst kommt
+            }
             const app = initializeApp(config);
             auth = getAuth(app);
             db = getFirestore(app);
