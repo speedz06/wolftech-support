@@ -6,7 +6,6 @@
 <title>Wolfle</title>
 
 <style>
-
 body{
 background: radial-gradient(circle at top,#0f172a,#020617);
 color:white;
@@ -34,9 +33,7 @@ font-weight:600;
 border-radius:12px;
 }
 
-.flip{
-animation:flip 0.6s ease;
-}
+.flip{ animation:flip 0.6s ease; }
 
 @keyframes flip{
 0%{transform:rotateX(0);}
@@ -52,9 +49,7 @@ animation:flip 0.6s ease;
 100%{transform:translateX(0);}
 }
 
-.shake{
-animation:shake 0.4s;
-}
+.shake{ animation:shake 0.4s; }
 
 .green{ background:#22c55e; }
 .yellow{ background:#eab308; }
@@ -85,7 +80,6 @@ border-radius:8px;
 border:none;
 margin:5px;
 }
-
 </style>
 </head>
 
@@ -110,19 +104,23 @@ margin:5px;
 
 <p id="message"></p>
 
-<!-- Wörter -->
+<div class="leaderboard">
+<h3>🏆 Top Spieler</h3>
+<ul id="leaderboard"></ul>
+</div>
+
 <script src="words.js"></script>
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
 <script>
 
+// 🔥 Firebase
 const firebaseConfig = {
-  apiKey: "DEIN_KEY",
-  authDomain: "DEIN_DOMAIN",
-  projectId: "DEIN_ID"
+  apiKey: "AIzaSyDTPO-01gusaBZGy-TthEWZWntwct6LrEQ",
+  authDomain: "wolfle.firebaseapp.com",
+  projectId: "wolfle"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -175,7 +173,7 @@ del.classList.add("key");
 del.onclick=back;
 kb.appendChild(del);
 
-// INPUT (nur Buchstaben!)
+// INPUT
 document.addEventListener("keydown",(e)=>{
 if(gameOver)return;
 
@@ -209,7 +207,6 @@ for(let i=0;i<5;i++){
 guess+=grid[currentRow][i].textContent.toLowerCase();
 }
 
-// ❌ ungültiges Wort
 if(!validWords.has(guess)){
 showError("Kein gültiges Wort!");
 shakeRow();
@@ -223,7 +220,7 @@ colorRow(guessArr, wordArr);
 
 if(guess===word){
 document.getElementById("message").textContent="🎉 Gewonnen!";
-gameOver=true;
+saveScore(true);
 return;
 }
 
@@ -232,11 +229,11 @@ currentCol=0;
 
 if(currentRow===6){
 document.getElementById("message").textContent="❌ Wort war: "+word;
-gameOver=true;
+saveScore(false);
 }
 }
 
-// 🎨 Farben + Flip
+// Farben
 function colorRow(guessArr, wordArr){
 for(let i=0;i<5;i++){
 let cell = grid[currentRow][i];
@@ -256,14 +253,50 @@ cell.classList.add("gray");
 }
 }
 
-// ❌ Fehler UI
+// Ranking speichern
+function saveScore(win){
+gameOver=true;
+
+let name = prompt("Dein Name?");
+if(!name) return;
+
+let score = win ? 100 - (currentRow * 10) : 0;
+if(score < 10 && win) score = 10;
+
+db.collection("scores").add({
+name:name,
+score:score,
+win:win,
+date:Date.now()
+});
+
+loadLeaderboard();
+}
+
+// Leaderboard
+function loadLeaderboard(){
+db.collection("scores")
+.orderBy("score","desc")
+.limit(10)
+.get()
+.then(snapshot=>{
+let list=document.getElementById("leaderboard");
+list.innerHTML="";
+
+snapshot.forEach(doc=>{
+let d = doc.data();
+let li=document.createElement("li");
+li.textContent = d.name+" | 🏆 "+d.score+" Punkte";
+list.appendChild(li);
+});
+});
+}
+
+// Fehler UI
 function showError(text){
 const msg = document.getElementById("message");
 msg.textContent = text;
-
-setTimeout(()=>{
-msg.textContent = "";
-},2000);
+setTimeout(()=>msg.textContent="",2000);
 }
 
 function shakeRow(){
@@ -275,20 +308,16 @@ grid[currentRow][i].classList.remove("shake");
 }
 }
 
-// SOLO
+// Modes
 function startSolo(){
 word = words[Math.floor(Math.random()*words.length)];
 }
 
-// ROOM SYSTEM
 function createRoom(){
 let code = Math.random().toString(36).substring(2,7).toUpperCase();
 word = words[Math.floor(Math.random()*words.length)];
 
-db.collection("rooms").doc(code).set({
-word: word
-});
-
+db.collection("rooms").doc(code).set({word: word});
 document.getElementById("roomInfo").textContent = "Code: "+code;
 }
 
@@ -306,6 +335,7 @@ alert("Room nicht gefunden");
 }
 
 startSolo();
+loadLeaderboard();
 
 </script>
 
