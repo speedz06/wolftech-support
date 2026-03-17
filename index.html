@@ -446,17 +446,39 @@
 
         async function endGame(win) {
             gameOver = true;
-            if(currentRoomCode) updateRoomProgress(currentRow, true, win);
+            const name = document.getElementById("playerName").value.trim() || "Anonym";
             
-            // Save Score
+            if(currentRoomCode) {
+                await updateRoomProgress(currentRow, true, win);
+            }
+            
+            // Score speichern nur wenn gewonnen
             if(win && user) {
-                const name = document.getElementById("playerName").value.trim() || "Anonym";
+                // Punkte-Logik: Je weniger Zeilen, desto mehr Punkte
                 const score = (7 - currentRow) * 10;
+                
                 try {
+                    showToast("Speichere Score...", "info");
                     const ref = collection(db, 'artifacts', appId, 'public', 'data', 'scores');
-                    await addDoc(ref, { name, score, date: Date.now() });
-                    loadLeaderboard();
-                } catch(e) {}
+                    
+                    // Wir warten explizit auf das Speichern
+                    await addDoc(ref, { 
+                        name: name, 
+                        score: score, 
+                        date: Date.now() 
+                    });
+                    
+                    showToast(`Score von ${score} gespeichert!`, "success");
+                    
+                    // Kleiner Timeout, damit Firebase die Daten verarbeiten kann
+                    setTimeout(() => {
+                        loadLeaderboard();
+                    }, 500);
+                    
+                } catch(e) {
+                    console.error("Fehler beim Speichern:", e);
+                    showToast("Score konnte nicht gespeichert werden", "error");
+                }
             }
         }
 
