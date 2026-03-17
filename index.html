@@ -483,23 +483,49 @@
         }
 
         async function loadLeaderboard() {
-            if(!db) return;
+            const list = document.getElementById("leaderboard");
+            if (!db) {
+                list.innerHTML = "<li class='text-red-400 text-xs'>Datenbank nicht bereit</li>";
+                return;
+            }
+
             try {
+                // Pfad muss EXAKT mit dem Pfad beim Speichern übereinstimmen!
                 const ref = collection(db, 'artifacts', appId, 'public', 'data', 'scores');
                 const snap = await getDocs(ref);
-                let data = [];
-                snap.forEach(d => data.push(d.data()));
-                data.sort((a,b) => b.score - a.score);
                 
-                const list = document.getElementById("leaderboard");
-                list.innerHTML = "";
-                data.slice(0, 8).forEach((s, i) => {
-                    list.innerHTML += `<li class="flex justify-between bg-slate-800/40 p-2 rounded-lg border border-slate-700/50 text-sm">
-                        <span>${i+1}. ${s.name}</span>
-                        <span class="text-indigo-400 font-bold">${s.score}</span>
-                    </li>`;
+                let data = [];
+                snap.forEach(d => {
+                    const docData = d.data();
+                    if (docData.name && docData.score !== undefined) {
+                        data.push(docData);
+                    }
                 });
-            } catch(e) {}
+
+                // Sortieren: Höchster Score zuerst
+                data.sort((a, b) => b.score - a.score);
+                
+                list.innerHTML = "";
+                
+                if (data.length === 0) {
+                    list.innerHTML = "<li class='text-slate-500 text-sm italic'>Noch keine Scores</li>";
+                    return;
+                }
+
+                // Nur die Top 10 anzeigen
+                data.slice(0, 10).forEach((s, i) => {
+                    const li = document.createElement("li");
+                    li.className = "flex justify-between bg-slate-800/40 p-2 rounded-lg border border-slate-700/50 text-sm animate-fade-in";
+                    li.innerHTML = `
+                        <span class="text-slate-300">${i + 1}. ${s.name}</span>
+                        <span class="text-indigo-400 font-bold">${s.score} Pkt.</span>
+                    `;
+                    list.appendChild(li);
+                });
+            } catch (e) {
+                console.error("Leaderboard Fehler:", e);
+                list.innerHTML = "<li class='text-red-400 text-xs'>Fehler beim Laden</li>";
+            }
         }
 
         function showToast(m, type) {
