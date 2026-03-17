@@ -228,16 +228,17 @@
 
         async function submitGuess() {
             if (currentCol < 5 || gameOver) return;
+            
             let guess = "";
             for (let i = 0; i < 5; i++) guess += cells[currentRow][i].textContent;
 
-            // --- Korrigierte deutsche Wort-Validierung ---
+            // --- Wort-Validierung ---
             try {
-                // Wir nutzen die Search-API, um sicherzustellen, dass das Wort existiert
+                // Suche im deutschen Wiktionary
                 const response = await fetch(`https://de.wiktionary.org/w/api.php?action=query&origin=*&format=json&list=search&srsearch=${guess.toLowerCase()}&srlimit=1`);
                 const data = await response.json();
                 
-                // Wir prüfen, ob das exakte Wort im Suchergebnis vorkommt
+                // Prüfen, ob das Wort existiert
                 const exists = data.query.search.some(result => result.title.toLowerCase() === guess.toLowerCase());
 
                 if (!exists) {
@@ -245,51 +246,57 @@
                     const rowEl = cells[currentRow][0].parentElement;
                     rowEl.classList.add("shake");
                     setTimeout(() => rowEl.classList.remove("shake"), 400);
-                    return;
+                    return; // Abbrechen, bevor die Farben berechnet werden
                 }
             } catch (e) {
                 console.error("Validierungsfehler", e);
-                // Fallback bei Netzwerkfehlern, damit das Spiel spielbar bleibt
+                // Bei Netzwerkfehler lassen wir es durchgehen, um das Spiel nicht zu blockieren
             }
-            // --- Ende Validierung ---
 
-            const evaluation = [];
+            // --- Farblogik (Zurück auf Original-Logik) ---
+            const evaluation = new Array(5).fill('absent');
             let tempTarget = targetWord.split('');
             let tempGuess = guess.split('');
 
-            // Green pass
-            for(let i=0; i<5; i++) {
+            // 1. Durchgang: Korrekte Position (Grün)
+            for(let i = 0; i < 5; i++) {
                 if(tempGuess[i] === tempTarget[i]) {
                     evaluation[i] = 'correct';
                     tempTarget[i] = null;
                     tempGuess[i] = null;
                 }
             }
-            // Yellow pass
-            for(let i=0; i<5; i++) {
-                if(tempGuess[i] && tempTarget.includes(tempGuess[i])) {
-                    evaluation[i] = 'present';
-                    tempTarget[tempTarget.indexOf(tempGuess[i])] = null;
-                } else if(!evaluation[i]) {
-                    evaluation[i] = 'absent';
+            
+            // 2. Durchgang: Enthalten (Gelb)
+            for(let i = 0; i < 5; i++) {
+                if(tempGuess[i] !== null) { // Noch nicht als grün markiert
+                    const indexInTarget = tempTarget.indexOf(tempGuess[i]);
+                    if(indexInTarget !== -1) {
+                        evaluation[i] = 'present';
+                        tempTarget[indexInTarget] = null; // Buchstabe "verbrauchen"
+                    }
                 }
             }
 
-            // Animate
+            // --- Animation & UI Update ---
             for (let i = 0; i < 5; i++) {
-                let cell = cells[currentRow][i];
-                let status = evaluation[i];
+                const cell = cells[currentRow][i];
+                const status = evaluation[i];
+                const letter = guess[i];
+                
                 setTimeout(() => {
                     cell.classList.add("flip");
                     setTimeout(() => {
+                        cell.classList.remove("bg-slate-800/50", "border-slate-400", "border-slate-700");
                         cell.classList.add(`bg-${status}`);
-                        cell.classList.remove("bg-slate-800/50");
-                        updateKeyColor(guess[i], status);
+                        updateKeyColor(letter, status);
                     }, 300);
                 }, i * 100);
             }
 
             const isWin = guess === targetWord;
+            const finalRow = currentRow; // Fixieren für Timeout
+            
             currentRow++;
             currentCol = 0;
 
@@ -297,7 +304,7 @@
                 if (isWin) {
                     showToast("Gewonnen!", "success");
                     endGame(true);
-                } else if (currentRow === 6) {
+                } else if (finalRow === 5) { // 5 ist der Index der 6. Reihe
                     showToast(`Wort war: ${targetWord}`, "error");
                     endGame(false);
                 } else if(currentRoomCode) {
