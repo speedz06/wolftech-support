@@ -1,343 +1,687 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Wolfle</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wolfle - Multiplayer Wordle</title>
+    
+    <!-- Tailwind CSS für modernes Design -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
 
-<style>
-body{
-background: radial-gradient(circle at top,#0f172a,#020617);
-color:white;
-font-family:sans-serif;
-text-align:center;
-}
+    <!-- Externe Wörter-Datei von Github (muss im selben Ordner/Repo liegen) -->
+    <script src="words.js"></script>
 
-.grid{
-display:grid;
-grid-template-columns:repeat(5,65px);
-gap:12px;
-justify-content:center;
-margin-top:30px;
-}
+    <style>
+        body {
+            background: radial-gradient(circle at top, #1e293b, #020617);
+            color: #f8fafc;
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+        }
 
-.cell{
-width:65px;
-height:65px;
-border:2px solid #334155;
-display:flex;
-align-items:center;
-justify-content:center;
-font-size:26px;
-font-weight:600;
-border-radius:12px;
-}
+        /* Grid Animations */
+        .cell {
+            transition: transform 0.15s ease, border-color 0.15s ease;
+        }
 
-.flip{ animation:flip 0.6s ease; }
+        .flip {
+            animation: flip 0.6s ease forwards;
+        }
 
-@keyframes flip{
-0%{transform:rotateX(0);}
-50%{transform:rotateX(90deg);}
-100%{transform:rotateX(0);}
-}
+        @keyframes flip {
+            0% { transform: rotateX(0); }
+            50% { transform: rotateX(90deg); }
+            100% { transform: rotateX(0); }
+        }
 
-@keyframes shake{
-0%{transform:translateX(0);}
-25%{transform:translateX(-5px);}
-50%{transform:translateX(5px);}
-75%{transform:translateX(-5px);}
-100%{transform:translateX(0);}
-}
+        .shake {
+            animation: shake 0.4s;
+        }
 
-.shake{ animation:shake 0.4s; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
 
-.green{ background:#22c55e; }
-.yellow{ background:#eab308; }
-.gray{ background:#374151; }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
 
-.key{
-display:inline-block;
-margin:4px;
-padding:12px;
-background:#1e293b;
-border-radius:8px;
-cursor:pointer;
-}
-
-button{
-margin:10px;
-padding:12px 25px;
-background:linear-gradient(135deg,#6366f1,#06b6d4);
-border:none;
-border-radius:25px;
-color:white;
-cursor:pointer;
-}
-
-input{
-padding:10px;
-border-radius:8px;
-border:none;
-margin:5px;
-}
-</style>
+        /* Game Colors */
+        .bg-correct { background-color: #22c55e !important; border-color: #22c55e !important; color: white; }
+        .bg-present { background-color: #eab308 !important; border-color: #eab308 !important; color: white; }
+        .bg-absent { background-color: #3f3f46 !important; border-color: #3f3f46 !important; color: white; }
+    </style>
 </head>
+<body class="flex flex-col md:flex-row h-screen overflow-hidden">
 
-<body>
+    <!-- Toast Messages -->
+    <div id="toast-container" class="fixed top-5 left-1/2 transform -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-<h1>🐺 Wolfle</h1>
+    <!-- Left Sidebar: Controls & Rooms -->
+    <div class="w-full md:w-80 bg-slate-900/50 border-r border-slate-800 p-6 flex flex-col gap-6 overflow-y-auto">
+        <div class="text-center md:text-left">
+            <h1 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400 flex items-center justify-center md:justify-start gap-2">
+                <i data-lucide="paw-print"></i> Wolfle
+            </h1>
+            <p class="text-slate-400 text-sm mt-1">Multiplayer Wort-Rätsel</p>
+        </div>
 
-<div>
-<button onclick="startSolo()">Solo</button>
-<button onclick="createRoom()">Room erstellen</button>
-</div>
+        <!-- Name Input -->
+        <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Dein Spielername</label>
+            <input type="text" id="playerName" placeholder="Name eingeben..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 transition-colors">
+        </div>
 
-<div>
-<input id="roomInput" placeholder="Room Code">
-<button onclick="joinRoom()">Beitreten</button>
-</div>
+        <!-- Modes -->
+        <div class="flex flex-col gap-3">
+            <button onclick="startSolo()" class="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-xl transition-all border border-slate-700">
+                <i data-lucide="user"></i> Solo Spielen
+            </button>
+            
+            <div class="relative flex items-center py-2">
+                <div class="flex-grow border-t border-slate-700"></div>
+                <span class="flex-shrink-0 mx-4 text-slate-500 text-xs uppercase">Oder Multiplayer</span>
+                <div class="flex-grow border-t border-slate-700"></div>
+            </div>
 
-<p id="roomInfo"></p>
+            <button onclick="createRoom()" class="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl transition-all shadow-lg shadow-indigo-900/20">
+                <i data-lucide="users"></i> Raum erstellen
+            </button>
 
-<div id="grid" class="grid"></div>
-<div id="keyboard"></div>
+            <div class="flex gap-2">
+                <input type="text" id="roomInput" placeholder="Code..." class="w-1/2 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-center uppercase text-lg tracking-widest focus:outline-none focus:border-cyan-500 transition-colors">
+                <button onclick="joinRoom()" class="w-1/2 flex items-center justify-center gap-2 bg-cyan-600 hover:bg-cyan-500 text-white py-2 rounded-xl transition-all">
+                    Beitreten
+                </button>
+            </div>
+        </div>
 
-<p id="message"></p>
+        <!-- Room Status (Visible when in room) -->
+        <div id="roomStatus" class="hidden bg-slate-800/80 p-4 rounded-xl border border-indigo-500/30 flex-1">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-sm font-semibold text-indigo-300">Raum: <span id="currentRoomCode" class="text-white font-mono tracking-wider"></span></h3>
+                <button onclick="leaveRoom()" class="text-xs text-red-400 hover:text-red-300"><i data-lucide="log-out" class="w-4 h-4"></i></button>
+            </div>
+            <ul id="roomPlayers" class="space-y-2 text-sm">
+                <!-- Players will be injected here -->
+            </ul>
+        </div>
+    </div>
 
-<div class="leaderboard">
-<h3>🏆 Top Spieler</h3>
-<ul id="leaderboard"></ul>
-</div>
+    <!-- Main Game Area -->
+    <div class="flex-1 flex flex-col items-center justify-between p-4 md:p-8 h-full overflow-hidden">
+        
+        <!-- Game Board -->
+        <div class="flex-1 flex items-center justify-center w-full min-h-0">
+            <div id="grid" class="grid grid-rows-6 gap-2">
+                <!-- Grid cells generated by JS -->
+            </div>
+        </div>
 
-<script src="words.js"></script>
+        <!-- Keyboard -->
+        <div id="keyboard" class="w-full max-w-lg mt-4 flex flex-col gap-2 pb-4">
+            <!-- Keyboard rows generated by JS -->
+        </div>
+    </div>
 
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <!-- Right Sidebar: Leaderboard -->
+    <div class="w-full md:w-72 bg-slate-900/50 border-l border-slate-800 p-6 hidden md:flex flex-col">
+        <h2 class="text-xl font-bold flex items-center gap-2 mb-4 text-slate-200">
+            <i data-lucide="trophy" class="text-yellow-500"></i> Top Spieler
+        </h2>
+        <div class="flex-1 overflow-y-auto pr-2">
+            <ul id="leaderboard" class="space-y-3">
+                <!-- Leaderboard entries here -->
+                <li class="text-slate-500 text-sm text-center mt-10">Lade...</li>
+            </ul>
+        </div>
+    </div>
 
-<script>
+    <!-- Firebase & Game Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot, getDocs, addDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-// 🔥 Firebase
-const firebaseConfig = {
-  apiKey: "AIzaSyDTPO-01gusaBZGy-TthEWZWntwct6LrEQ",
-  authDomain: "wolfle.firebaseapp.com",
-  projectId: "wolfle"
-};
+        // --- Init Lucide Icons ---
+        lucide.createIcons();
 
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+        // --- Fallback Words (German 5-letters without umlauts for standard QWERTZ) ---
+        const FALLBACK_WORDS = [
+            "APFEL", "STADT", "STUHL", "TISCH", "VOGEL", "STERN", "LICHT", "NACHT", "SPIEL", "FEUER",
+            "KATZE", "HUNDE", "MAUSE", "BAUME", "BLUME", "KREIS", "PUNKT", "LINIE", "WELLE", "WOLFE",
+            "AUTOS", "HAUSE", "ESSEN", "TRINK", "SCHLA", "LAUFE", "GEHEN", "STEHE", "SAGEN", "FRAGE",
+            "SPORT", "MUSIK", "KUNST", "BUCH", "SEITE", "WORT", "SATZ", "BRIEF", "KARTE", "BILD"
+        ];
+        
+        // Prüft, ob die words.js erfolgreich geladen wurde, ansonsten nutze die Fallback-Liste
+        const words = (typeof window.WORDS !== 'undefined' && Array.isArray(window.WORDS)) 
+                      ? window.WORDS 
+                      : (typeof WORDS !== 'undefined' ? WORDS : FALLBACK_WORDS);
+        const validWords = new Set(words.map(w => w.toUpperCase()));
 
-// Wörter
-const words = WORDS;
-const validWords = new Set(words);
+        // --- Game State ---
+        let targetWord = "";
+        let currentRow = 0;
+        let currentCol = 0;
+        let grid = [];
+        let gameOver = false;
+        let letterStates = {}; // 'A': 'correct', 'present', 'absent'
+        
+        // --- Multiplayer State ---
+        let currentRoom = null;
+        let roomUnsubscribe = null;
+        let currentUser = null;
+        
+        // --- Setup Database ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'wolfle-app';
+        let db, auth;
 
-let word;
-let currentRow=0;
-let currentCol=0;
-let grid=[];
-let gameOver=false;
+        async function initFirebase() {
+            try {
+                const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { projectId: "demo-wolfle" };
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
 
-const gridEl=document.getElementById("grid");
+                // Authentication (MANDATORY before queries)
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
 
-// GRID
-for(let i=0;i<6;i++){
-grid[i]=[];
-for(let j=0;j<5;j++){
-let d=document.createElement("div");
-d.classList.add("cell");
-gridEl.appendChild(d);
-grid[i][j]=d;
-}
-}
+                onAuthStateChanged(auth, (user) => {
+                    if(user) {
+                        currentUser = user;
+                        loadLeaderboard();
+                        
+                        // Restore name
+                        const savedName = localStorage.getItem("wolfle_name");
+                        if(savedName) document.getElementById('playerName').value = savedName;
+                    }
+                });
+            } catch(e) {
+                console.error("Firebase init failed:", e);
+                showToast("Lokaler Modus (Keine Datenbankverbindung)", "error");
+            }
+        }
 
-// KEYBOARD
-const letters="QWERTZUIOPASDFGHJKLYXCVBNM";
-const kb=document.getElementById("keyboard");
+        // --- UI Setup: Grid ---
+        const gridEl = document.getElementById("grid");
+        function createGrid() {
+            gridEl.innerHTML = '';
+            grid = [];
+            for (let i = 0; i < 6; i++) {
+                grid[i] = [];
+                let rowEl = document.createElement("div");
+                rowEl.className = "grid grid-cols-5 gap-2";
+                for (let j = 0; j < 5; j++) {
+                    let d = document.createElement("div");
+                    // Base classes for a cell
+                    d.className = "cell w-12 h-12 md:w-16 md:h-16 border-2 border-slate-700 flex items-center justify-center text-2xl md:text-3xl font-bold rounded-lg uppercase bg-slate-800/50 text-white";
+                    rowEl.appendChild(d);
+                    grid[i][j] = d;
+                }
+                gridEl.appendChild(rowEl);
+            }
+        }
 
-letters.split("").forEach(l=>{
-let k=document.createElement("div");
-k.textContent=l;
-k.classList.add("key");
-k.onclick=()=>input(l);
-kb.appendChild(k);
-});
+        // --- UI Setup: Keyboard (QWERTZ Layout) ---
+        const kbEl = document.getElementById("keyboard");
+        const keyboardLayout = [
+            ['Q','W','E','R','T','Z','U','I','O','P'],
+            ['A','S','D','F','G','H','J','K','L'],
+            ['ENTER','Y','X','C','V','B','N','M','⌫']
+        ];
+        
+        const keyElements = {}; // Map to update colors easily
 
-let enter=document.createElement("div");
-enter.textContent="ENTER";
-enter.classList.add("key");
-enter.onclick=submit;
-kb.appendChild(enter);
+        function createKeyboard() {
+            kbEl.innerHTML = '';
+            keyboardLayout.forEach(row => {
+                let rowDiv = document.createElement("div");
+                rowDiv.className = "flex justify-center gap-1 md:gap-2";
+                
+                row.forEach(key => {
+                    let btn = document.createElement("button");
+                    btn.textContent = key;
+                    btn.className = "key-btn flex-1 max-w-[45px] md:max-w-[50px] h-12 md:h-14 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded flex items-center justify-center text-sm md:text-base transition-colors select-none cursor-pointer";
+                    
+                    if (key === 'ENTER') {
+                        btn.className += " px-2 md:px-4 text-xs md:text-sm !flex-none";
+                        btn.onclick = submitGuess;
+                    } else if (key === '⌫') {
+                        btn.className += " px-2 md:px-4 !flex-none";
+                        btn.onclick = backspace;
+                    } else {
+                        btn.onclick = () => typeLetter(key);
+                        keyElements[key] = btn;
+                    }
+                    rowDiv.appendChild(btn);
+                });
+                kbEl.appendChild(rowDiv);
+            });
+        }
 
-let del=document.createElement("div");
-del.textContent="⌫";
-del.classList.add("key");
-del.onclick=back;
-kb.appendChild(del);
+        // --- Interaction Logic ---
+        document.addEventListener("keydown", (e) => {
+            if (gameOver) return;
+            // Prevent typing when focusing inputs
+            if(document.activeElement.tagName === "INPUT") return;
 
-// INPUT
-document.addEventListener("keydown",(e)=>{
-if(gameOver)return;
+            if (e.key === "Enter") submitGuess();
+            else if (e.key === "Backspace") backspace();
+            else if (/^[a-zA-Z]$/.test(e.key)) {
+                typeLetter(e.key.toUpperCase());
+            }
+        });
 
-if(e.key==="Enter") submit();
-else if(e.key==="Backspace") back();
-else if(/^[a-zA-Z]$/.test(e.key)){
-input(e.key.toUpperCase());
-}
-});
+        function typeLetter(l) {
+            if (currentCol < 5 && !gameOver) {
+                let cell = grid[currentRow][currentCol];
+                cell.textContent = l;
+                cell.classList.add("border-slate-400"); // highlight active typing
+                
+                // Pop animation
+                cell.style.transform = "scale(1.1)";
+                setTimeout(() => cell.style.transform = "scale(1)", 100);
+                
+                currentCol++;
+            }
+        }
 
-function input(l){
-if(currentCol<5){
-grid[currentRow][currentCol].textContent=l;
-currentCol++;
-}
-}
+        function backspace() {
+            if (currentCol > 0 && !gameOver) {
+                currentCol--;
+                let cell = grid[currentRow][currentCol];
+                cell.textContent = "";
+                cell.classList.remove("border-slate-400");
+            }
+        }
 
-function back(){
-if(currentCol>0){
-currentCol--;
-grid[currentRow][currentCol].textContent="";
-}
-}
+        function evaluateGuessLogic(guessStr, targetStr) {
+            let guessArr = guessStr.split('');
+            let targetArr = targetStr.split('');
+            let result = Array(5).fill('absent');
 
-// SUBMIT
-function submit(){
-if(currentCol<5) return;
+            // Pass 1: Correct positions (Green)
+            for (let i = 0; i < 5; i++) {
+                if (guessArr[i] === targetArr[i]) {
+                    result[i] = 'correct';
+                    targetArr[i] = null; 
+                    guessArr[i] = null;
+                }
+            }
 
-let guess="";
-for(let i=0;i<5;i++){
-guess+=grid[currentRow][i].textContent.toLowerCase();
-}
+            // Pass 2: Present positions (Yellow)
+            for (let i = 0; i < 5; i++) {
+                if (guessArr[i] && targetArr.includes(guessArr[i])) {
+                    result[i] = 'present';
+                    targetArr[targetArr.indexOf(guessArr[i])] = null;
+                }
+            }
+            return result;
+        }
 
-if(!validWords.has(guess)){
-showError("Kein gültiges Wort!");
-shakeRow();
-return;
-}
+        async function submitGuess() {
+            if (currentCol < 5 || gameOver) return;
 
-let guessArr = guess.split("");
-let wordArr = word.split("");
+            let guess = "";
+            for (let i = 0; i < 5; i++) {
+                guess += grid[currentRow][i].textContent;
+            }
 
-colorRow(guessArr, wordArr);
+            if (!validWords.has(guess)) {
+                showToast("Wort nicht in der Liste", "warning");
+                shakeRow();
+                return;
+            }
 
-if(guess===word){
-document.getElementById("message").textContent="🎉 Gewonnen!";
-saveScore(true);
-return;
-}
+            let evaluation = evaluateGuessLogic(guess, targetWord);
+            
+            // Animate and Color Row
+            for (let i = 0; i < 5; i++) {
+                let cell = grid[currentRow][i];
+                let status = evaluation[i];
+                let letter = guess[i];
 
-currentRow++;
-currentCol=0;
+                setTimeout(() => {
+                    cell.classList.add("flip");
+                    cell.classList.remove("border-slate-400");
+                    
+                    setTimeout(() => {
+                        cell.classList.add(`bg-${status}`);
+                        cell.classList.remove("bg-slate-800/50");
+                        
+                        // Update Keyboard colors (prioritize green > yellow > gray)
+                        updateKeyboardColor(letter, status);
+                    }, 300); // Wait for half flip
+                }, i * 150);
+            }
 
-if(currentRow===6){
-document.getElementById("message").textContent="❌ Wort war: "+word;
-saveScore(false);
-}
-}
+            let isWin = guess === targetWord;
+            currentRow++;
+            currentCol = 0;
 
-// Farben
-function colorRow(guessArr, wordArr){
-for(let i=0;i<5;i++){
-let cell = grid[currentRow][i];
+            // Wait for animations to finish before ending game
+            setTimeout(() => {
+                if (isWin) {
+                    showToast("🎉 Gewonnen!", "success");
+                    endGame(true);
+                } else if (currentRow === 6) {
+                    showToast(`❌ Vorbei! Das Wort war: ${targetWord}`, "error");
+                    endGame(false);
+                } else {
+                    // Update multiplayer state if in a room
+                    if(currentRoom) updateRoomProgress(currentRow, false, false);
+                }
+            }, 5 * 150 + 400);
+        }
 
-setTimeout(()=>{
-cell.classList.add("flip");
+        function updateKeyboardColor(letter, status) {
+            let btn = keyElements[letter];
+            if (!btn) return;
+            
+            let currentStatus = letterStates[letter];
+            if (currentStatus === 'correct') return; // Don't downgrade green
+            if (currentStatus === 'present' && status === 'absent') return; // Don't downgrade yellow
+            
+            letterStates[letter] = status;
+            btn.className = btn.className.replace(/bg-slate-700|bg-slate-600|bg-correct|bg-present|bg-absent/g, '');
+            btn.classList.add(`bg-${status}`);
+        }
 
-if(guessArr[i]===wordArr[i]){
-cell.classList.add("green");
-}else if(wordArr.includes(guessArr[i])){
-cell.classList.add("yellow");
-}else{
-cell.classList.add("gray");
-}
+        function shakeRow() {
+            for (let i = 0; i < 5; i++) {
+                grid[currentRow][i].classList.remove("shake");
+                void grid[currentRow][i].offsetWidth; // trigger reflow
+                grid[currentRow][i].classList.add("shake");
+            }
+        }
 
-}, i * 300);
-}
-}
+        // --- Game Flow ---
 
-// Ranking speichern
-function saveScore(win){
-gameOver=true;
+        window.startSolo = function() {
+            resetGame();
+            targetWord = words[Math.floor(Math.random() * words.length)].toUpperCase();
+            window.leaveRoom(); // Leave any active room
+            showToast("Solo Spiel gestartet!", "success");
+        }
 
-let name = prompt("Dein Name?");
-if(!name) return;
+        function resetGame() {
+            createGrid();
+            createKeyboard();
+            currentRow = 0;
+            currentCol = 0;
+            gameOver = false;
+            letterStates = {};
+            targetWord = "";
+        }
 
-let score = win ? 100 - (currentRow * 10) : 0;
-if(score < 10 && win) score = 10;
+        async function endGame(win) {
+            gameOver = true;
+            
+            // Save to Leaderboard
+            let nameInput = document.getElementById("playerName").value.trim();
+            let name = nameInput || "Anonym_" + Math.floor(Math.random()*1000);
+            localStorage.setItem("wolfle_name", nameInput);
 
-db.collection("scores").add({
-name:name,
-score:score,
-win:win,
-date:Date.now()
-});
+            if(currentUser && db) {
+                try {
+                    // Calculate score: Win = baseline 10 + 10 points for every unused row
+                    let score = win ? 10 + ((6 - currentRow) * 15) : 0;
+                    
+                    if (score > 0) {
+                        const scoreRef = collection(db, 'artifacts', appId, 'public', 'data', 'scores');
+                        await addDoc(scoreRef, {
+                            uid: currentUser.uid,
+                            name: name,
+                            score: score,
+                            date: Date.now()
+                        });
+                        loadLeaderboard();
+                    }
+                } catch(e) {
+                    console.error("Score save error", e);
+                }
+            }
 
-loadLeaderboard();
-}
+            // Update Multiplayer Room
+            if(currentRoom) {
+                updateRoomProgress(currentRow, true, win);
+            }
+        }
 
-// Leaderboard
-function loadLeaderboard(){
-db.collection("scores")
-.orderBy("score","desc")
-.limit(10)
-.get()
-.then(snapshot=>{
-let list=document.getElementById("leaderboard");
-list.innerHTML="";
+        // --- Multiplayer Features ---
 
-snapshot.forEach(doc=>{
-let d = doc.data();
-let li=document.createElement("li");
-li.textContent = d.name+" | 🏆 "+d.score+" Punkte";
-list.appendChild(li);
-});
-});
-}
+        window.createRoom = async function() {
+            if(!currentUser || !db) return showToast("Verbindung fehlt", "error");
+            
+            let nameInput = document.getElementById("playerName").value.trim() || "Host";
+            let code = Math.random().toString(36).substring(2,7).toUpperCase();
+            let rWord = words[Math.floor(Math.random() * words.length)].toUpperCase();
+            
+            try {
+                const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', code);
+                await setDoc(roomRef, {
+                    word: rWord,
+                    createdAt: Date.now(),
+                    players: {
+                        [currentUser.uid]: {
+                            name: nameInput,
+                            guesses: 0,
+                            finished: false,
+                            won: false
+                        }
+                    }
+                });
+                
+                joinRoomInternal(code, rWord);
+                showToast(`Raum ${code} erstellt!`, "success");
+            } catch(e) {
+                console.error(e);
+                showToast("Fehler beim Erstellen", "error");
+            }
+        }
 
-// Fehler UI
-function showError(text){
-const msg = document.getElementById("message");
-msg.textContent = text;
-setTimeout(()=>msg.textContent="",2000);
-}
+        window.joinRoom = async function() {
+            if(!currentUser || !db) return;
+            let code = document.getElementById("roomInput").value.toUpperCase();
+            if(!code) return showToast("Code eingeben!", "warning");
+            
+            try {
+                const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', code);
+                const docSnap = await getDoc(roomRef);
+                
+                if(docSnap.exists()) {
+                    let rData = docSnap.data();
+                    let nameInput = document.getElementById("playerName").value.trim() || "Gast";
+                    
+                    // Add self to room
+                    await setDoc(roomRef, {
+                        players: {
+                            [currentUser.uid]: {
+                                name: nameInput,
+                                guesses: 0,
+                                finished: false,
+                                won: false
+                            }
+                        }
+                    }, { merge: true });
+                    
+                    joinRoomInternal(code, rData.word);
+                    showToast(`Raum ${code} beigetreten!`, "success");
+                    document.getElementById("roomInput").value = "";
+                } else {
+                    showToast("Raum nicht gefunden", "error");
+                }
+            } catch(e) {
+                console.error(e);
+            }
+        }
 
-function shakeRow(){
-for(let i=0;i<5;i++){
-grid[currentRow][i].classList.add("shake");
-setTimeout(()=>{
-grid[currentRow][i].classList.remove("shake");
-},500);
-}
-}
+        function joinRoomInternal(code, word) {
+            resetGame();
+            targetWord = word;
+            currentRoom = code;
+            
+            document.getElementById("roomStatus").classList.remove("hidden");
+            document.getElementById("currentRoomCode").textContent = code;
+            
+            listenToRoom(code);
+        }
 
-// Modes
-function startSolo(){
-word = words[Math.floor(Math.random()*words.length)];
-}
+        window.leaveRoom = function() {
+            currentRoom = null;
+            if(roomUnsubscribe) {
+                roomUnsubscribe();
+                roomUnsubscribe = null;
+            }
+            document.getElementById("roomStatus").classList.add("hidden");
+        }
 
-function createRoom(){
-let code = Math.random().toString(36).substring(2,7).toUpperCase();
-word = words[Math.floor(Math.random()*words.length)];
+        function listenToRoom(code) {
+            if(roomUnsubscribe) roomUnsubscribe();
+            
+            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', code);
+            roomUnsubscribe = onSnapshot(roomRef, (docSnap) => {
+                if(docSnap.exists()) {
+                    renderRoomPlayers(docSnap.data().players);
+                }
+            }, (error) => {
+                console.error("Room listener error", error);
+            });
+        }
 
-db.collection("rooms").doc(code).set({word: word});
-document.getElementById("roomInfo").textContent = "Code: "+code;
-}
+        async function updateRoomProgress(guesses, finished, won) {
+            if(!currentRoom || !currentUser || !db) return;
+            let nameInput = document.getElementById("playerName").value.trim() || "Spieler";
+            
+            try {
+                const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoom);
+                await setDoc(roomRef, {
+                    players: {
+                        [currentUser.uid]: {
+                            name: nameInput,
+                            guesses: guesses,
+                            finished: finished,
+                            won: won
+                        }
+                    }
+                }, { merge: true });
+            } catch(e) {
+                console.error(e);
+            }
+        }
 
-function joinRoom(){
-let code = document.getElementById("roomInput").value.toUpperCase();
+        function renderRoomPlayers(playersObj) {
+            const list = document.getElementById("roomPlayers");
+            list.innerHTML = "";
+            
+            Object.values(playersObj).forEach(p => {
+                let statusIcon = '⏳';
+                if(p.finished) {
+                    statusIcon = p.won ? '🏆' : '❌';
+                }
+                
+                let li = document.createElement("li");
+                li.className = "flex justify-between items-center bg-slate-900/50 px-3 py-2 rounded";
+                li.innerHTML = `
+                    <span class="font-medium text-slate-200">${p.name}</span>
+                    <span class="text-xs text-slate-400">${statusIcon} Versuche: ${p.guesses}/6</span>
+                `;
+                list.appendChild(li);
+            });
+        }
 
-db.collection("rooms").doc(code).get().then(doc=>{
-if(doc.exists){
-word = doc.data().word;
-document.getElementById("roomInfo").textContent = "Beigetreten: "+code;
-}else{
-alert("Room nicht gefunden");
-}
-});
-}
+        // --- Leaderboard ---
+        async function loadLeaderboard() {
+            if(!db || !currentUser) return;
+            try {
+                const scoresRef = collection(db, 'artifacts', appId, 'public', 'data', 'scores');
+                const snapshot = await getDocs(scoresRef);
+                
+                let scores = [];
+                snapshot.forEach(doc => {
+                    scores.push(doc.data());
+                });
+                
+                // Sort in memory (Rule 2: No complex queries)
+                scores.sort((a, b) => b.score - a.score);
+                const top10 = scores.slice(0, 10);
+                
+                const list = document.getElementById("leaderboard");
+                list.innerHTML = "";
+                
+                if(top10.length === 0) {
+                    list.innerHTML = `<li class="text-slate-500 text-sm text-center mt-5">Noch keine Einträge</li>`;
+                    return;
+                }
 
-startSolo();
-loadLeaderboard();
+                top10.forEach((d, index) => {
+                    let li = document.createElement("li");
+                    li.className = "flex justify-between items-center bg-slate-800/40 p-3 rounded-lg border border-slate-700/50";
+                    
+                    let medal = "";
+                    if(index === 0) medal = "🥇";
+                    else if(index === 1) medal = "🥈";
+                    else if(index === 2) medal = "🥉";
+                    else medal = `<span class="text-slate-500 w-5 inline-block text-center">${index+1}.</span>`;
 
-</script>
+                    li.innerHTML = `
+                        <div class="flex items-center gap-2">
+                            ${medal}
+                            <span class="font-semibold text-slate-200 truncate max-w-[120px]" title="${d.name}">${d.name}</span>
+                        </div>
+                        <div class="text-indigo-400 font-mono font-bold">${d.score} <span class="text-xs text-slate-500 font-sans">Pkt</span></div>
+                    `;
+                    list.appendChild(li);
+                });
+            } catch(e) {
+                console.error("Leaderboard fetch error", e);
+            }
+        }
 
+        // --- Utilities ---
+        function showToast(message, type="info") {
+            const container = document.getElementById("toast-container");
+            const toast = document.createElement("div");
+            
+            let colorClass = "bg-slate-800 border-slate-600 text-white";
+            if(type === "error") colorClass = "bg-red-900/90 border-red-700 text-red-100";
+            if(type === "success") colorClass = "bg-green-900/90 border-green-700 text-green-100";
+            if(type === "warning") colorClass = "bg-yellow-900/90 border-yellow-700 text-yellow-100";
+
+            toast.className = `px-4 py-2 rounded-full border shadow-lg text-sm font-medium transition-all duration-300 transform translate-y-[-20px] opacity-0 ${colorClass}`;
+            toast.textContent = message;
+            
+            container.appendChild(toast);
+            
+            // Animate in
+            setTimeout(() => {
+                toast.classList.remove("translate-y-[-20px]", "opacity-0");
+            }, 10);
+
+            // Animate out
+            setTimeout(() => {
+                toast.classList.add("translate-y-[-20px]", "opacity-0");
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // --- Boot ---
+        resetGame();
+        startSolo(); 
+        initFirebase();
+
+    </script>
 </body>
 </html>
