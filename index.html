@@ -129,8 +129,6 @@
         // --- Init ---
         async function init() {
             lucide.createIcons();
-            createGrid();
-            createKeyboard();
             
             // Firebase Config safe access
             const config = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { projectId: "demo" };
@@ -138,18 +136,7 @@
             auth = getAuth(app);
             db = getFirestore(app);
 
-            // Auth Rule 3
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (e) {
-                console.error("Auth failed", e);
-                showToast("Verbindungsproblem", "error");
-            }
-
+            // Auth mit verbesserter Namensprüfung
             onAuthStateChanged(auth, (u) => {
                 user = u;
                 if(u) {
@@ -158,11 +145,41 @@
                 }
             });
 
-            const savedName = localStorage.getItem("wolfle_user_name");
-            if(savedName) document.getElementById('playerName').value = savedName;
+            try {
+                await signInAnonymously(auth);
+            } catch (e) {
+                console.error("Auth failed", e);
+            }
 
-            startSolo();
+            // Namen aus dem Speicher laden
+            const savedName = localStorage.getItem("wolfle_user_name");
+            if(savedName) {
+                document.getElementById('playerName').value = savedName;
+            }
+
+            // WICHTIG: Erst hier das Spiel initialisieren
+            resetGame(); 
+            selectNewTargetWord();
         }
+
+        function selectNewTargetWord() {
+            targetWord = WORDS[Math.floor(Math.random() * WORDS.length)];
+            console.log("Neues Wort gewählt"); // Nur zum Debuggen
+        }
+
+        window.startSolo = () => {
+            const name = document.getElementById("playerName").value.trim();
+            if(!name) {
+                showToast("Bitte gib zuerst einen Namen ein!", "warning");
+                document.getElementById("playerName").focus();
+                return;
+            }
+            localStorage.setItem("wolfle_user_name", name);
+            window.leaveRoom();
+            resetGame();
+            selectNewTargetWord();
+            showToast("Neues Spiel gestartet", "success");
+        };
 
         // --- Game Logic ---
         function createGrid() {
@@ -474,6 +491,16 @@
 
         document.addEventListener("keydown", (e) => {
             if(document.activeElement.tagName === "INPUT") return;
+            
+            // Prüfen, ob ein Name gesetzt ist
+            const name = document.getElementById("playerName").value.trim();
+            if(!name) {
+                if(/^[a-zA-Z]$/.test(e.key)) {
+                    showToast("Bitte gib oben deinen Namen ein!", "warning");
+                }
+                return;
+            }
+
             if(e.key === "Enter") submitGuess();
             else if(e.key === "Backspace") backspace();
             else if(/^[a-zA-Z]$/.test(e.key)) typeLetter(e.key.toUpperCase());
