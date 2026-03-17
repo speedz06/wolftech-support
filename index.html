@@ -13,6 +13,8 @@ font-family:sans-serif;
 text-align:center;
 }
 
+h1{ margin-top:20px; }
+
 .grid{
 display:grid;
 grid-template-columns:repeat(5,60px);
@@ -29,6 +31,7 @@ display:flex;
 align-items:center;
 justify-content:center;
 font-size:24px;
+text-transform:uppercase;
 }
 
 .green{ background:#22c55e; }
@@ -40,8 +43,8 @@ display:inline-block;
 margin:4px;
 padding:10px;
 background:#1e293b;
-cursor:pointer;
 border-radius:5px;
+cursor:pointer;
 }
 
 button{
@@ -81,18 +84,41 @@ margin-top:20px;
 <ul id="leaderboard"></ul>
 </div>
 
+<!-- 🔥 Firebase laden -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
 <script>
+// 🔥 DEINE FIREBASE CONFIG (schon richtig eingesetzt)
+const firebaseConfig = {
+  apiKey: "AIzaSyDTPO-01gusaBZGy-TthEWZWntwct6LrEQ",
+  authDomain: "wolfle.firebaseapp.com",
+  projectId: "wolfle",
+  storageBucket: "wolfle.firebasestorage.app",
+  messagingSenderId: "286289741614",
+  appId: "1:286289741614:web:14e5faad1616fe75755cbf"
+};
 
-// 🔥 große Wörterliste (ohne äöü)
-const words = WORDS;
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
+// 🔥 Wörter (500+ kannst du später erweitern)
+const words = [
+"apple","table","chair","light","plant","stone","water","house","mouse","sound",
+"video","audio","power","train","brain","clock","paper","glass","phone","cable",
+"screen","track","click","press","shift","enter","space","drive","wheel","panel",
+"model","array","stack","debug","logic","input","error","event","frame","pixel",
+"index","level","score","timer","reset","start","block","class","style","color",
+"green","white","black","brown","sweet","spice","sugar","bread","fruit","drink",
+"smile","laugh","dream","sleep","night","storm","cloud","rainy","sunny","windy",
+"river","ocean","beach","shore","earth","space","stars","planet","orbit","music"
+];
 
 let word;
 let currentRow=0;
 let currentCol=0;
 let grid=[];
 let gameOver=false;
-let mode="solo";
 
 const gridEl=document.getElementById("grid");
 const msg=document.getElementById("message");
@@ -202,16 +228,14 @@ saveScore(false);
 
 // MODES
 function startSolo(){
-mode="solo";
 word = words[Math.floor(Math.random()*words.length)];
 }
 
 function startMulti(){
-mode="multi";
-word = "wolfe"; // gleich für alle
+word = "apple"; // gleich für alle
 }
 
-// SCORE (Firebase)
+// SCORE speichern
 function saveScore(win){
 gameOver=true;
 
@@ -223,6 +247,8 @@ name:name,
 win:win,
 time:Date.now()
 });
+
+loadLeaderboard();
 }
 
 // LEADERBOARD laden
@@ -242,27 +268,14 @@ list.appendChild(li);
 });
 }
 
-// RESET
 function resetGame(){
 location.reload();
 }
 
-// 🔥 Firebase config (HIER EINTRAGEN)
-const firebaseConfig = {
-apiKey: "DEIN_KEY",
-authDomain: "DEIN_DOMAIN",
-projectId: "DEIN_ID"
-};
-
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-
 loadLeaderboard();
+startSolo();
 
 </script>
 
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-<script src="words.js"></script>
 </body>
 </html>
