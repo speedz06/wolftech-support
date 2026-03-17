@@ -14,8 +14,6 @@ font-family:sans-serif;
 text-align:center;
 }
 
-h1{ margin-top:20px; }
-
 .grid{
 display:grid;
 grid-template-columns:repeat(5,65px);
@@ -34,7 +32,6 @@ justify-content:center;
 font-size:26px;
 font-weight:600;
 border-radius:12px;
-transition:0.2s;
 }
 
 .flip{
@@ -45,6 +42,18 @@ animation:flip 0.6s ease;
 0%{transform:rotateX(0);}
 50%{transform:rotateX(90deg);}
 100%{transform:rotateX(0);}
+}
+
+@keyframes shake{
+0%{transform:translateX(0);}
+25%{transform:translateX(-5px);}
+50%{transform:translateX(5px);}
+75%{transform:translateX(-5px);}
+100%{transform:translateX(0);}
+}
+
+.shake{
+animation:shake 0.4s;
 }
 
 .green{ background:#22c55e; }
@@ -110,7 +119,6 @@ margin:5px;
 
 <script>
 
-// 🔥 Firebase
 const firebaseConfig = {
   apiKey: "DEIN_KEY",
   authDomain: "DEIN_DOMAIN",
@@ -122,17 +130,17 @@ const db = firebase.firestore();
 
 // Wörter
 const words = WORDS;
+const validWords = new Set(words);
 
-// STATE
 let word;
 let currentRow=0;
 let currentCol=0;
 let grid=[];
 let gameOver=false;
 
-// GRID
 const gridEl=document.getElementById("grid");
 
+// GRID
 for(let i=0;i<6;i++){
 grid[i]=[];
 for(let j=0;j<5;j++){
@@ -167,12 +175,15 @@ del.classList.add("key");
 del.onclick=back;
 kb.appendChild(del);
 
-// INPUT
+// INPUT (nur Buchstaben!)
 document.addEventListener("keydown",(e)=>{
 if(gameOver)return;
+
 if(e.key==="Enter") submit();
 else if(e.key==="Backspace") back();
-else if(/[a-zA-Z]/.test(e.key)) input(e.key.toUpperCase());
+else if(/^[a-zA-Z]$/.test(e.key)){
+input(e.key.toUpperCase());
+}
 });
 
 function input(l){
@@ -189,12 +200,20 @@ grid[currentRow][currentCol].textContent="";
 }
 }
 
+// SUBMIT
 function submit(){
 if(currentCol<5) return;
 
 let guess="";
 for(let i=0;i<5;i++){
 guess+=grid[currentRow][i].textContent.toLowerCase();
+}
+
+// ❌ ungültiges Wort
+if(!validWords.has(guess)){
+showError("Kein gültiges Wort!");
+shakeRow();
+return;
 }
 
 let guessArr = guess.split("");
@@ -217,7 +236,7 @@ gameOver=true;
 }
 }
 
-// 🔥 Animation + Farben
+// 🎨 Farben + Flip
 function colorRow(guessArr, wordArr){
 for(let i=0;i<5;i++){
 let cell = grid[currentRow][i];
@@ -234,6 +253,25 @@ cell.classList.add("gray");
 }
 
 }, i * 300);
+}
+}
+
+// ❌ Fehler UI
+function showError(text){
+const msg = document.getElementById("message");
+msg.textContent = text;
+
+setTimeout(()=>{
+msg.textContent = "";
+},2000);
+}
+
+function shakeRow(){
+for(let i=0;i<5;i++){
+grid[currentRow][i].classList.add("shake");
+setTimeout(()=>{
+grid[currentRow][i].classList.remove("shake");
+},500);
 }
 }
 
