@@ -1,319 +1,67 @@
 <!DOCTYPE html>
 <html lang="de">
-
 <head>
-
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>WolfTech Support – IT Hilfe für PC, WLAN und Smartphones</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
-
-<link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16x16.png">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32x32.png">
-<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
-<link rel="icon" type="image/png" sizes="192x192" href="icons/android-chrome-192x192.png">
-<link rel="icon" type="image/png" sizes="512x512" href="icons/android-chrome-512x512.png">
+<title>Wolfle</title>
 
 <style>
 
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
-font-family:'Poppins',sans-serif;
-}
-
 body{
+background:#0f172a;
 color:white;
-background-color:#0f172a;
-background-image:
-linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
-background-size:40px 40px;
-}
-
-body::before{
-content:"";
-position:fixed;
-width:600px;
-height:600px;
-background:radial-gradient(circle,#06b6d4,transparent 70%);
-top:-200px;
-right:-200px;
-opacity:0.15;
-filter:blur(120px);
-z-index:-1;
-}
-
-body::after{
-content:"";
-position:fixed;
-width:500px;
-height:500px;
-background:radial-gradient(circle,#6366f1,transparent 70%);
-bottom:-200px;
-left:-200px;
-opacity:0.15;
-filter:blur(120px);
-z-index:-1;
-}
-
-/* HEADER */
-
-header{
-display:flex;
-justify-content:space-between;
-align-items:center;
-flex-wrap:wrap;
-padding:25px 10%;
-}
-
-.logo img{
-height:80px;
-}
-
-nav a{
-margin-left:25px;
-text-decoration:none;
-color:white;
-opacity:0.8;
-}
-
-nav a:hover{
-opacity:1;
-}
-
-/* HERO */
-
-.hero{
-min-height:85vh;
-display:flex;
-flex-direction:column;
-justify-content:center;
-align-items:center;
+font-family:sans-serif;
 text-align:center;
-padding:20px;
 }
 
-.hero h1{
-font-size:55px;
-margin-bottom:20px;
+h1{
+margin-top:20px;
 }
 
-.hero p{
-max-width:650px;
-opacity:0.85;
-margin-bottom:25px;
-}
-
-.btn{
-background:linear-gradient(135deg,#6366f1,#06b6d4);
-border:none;
-padding:16px 35px;
-border-radius:40px;
-font-size:16px;
-cursor:pointer;
-color:white;
-transition:0.3s;
-}
-
-.btn:hover{
-transform:scale(1.05);
-}
-
-/* SECTION */
-
-.section{
-padding:90px 10%;
-}
-
-.section-title{
-text-align:center;
-font-size:36px;
-margin-bottom:60px;
-}
-
-/* SERVICES */
-
-.services{
+.grid{
 display:grid;
-grid-template-columns:repeat(4,1fr);
-gap:30px;
-}
-
-@media (max-width:1100px){
-.services{
-grid-template-columns:repeat(2,1fr);
-}
-}
-
-@media (max-width:600px){
-.services{
-grid-template-columns:1fr;
-}
-.hero h1{
-font-size:36px;
-}
-nav{
-width:100%;
-margin-top:10px;
-text-align:center;
-}
-nav a{
-margin:10px;
-display:inline-block;
-}
-}
-
-.service-card{
-background:rgba(255,255,255,0.05);
-padding:35px;
-border-radius:18px;
-text-align:center;
-transition:0.3s;
-}
-
-.service-card:hover{
-transform:translateY(-8px);
-background:rgba(255,255,255,0.1);
-}
-
-.service-icon{
-font-size:35px;
-margin-bottom:15px;
-}
-
-/* FEATURES */
-
-.features{
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
-gap:30px;
-text-align:center;
-}
-
-.feature{
-background:rgba(255,255,255,0.05);
-padding:30px;
-border-radius:15px;
-}
-
-/* PROCESS */
-
-.process{
-display:flex;
-flex-wrap:wrap;
+grid-template-columns:repeat(5,60px);
+gap:10px;
 justify-content:center;
-gap:30px;
-}
-
-.step{
-background:rgba(255,255,255,0.05);
-padding:30px;
-width:250px;
-border-radius:15px;
-text-align:center;
-}
-
-/* PREISE */
-
-.price-wrapper{
-display:flex;
-flex-wrap:wrap;
-justify-content:center;
-gap:30px;
-}
-
-.price-card{
-background:rgba(255,255,255,0.05);
-padding:40px;
-width:260px;
-border-radius:20px;
-text-align:center;
-position:relative;
-transition:0.3s;
-border:1px solid rgba(255,255,255,0.05);
-}
-
-.price-card:hover{
-transform:translateY(-10px);
-background:rgba(255,255,255,0.08);
-}
-
-.price-icon{
-font-size:32px;
-margin-bottom:10px;
-}
-
-.price{
-font-size:42px;
-margin:20px 0;
-color:#06b6d4;
-}
-
-.price.small{
-font-size:34px;
-}
-
-/* CONTACT */
-
-.contact{
-max-width:500px;
-margin:auto;
-display:flex;
-flex-direction:column;
-gap:15px;
-}
-
-input,textarea{
-padding:12px;
-border-radius:8px;
-border:none;
-}
-
-.contact-info{
-text-align:center;
 margin-top:30px;
 }
 
-.contact-info a{
-display:block;
-color:#06b6d4;
-text-decoration:none;
-margin:5px;
-}
-
-/* WHATSAPP */
-
-.whatsapp{
-position:fixed;
-bottom:20px;
-right:20px;
-background:#25D366;
+.cell{
 width:60px;
 height:60px;
-border-radius:50%;
+border:2px solid #444;
 display:flex;
 align-items:center;
 justify-content:center;
-font-size:28px;
-text-decoration:none;
-color:white;
+font-size:24px;
+text-transform:uppercase;
 }
 
-/* FOOTER */
+.green{ background:#22c55e; }
+.yellow{ background:#eab308; }
+.gray{ background:#374151; }
 
-footer{
-text-align:center;
-padding:50px;
-opacity:0.8;
-}
-
-.impressum{
+.keyboard{
 margin-top:30px;
-font-size:14px;
+}
+
+.key{
+display:inline-block;
+margin:5px;
+padding:10px 15px;
+background:#1e293b;
+border-radius:5px;
+cursor:pointer;
+}
+
+button{
+margin-top:20px;
+padding:10px 20px;
+border:none;
+background:#06b6d4;
+color:white;
+border-radius:5px;
+cursor:pointer;
 }
 
 </style>
@@ -321,179 +69,147 @@ font-size:14px;
 
 <body>
 
-<header>
+<h1>🐺 Wolfle</h1>
 
-<div class="logo">
-<img src="logo.png" alt="WolfTech Support Logo">
-</div>
+<div id="grid" class="grid"></div>
 
-<nav>
-<a href="#services">Services</a>
-<a href="#preise">Preise</a>
-<a href="#kontakt">Kontakt</a>
-</nav>
+<div id="keyboard" class="keyboard"></div>
 
-</header>
+<p id="message"></p>
 
-<section class="hero">
-
-<h1>WolfTech Support</h1>
-
-<p>IT Hilfe für Computer, WLAN, Smartphones und Technikprobleme.</p>
-
-<p>
-Probleme mit Computer, WLAN oder Technik?
-Ich helfe schnell und unkompliziert direkt vor Ort.
-</p>
-
-<button class="btn" onclick="scrollKontakt()">
-Termin anfragen
-</button>
-
-</section>
-
-<section class="section" id="services">
-
-<h2 class="section-title">Services</h2>
-
-<div class="services">
-
-<div class="service-card"><div class="service-icon">💻</div><h3>PC Reparatur</h3><p>Fehlerdiagnose und Reparatur.</p></div>
-<div class="service-card"><div class="service-icon">🖥</div><h3>Laptop Hilfe</h3><p>Einrichtung und Optimierung.</p></div>
-<div class="service-card"><div class="service-icon">📱</div><h3>Smartphone Hilfe</h3><p>Apps und Einstellungen.</p></div>
-<div class="service-card"><div class="service-icon">🌐</div><h3>WLAN Probleme</h3><p>Internet stabilisieren.</p></div>
-<div class="service-card"><div class="service-icon">📶</div><h3>Router konfigurieren</h3><p>Netzwerk optimieren.</p></div>
-<div class="service-card"><div class="service-icon">🖨</div><h3>Drucker einrichten</h3><p>Drucker und Scanner.</p></div>
-<div class="service-card"><div class="service-icon">⌨</div><h3>Peripherie</h3><p>Tastaturen und Mäuse.</p></div>
-<div class="service-card"><div class="service-icon">🎧</div><h3>Audio Geräte</h3><p>Headsets und Mikrofone.</p></div>
-<div class="service-card"><div class="service-icon">💾</div><h3>Externe Geräte</h3><p>USB und Festplatten.</p></div>
-<div class="service-card"><div class="service-icon">⚙</div><h3>PC Upgrade</h3><p>RAM und SSD.</p></div>
-<div class="service-card"><div class="service-icon">🌐</div><h3>Netzwerk Planung</h3><p>Planung und Einrichtung stabiler Heimnetzwerke.</p></div>
-<div class="service-card"><div class="service-icon">🖥</div><h3>PC Konfiguration & Aufbau</h3><p>Individuelle PC Zusammenstellung und Einrichtung.</p></div>
-
-</div>
-
-</section>
-
-<section class="section">
-
-<h2 class="section-title">Warum WolfTech Support?</h2>
-
-<div class="features">
-
-<div class="feature">
-⚡ Schnelle Hilfe
-<p>Viele Probleme lassen sich bereits innerhalb von 30 Minuten lösen.</p>
-</div>
-
-<div class="feature">
-🏠 Vor Ort Service
-<p>IT Unterstützung direkt bei dir zuhause im Kreis Offenbach.</p>
-</div>
-
-<div class="feature">
-💰 Faire Preise
-<p>Transparente Preise ohne versteckte Kosten.</p>
-</div>
-
-<div class="feature">
-🔧 Breites Technik Wissen
-<p>Von PC über Smartphones bis Netzwerke.</p>
-</div>
-
-</div>
-
-</section>
-
-<section class="section" id="preise">
-
-<h2 class="section-title">Preise</h2>
-
-<div class="price-wrapper">
-
-<div class="price-card">
-<div class="price-icon">⚡</div>
-<h3>Kurze Hilfe</h3>
-<div class="price">20€</div>
-<p>bis 30 Minuten</p>
-</div>
-
-<div class="price-card">
-<div class="price-icon">💻</div>
-<h3>Standard</h3>
-<div class="price">35€</div>
-<p>bis 60 Minuten</p>
-</div>
-
-<div class="price-card">
-
-<div class="price-icon">🛠</div>
-
-<h3>Komplex</h3>
-
-<div class="price small">
-nach Absprache
-</div>
-
-<p>größere Probleme oder Installationen</p>
-
-</div>
-
-</div>
-
-</section>
-
-<section class="section" id="kontakt">
-
-<h2 class="section-title">Kontakt</h2>
-
-<form class="contact" action="https://formspree.io/f/mojkkdbe" method="POST">
-
-<input type="text" name="name" placeholder="Name" required>
-<input type="email" name="email" placeholder="Email" required>
-<textarea name="message" placeholder="Beschreibe dein Problem"></textarea>
-
-<button class="btn">Anfrage senden</button>
-
-</form>
-
-<div class="contact-info">
-
-<a href="tel:+4915734299200">📞 0157 34299200</a>
-<a href="mailto:tyler.wolf@wolftech-support.de">✉ tyler.wolf@wolftech-support.de</a>
-<a href="https://wa.me/4915734299200">💬 WhatsApp</a>
-
-<p>📍 Kreis Offenbach und Umgebung</p>
-
-</div>
-
-</section>
-
-<footer>
-
-<p>© 2026 WolfTech Support</p>
-
-<div class="impressum">
-
-<p><b>Impressum</b></p>
-
-<p>
-Tyler Wolf<br>
-Keplerstraße 1<br>
-63500 Seligenstadt<br>
-Deutschland
-</p>
-
-</div>
-
-</footer>
-
-<a class="whatsapp" href="https://wa.me/4915734299200">💬</a>
+<button onclick="resetGame()">Neues Spiel</button>
 
 <script>
 
-function scrollKontakt(){
-document.getElementById("kontakt").scrollIntoView({behavior:"smooth"});
+// Wörterliste (nur ohne ä ö ü)
+const words = [
+"apfel","tisch","stuhl","lampe","fenst","garten","sonne","wolke","fluss",
+"stein","nacht","stern","farbe","licht","kabel","druck","radio","smart",
+"cloud","laser","meter","strom","daten","server","login","input","cache",
+"timer","reset","level","spiel","taste","mausx","sound","video","audio"
+];
+
+let word = words[Math.floor(Math.random()*words.length)];
+let currentRow = 0;
+let currentCol = 0;
+let grid = [];
+let gameOver = false;
+
+const gridEl = document.getElementById("grid");
+const messageEl = document.getElementById("message");
+
+// GRID erstellen
+for(let i=0;i<6;i++){
+grid[i]=[];
+for(let j=0;j<5;j++){
+let div=document.createElement("div");
+div.classList.add("cell");
+gridEl.appendChild(div);
+grid[i][j]=div;
+}
+}
+
+// Tastatur
+const letters = "QWERTZUIOPASDFGHJKLYXCVBNM";
+
+const keyboardEl = document.getElementById("keyboard");
+
+letters.split("").forEach(l=>{
+let key=document.createElement("div");
+key.textContent=l;
+key.classList.add("key");
+key.onclick=()=>handleKey(l);
+keyboardEl.appendChild(key);
+});
+
+// Enter + Backspace
+let enter=document.createElement("div");
+enter.textContent="ENTER";
+enter.classList.add("key");
+enter.onclick=submitGuess;
+keyboardEl.appendChild(enter);
+
+let back=document.createElement("div");
+back.textContent="⌫";
+back.classList.add("key");
+back.onclick=deleteLetter;
+keyboardEl.appendChild(back);
+
+// Eingabe via Tastatur
+document.addEventListener("keydown",(e)=>{
+if(gameOver) return;
+
+if(e.key==="Enter") submitGuess();
+else if(e.key==="Backspace") deleteLetter();
+else{
+let k=e.key.toUpperCase();
+if(/[A-Z]/.test(k)) handleKey(k);
+}
+});
+
+function handleKey(letter){
+if(currentCol<5 && !gameOver){
+grid[currentRow][currentCol].textContent=letter;
+currentCol++;
+}
+}
+
+function deleteLetter(){
+if(currentCol>0){
+currentCol--;
+grid[currentRow][currentCol].textContent="";
+}
+}
+
+function submitGuess(){
+if(currentCol<5) return;
+
+let guess="";
+for(let i=0;i<5;i++){
+guess+=grid[currentRow][i].textContent.toLowerCase();
+}
+
+let wordArr = word.split("");
+let guessArr = guess.split("");
+
+// Grün check
+for(let i=0;i<5;i++){
+if(guessArr[i]===wordArr[i]){
+grid[currentRow][i].classList.add("green");
+wordArr[i]=null;
+guessArr[i]=null;
+}
+}
+
+// Gelb check
+for(let i=0;i<5;i++){
+if(guessArr[i] && wordArr.includes(guessArr[i])){
+grid[currentRow][i].classList.add("yellow");
+wordArr[wordArr.indexOf(guessArr[i])] = null;
+}else if(guessArr[i]){
+grid[currentRow][i].classList.add("gray");
+}
+}
+
+// Gewinn
+if(guess===word){
+messageEl.textContent="🎉 Gewonnen!";
+gameOver=true;
+return;
+}
+
+// nächste Reihe
+currentRow++;
+currentCol=0;
+
+if(currentRow===6){
+messageEl.textContent="❌ Verloren! Wort war: "+word;
+gameOver=true;
+}
+}
+
+function resetGame(){
+location.reload();
 }
 
 </script>
