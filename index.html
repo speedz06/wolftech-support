@@ -6,7 +6,6 @@
 <title>Wolfle</title>
 
 <style>
-
 body{
 background:#0f172a;
 color:white;
@@ -14,16 +13,12 @@ font-family:sans-serif;
 text-align:center;
 }
 
-h1{
-margin-top:20px;
-}
-
 .grid{
 display:grid;
 grid-template-columns:repeat(5,60px);
 gap:10px;
 justify-content:center;
-margin-top:30px;
+margin-top:20px;
 }
 
 .cell{
@@ -34,36 +29,34 @@ display:flex;
 align-items:center;
 justify-content:center;
 font-size:24px;
-text-transform:uppercase;
 }
 
 .green{ background:#22c55e; }
 .yellow{ background:#eab308; }
 .gray{ background:#374151; }
 
-.keyboard{
-margin-top:30px;
-}
-
 .key{
 display:inline-block;
-margin:5px;
-padding:10px 15px;
+margin:4px;
+padding:10px;
 background:#1e293b;
-border-radius:5px;
 cursor:pointer;
+border-radius:5px;
 }
 
 button{
-margin-top:20px;
+margin:10px;
 padding:10px 20px;
-border:none;
 background:#06b6d4;
-color:white;
+border:none;
 border-radius:5px;
+color:white;
 cursor:pointer;
 }
 
+.leaderboard{
+margin-top:20px;
+}
 </style>
 </head>
 
@@ -71,97 +64,97 @@ cursor:pointer;
 
 <h1>🐺 Wolfle</h1>
 
-<div id="grid" class="grid"></div>
+<div>
+<button onclick="startSolo()">Solo</button>
+<button onclick="startMulti()">Multiplayer</button>
+</div>
 
-<div id="keyboard" class="keyboard"></div>
+<div id="grid" class="grid"></div>
+<div id="keyboard"></div>
 
 <p id="message"></p>
 
 <button onclick="resetGame()">Neues Spiel</button>
 
+<div class="leaderboard">
+<h3>Leaderboard</h3>
+<ul id="leaderboard"></ul>
+</div>
+
 <script>
 
-// Wörterliste (nur ohne ä ö ü)
-const words = [
-"apfel","tisch","stuhl","lampe","fenst","garten","sonne","wolke","fluss",
-"stein","nacht","stern","farbe","licht","kabel","druck","radio","smart",
-"cloud","laser","meter","strom","daten","server","login","input","cache",
-"timer","reset","level","spiel","taste","mausx","sound","video","audio"
-];
+// 🔥 große Wörterliste (ohne äöü)
+const words = WORDS;
 
-let word = words[Math.floor(Math.random()*words.length)];
-let currentRow = 0;
-let currentCol = 0;
-let grid = [];
-let gameOver = false;
 
-const gridEl = document.getElementById("grid");
-const messageEl = document.getElementById("message");
+let word;
+let currentRow=0;
+let currentCol=0;
+let grid=[];
+let gameOver=false;
+let mode="solo";
+
+const gridEl=document.getElementById("grid");
+const msg=document.getElementById("message");
 
 // GRID erstellen
 for(let i=0;i<6;i++){
 grid[i]=[];
 for(let j=0;j<5;j++){
-let div=document.createElement("div");
-div.classList.add("cell");
-gridEl.appendChild(div);
-grid[i][j]=div;
+let d=document.createElement("div");
+d.classList.add("cell");
+gridEl.appendChild(d);
+grid[i][j]=d;
 }
 }
 
-// Tastatur
-const letters = "QWERTZUIOPASDFGHJKLYXCVBNM";
-
-const keyboardEl = document.getElementById("keyboard");
+// KEYBOARD
+const letters="QWERTZUIOPASDFGHJKLYXCVBNM";
+const kb=document.getElementById("keyboard");
 
 letters.split("").forEach(l=>{
-let key=document.createElement("div");
-key.textContent=l;
-key.classList.add("key");
-key.onclick=()=>handleKey(l);
-keyboardEl.appendChild(key);
+let k=document.createElement("div");
+k.textContent=l;
+k.classList.add("key");
+k.onclick=()=>input(l);
+kb.appendChild(k);
 });
 
-// Enter + Backspace
 let enter=document.createElement("div");
 enter.textContent="ENTER";
 enter.classList.add("key");
-enter.onclick=submitGuess;
-keyboardEl.appendChild(enter);
+enter.onclick=submit;
+kb.appendChild(enter);
 
-let back=document.createElement("div");
-back.textContent="⌫";
-back.classList.add("key");
-back.onclick=deleteLetter;
-keyboardEl.appendChild(back);
+let del=document.createElement("div");
+del.textContent="⌫";
+del.classList.add("key");
+del.onclick=back;
+kb.appendChild(del);
 
-// Eingabe via Tastatur
+// INPUT
 document.addEventListener("keydown",(e)=>{
-if(gameOver) return;
-
-if(e.key==="Enter") submitGuess();
-else if(e.key==="Backspace") deleteLetter();
-else{
-let k=e.key.toUpperCase();
-if(/[A-Z]/.test(k)) handleKey(k);
-}
+if(gameOver)return;
+if(e.key==="Enter") submit();
+else if(e.key==="Backspace") back();
+else if(/[a-zA-Z]/.test(e.key)) input(e.key.toUpperCase());
 });
 
-function handleKey(letter){
-if(currentCol<5 && !gameOver){
-grid[currentRow][currentCol].textContent=letter;
+function input(l){
+if(currentCol<5){
+grid[currentRow][currentCol].textContent=l;
 currentCol++;
 }
 }
 
-function deleteLetter(){
+function back(){
 if(currentCol>0){
 currentCol--;
 grid[currentRow][currentCol].textContent="";
 }
 }
 
-function submitGuess(){
+function submit(){
 if(currentCol<5) return;
 
 let guess="";
@@ -169,50 +162,107 @@ for(let i=0;i<5;i++){
 guess+=grid[currentRow][i].textContent.toLowerCase();
 }
 
-let wordArr = word.split("");
-let guessArr = guess.split("");
+let wArr=word.split("");
+let gArr=guess.split("");
 
-// Grün check
+// grün
 for(let i=0;i<5;i++){
-if(guessArr[i]===wordArr[i]){
+if(gArr[i]===wArr[i]){
 grid[currentRow][i].classList.add("green");
-wordArr[i]=null;
-guessArr[i]=null;
+wArr[i]=null;
+gArr[i]=null;
 }
 }
 
-// Gelb check
+// gelb
 for(let i=0;i<5;i++){
-if(guessArr[i] && wordArr.includes(guessArr[i])){
+if(gArr[i] && wArr.includes(gArr[i])){
 grid[currentRow][i].classList.add("yellow");
-wordArr[wordArr.indexOf(guessArr[i])] = null;
-}else if(guessArr[i]){
+wArr[wArr.indexOf(gArr[i])]=null;
+}else if(gArr[i]){
 grid[currentRow][i].classList.add("gray");
 }
 }
 
-// Gewinn
+// win
 if(guess===word){
-messageEl.textContent="🎉 Gewonnen!";
-gameOver=true;
+msg.textContent="🎉 Gewonnen!";
+saveScore(true);
 return;
 }
 
-// nächste Reihe
 currentRow++;
 currentCol=0;
 
 if(currentRow===6){
-messageEl.textContent="❌ Verloren! Wort war: "+word;
-gameOver=true;
+msg.textContent="❌ Wort war: "+word;
+saveScore(false);
 }
 }
 
+// MODES
+function startSolo(){
+mode="solo";
+word = words[Math.floor(Math.random()*words.length)];
+}
+
+function startMulti(){
+mode="multi";
+word = "wolfe"; // gleich für alle
+}
+
+// SCORE (Firebase)
+function saveScore(win){
+gameOver=true;
+
+let name = prompt("Dein Name?");
+if(!name) return;
+
+db.collection("scores").add({
+name:name,
+win:win,
+time:Date.now()
+});
+}
+
+// LEADERBOARD laden
+function loadLeaderboard(){
+db.collection("scores")
+.orderBy("time","desc")
+.limit(10)
+.get()
+.then(snapshot=>{
+let list=document.getElementById("leaderboard");
+list.innerHTML="";
+snapshot.forEach(doc=>{
+let li=document.createElement("li");
+li.textContent = doc.data().name + " - " + (doc.data().win?"Win":"Lose");
+list.appendChild(li);
+});
+});
+}
+
+// RESET
 function resetGame(){
 location.reload();
 }
 
+// 🔥 Firebase config (HIER EINTRAGEN)
+const firebaseConfig = {
+apiKey: "DEIN_KEY",
+authDomain: "DEIN_DOMAIN",
+projectId: "DEIN_ID"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+loadLeaderboard();
+
 </script>
 
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+<script src="words.js"></script>
 </body>
 </html>
