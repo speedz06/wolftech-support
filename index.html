@@ -132,50 +132,44 @@
             createGrid();
             createKeyboard();
             
-            let config = null;
-            
-            // Versuche die automatische Config zu lesen
+            // --- MANUELLE KONFIGURATION ---
+            // Trage hier die Daten aus deiner Firebase Console (Projekteinstellungen) ein:
+            const manualConfig = {
+                apiKey: "AIzaSyDTPO-01gusabZGy-TthEWZWntwct6LrEQ",
+                authDomain: "wolfle.firebaseapp.com",
+                projectId: "wolfle",
+                storageBucket: "wolfle.firebasestorage.app",
+                messagingSenderId: "286289741614",
+                appId: "1:286289741614:web:14e5faad1616fe75755cbf"
+            };
+
+            // Falls du die Automatik doch noch im Hintergrund hast, prüfen wir kurz:
+            let config = manualConfig;
+            if (typeof __firebase_config !== 'undefined' && __firebase_config && !manualConfig.apiKey.includes("DEIN_")) {
+                try {
+                    config = (typeof __firebase_config === 'string') ? JSON.parse(__firebase_config) : __firebase_config;
+                } catch(e) {}
+            }
+
+            // Start von Firebase
             try {
-                if (typeof __firebase_config !== 'undefined' && __firebase_config) {
-                    // Falls es ein String ist (JSON), parsen wir ihn
-                    config = (typeof __firebase_config === 'string') 
-                        ? JSON.parse(__firebase_config) 
-                        : __firebase_config;
-                }
+                const app = initializeApp(config);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                onAuthStateChanged(auth, (u) => {
+                    user = u;
+                    if(u) {
+                        loadLeaderboard();
+                        document.getElementById('btnCreateRoom').disabled = false;
+                    }
+                });
+
+                await signInAnonymously(auth);
             } catch (e) {
-                console.error("Fehler beim Parsen der Config:", e);
+                console.error("Firebase Verbindung fehlgeschlagen:", e);
+                document.getElementById("leaderboard").innerHTML = "<li class='text-red-400 text-xs p-2 text-center'>Verbindung fehlgeschlagen</li>";
             }
-
-            // PRÜFUNG: Wenn kein Key da ist, stoppen wir hier sauber
-            if (!config || !config.apiKey || config.apiKey.includes("YOUR_API_KEY")) {
-                console.error("Firebase API Key fehlt in der automatischen Konfiguration!");
-                const list = document.getElementById("leaderboard");
-                list.innerHTML = "<li class='text-amber-500 text-xs p-2 text-center'>⚠️ Firebase Config fehlt im System</li>";
-                // Wir laden trotzdem das Spiel (Solo Modus), aber ohne Cloud-Features
-                startSolo(); 
-                return; 
-            }
-
-            // Ab hier läuft Firebase, da ein Key gefunden wurde
-            const app = initializeApp(config);
-            auth = getAuth(app);
-            db = getFirestore(app);
-
-            onAuthStateChanged(auth, (u) => {
-                user = u;
-                if(u) {
-                    loadLeaderboard();
-                    document.getElementById('btnCreateRoom').disabled = false;
-                }
-            });
-
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (e) { console.error("Auth failed", e); }
 
             const savedName = localStorage.getItem("wolfle_user_name");
             if(savedName) document.getElementById('playerName').value = savedName;
