@@ -231,6 +231,23 @@
             let guess = "";
             for (let i = 0; i < 5; i++) guess += cells[currentRow][i].textContent;
 
+            // --- NEU: Wort-Validierung ---
+            try {
+                // Wir fragen die Wiktionary API ab, ob das Wort existiert
+                const response = await fetch(`https://de.wiktionary.org/api/rest_v1/page/title/${guess.toLowerCase()}`);
+                if (response.status !== 200) {
+                    showToast("Wort nicht in der Liste", "error");
+                    const rowEl = cells[currentRow][0].parentElement;
+                    rowEl.classList.add("shake");
+                    setTimeout(() => rowEl.classList.remove("shake"), 400);
+                    return; // Stoppt hier, wenn das Wort nicht existiert
+                }
+            } catch (e) {
+                console.error("Validierungsfehler", e);
+                // Fallback: Wenn API down, Spiel erlauben
+            }
+            // --- Ende Validierung ---
+
             const evaluation = [];
             let tempTarget = targetWord.split('');
             let tempGuess = guess.split('');
