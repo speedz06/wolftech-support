@@ -135,7 +135,7 @@
         window.setConsent = (val) => {
             localStorage.setItem('wolfle_consent', val ? 'granted' : 'denied');
             document.getElementById('cookie-banner').classList.add('hidden');
-            location.reload();
+            startApp(); // ← no reload needed
         };
 
         async function startApp() {
@@ -371,9 +371,14 @@
         });
 
         // INIT
-        if (!localStorage.getItem('wolfle_consent')) {
-            document.getElementById('cookie-banner').classList.remove('hidden');
+        const consentStatus = localStorage.getItem('wolfle_consent');
+        if (!consentStatus) {
+            // Show banner, init icons so the shield-check icon renders
             lucide.createIcons();
+            document.getElementById('cookie-banner').classList.remove('hidden');
+            // Also initialize the game in the background so it's ready after consent
+            createGrid();
+            createKeyboard();
         } else {
             startApp();
         }
