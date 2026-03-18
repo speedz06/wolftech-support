@@ -33,6 +33,14 @@
         .bg-present { background-color: #eab308 !important; border-color: #eab308 !important; color: white; }
         .bg-absent { background-color: #3f3f46 !important; border-color: #3f3f46 !important; color: white; }
         button:focus { outline: none; }
+        #end-modal-box { transition: transform 0.25s ease, opacity 0.25s ease; }
+        #end-modal-box.visible { transform: scale(1); opacity: 1; }
+        .end-letter {
+            width: 3rem; height: 3rem;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.25rem; font-weight: bold; border-radius: 0.5rem;
+            border: 2px solid #3f3f46; color: white; text-transform: uppercase;
+        }
 
         #playerName:focus { border-color: #6366f1; }
         .name-hint { transition: opacity 0.3s; }
@@ -41,6 +49,32 @@
 <body class="flex flex-col md:flex-row h-screen overflow-hidden">
 
     <div id="toast-container" class="fixed top-5 left-1/2 transform -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- END GAME MODAL -->
+    <div id="end-modal" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[90] flex items-center justify-center p-4">
+        <div id="end-modal-box" class="w-full max-w-sm bg-slate-800 border border-slate-700 rounded-2xl p-8 shadow-2xl text-center transform transition-all scale-95 opacity-0">
+            <div id="end-emoji" class="text-6xl mb-3"></div>
+            <h2 id="end-title" class="text-2xl font-bold text-white mb-1"></h2>
+            <p id="end-subtitle" class="text-slate-400 text-sm mb-4"></p>
+
+            <!-- The word, shown letter by letter -->
+            <div id="end-word" class="flex justify-center gap-2 mb-6"></div>
+
+            <!-- Points badge, only shown on win -->
+            <div id="end-points" class="hidden mb-5 inline-block bg-indigo-900/50 border border-indigo-500/40 text-indigo-300 text-sm font-semibold px-4 py-1.5 rounded-full"></div>
+
+            <div class="flex flex-col gap-3 mt-2">
+                <button onclick="window.playAgain()" 
+                    class="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-bold transition-colors">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i> Nochmal spielen
+                </button>
+                <button onclick="window.closeModal()" 
+                    class="w-full text-slate-400 hover:text-slate-200 py-2 text-sm transition-colors">
+                    Board ansehen
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- LEFT SIDEBAR -->
     <div class="w-full md:w-80 bg-slate-900/50 border-r border-slate-800 p-6 flex flex-col gap-6 overflow-y-auto">
@@ -304,30 +338,85 @@
         // ─── End Game ─────────────────────────────────────────────
         async function endGame(win) {
             gameOver = true;
+            let points = 0;
+
             if (win) {
-                showToast("🎉 Gewonnen!", "success");
+                points = (7 - currentRow) * 10;
                 const name = getPlayerName();
-                // Only publish score if player has a name
                 if (name) {
                     const firestore = await getDB();
                     if (firestore) {
-                        const points = (7 - currentRow) * 10;
-                        // Use name as key (lowercased) — no anonymous UID needed
                         const scoreRef = doc(firestore, 'artifacts', appId, 'public', 'data', 'scores', name.toLowerCase());
                         try {
                             const snap = await getDoc(scoreRef);
                             const total = (snap.exists() ? (snap.data().score || 0) : 0) + points;
                             await setDoc(scoreRef, { name, score: total }, { merge: true });
-                            showToast(`+${points} Punkte!`, "success");
                             loadLeaderboard();
                         } catch(e) { console.error("Score save failed", e); }
                     }
                 }
-            } else {
-                showToast("Wort war: " + targetWord, "error");
             }
+
             if (currentRoomCode) updateRoomProgress(currentRow, true, win);
+
+            // Show modal after a short delay so the last flip finishes
+            setTimeout(() => showEndModal(win, points), 400);
         }
+
+        function showEndModal(win, points) {
+            const modal = document.getElementById('end-modal');
+            const box = document.getElementById('end-modal-box');
+
+            document.getElementById('end-emoji').textContent = win ? '🎉' : '😔';
+            document.getElementById('end-title').textContent = win ? 'Gewonnen!' : 'Verloren!';
+
+            const attempts = win ? `In ${currentRow} ${currentRow === 1 ? 'Versuch' : 'Versuchen'}` : 'Kein Versuch mehr übrig';
+            document.getElementById('end-subtitle').textContent = attempts;
+
+            // Render the target word letter by letter with colours
+            const wordEl = document.getElementById('end-word');
+            wordEl.innerHTML = '';
+            targetWord.split('').forEach(letter => {
+                const d = document.createElement('div');
+                d.className = 'end-letter ' + (win ? 'bg-correct' : 'bg-absent');
+                d.textContent = letter;
+                wordEl.appendChild(d);
+            });
+
+            // Points badge
+            const pointsEl = document.getElementById('end-points');
+            if (win && points > 0) {
+                pointsEl.textContent = `+${points} Punkte`;
+                pointsEl.classList.remove('hidden');
+                pointsEl.classList.add('block');
+            } else {
+                pointsEl.classList.add('hidden');
+            }
+
+            modal.classList.remove('hidden');
+            // Trigger animation on next frame
+            requestAnimationFrame(() => requestAnimationFrame(() => box.classList.add('visible')));
+        }
+
+        window.closeModal = () => {
+            const modal = document.getElementById('end-modal');
+            const box = document.getElementById('end-modal-box');
+            box.classList.remove('visible');
+            setTimeout(() => modal.classList.add('hidden'), 250);
+        };
+
+        window.playAgain = () => {
+            window.closeModal();
+            setTimeout(() => {
+                if (currentRoomCode) {
+                    // In a room: start a new solo game but stay in room chat
+                    resetGame();
+                    targetWord = WORDS[Math.floor(Math.random() * WORDS.length)].toUpperCase();
+                } else {
+                    window.startSolo();
+                }
+            }, 260);
+        };
 
         // ─── Leaderboard ──────────────────────────────────────────
         async function loadLeaderboard() {
