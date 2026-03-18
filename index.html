@@ -49,8 +49,8 @@
                 Wir nutzen Cookies und lokalen Speicher, um deinen Namen und Punktestand sicher in der Cloud zu speichern. Akzeptiere, um die Bestenliste und den Multiplayer zu nutzen.
             </p>
             <div class="flex flex-col gap-3">
-                <button onclick="window.acceptCookies()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-bold transition-colors">Akzeptieren & Spielen</button>
-                <button onclick="window.location.href='https://google.de'" class="text-slate-500 text-xs hover:underline">Ablehnen (Verlassen)</button>
+                <button onclick="window.setConsent(true)" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-bold transition-colors">Vollversion (Cloud & Multiplayer)</button>
+                <button onclick="window.setConsent(false)" class="w-full bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-xl text-sm transition-colors">Nur Solo spielen (Lokal)</button>
             </div>
         </div>
     </div>
@@ -132,48 +132,74 @@
         let currentRoomCode = null, roomUnsubscribe = null, user = null, db = null, auth = null;
         const appId = 'wolfle-v1';
 
-        // --- COOKIE LOGIK ---
-        window.acceptCookies = () => {
-            localStorage.setItem('wolfle_consent', 'true');
+       // --- COOKIE LOGIK ---
+        // val ist true für "Akzeptieren", false für "Ablehnen"
+        window.setConsent = (val) => {
+            localStorage.setItem('wolfle_consent', val ? 'granted' : 'denied');
             document.getElementById('cookie-banner').classList.add('hidden');
-            startApp(); // Starte die App erst nach Klick
+            // Seite neu laden, um die Entscheidung sauber anzuwenden
+            location.reload();
         };
+
+        // Alte Funktion überschreiben/löschen, da wir jetzt setConsent nutzen
+        window.acceptCookies = () => window.setConsent(true);
 
         async function startApp() {
             lucide.createIcons();
+            const consentStatus = localStorage.getItem('wolfle_consent');
+            const hasConsent = (consentStatus === 'granted');
+
             createGrid();
             createKeyboard();
             
-            const config = {
-                apiKey: "AIzaSyDTPO-01gusabZGy-TthEWZWntwct6LrEQ",
-                authDomain: "wolfle.firebaseapp.com",
-                projectId: "wolfle",
-                storageBucket: "wolfle.firebasestorage.app",
-                messagingSenderId: "286289741614",
-                appId: "1:286289741614:web:14e5faad1616fe75755cbf"
-            };
+            // Nur wenn zugestimmt wurde, Firebase laden
+            if (hasConsent) {
+                const config = {
+                    apiKey: "AIzaSyDTPO-01gusabZGy-TthEWZWntwct6LrEQ",
+                    authDomain: "wolfle.firebaseapp.com",
+                    projectId: "wolfle",
+                    storageBucket: "wolfle.firebasestorage.app",
+                    messagingSenderId: "286289741614",
+                    appId: "1:286289741614:web:14e5faad1616fe75755cbf"
+                };
 
-            try {
-                const app = initializeApp(config);
-                auth = getAuth(app);
-                db = getFirestore(app);
-                onAuthStateChanged(auth, (u) => {
-                    user = u;
-                    if(u) {
-                        loadLeaderboard();
-                        const urlParams = new URLSearchParams(window.location.search);
-                        const r = urlParams.get('room');
-                        if(r) { document.getElementById('roomInput').value = r; window.joinRoom(); }
-                    }
-                });
-                await signInAnonymously(auth);
-            } catch (e) { console.error("Firebase init failed", e); }
+                try {
+                    const app = initializeApp(config);
+                    auth = getAuth(app);
+                    db = getFirestore(app);
+                    onAuthStateChanged(auth, (u) => {
+                        user = u;
+                        if(u) {
+                            loadLeaderboard();
+                            const urlParams = new URLSearchParams(window.location.search);
+                            const r = urlParams.get('room');
+                            if(r) { document.getElementById('roomInput').value = r; window.joinRoom(); }
+                        }
+                    });
+                    await signInAnonymously(auth);
+                } catch (e) { console.error("Firebase init failed", e); }
+            } else {
+                // Wenn abgelehnt: Multiplayer-Sektion visuell sperren
+                const mpArea = document.getElementById('btnCreateRoom').parentElement;
+                mpArea.style.opacity = "0.4";
+                mpArea.style.pointerEvents = "none";
+                document.getElementById('leaderboard').innerHTML = '<li class="text-slate-500 text-xs italic">Deaktiviert (keine Cookies)</li>';
+            }
 
             const savedName = localStorage.getItem("wolfle_user_name");
             if(savedName) document.getElementById('playerName').value = savedName;
             window.startSolo();
         }
 
+        function checkConsentAtStart() {
+            const status = localStorage.getItem('wolfle_consent');
+            if (!status) {
+                document.getElementById('cookie-banner').classList.remove('hidden');
+                lucide.createIcons();
+            } else {
+                startApp();
+            }
+        }
         // --- INIT PRÜFUNG ---
         function checkConsentAtStart() {
             if (!localStorage.getItem('wolfle_consent')) {
