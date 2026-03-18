@@ -461,38 +461,52 @@
 
         async function endGame(win) {
             gameOver = true;
-            const name = document.getElementById("playerName").value.trim() || "Anonym";
+            const nameInput = document.getElementById("playerName").value.trim();
+            const name = nameInput || "Anonym";
+            
+            // Namen lokal merken
+            if(nameInput) localStorage.setItem("wolfle_user_name", nameInput);
             
             if(currentRoomCode) {
                 await updateRoomProgress(currentRow, true, win);
             }
             
-            // Score speichern nur wenn gewonnen
+            // Score addieren nur wenn gewonnen
             if(win && user) {
-                // Punkte-Logik: Je weniger Zeilen, desto mehr Punkte
-                const score = (7 - currentRow) * 10;
+                const pointsThisRound = (7 - currentRow) * 10;
                 
                 try {
-                    showToast("Speichere Score...", "info");
-                    const ref = collection(db, 'artifacts', appId, 'public', 'data', 'scores');
+                    showToast(`+${pointsThisRound} Punkte!`, "info");
                     
-                    // Wir warten explizit auf das Speichern
-                    await addDoc(ref, { 
+                    // Referenz auf das EINE Dokument dieses Users (über seine UID)
+                    const userScoreRef = doc(db, 'artifacts', appId, 'public', 'data', 'scores', user.uid);
+                    
+                    // 1. Aktuellen Stand aus der DB holen
+                    const docSnap = await getDoc(userScoreRef);
+                    let newTotalScore = pointsThisRound;
+
+                    if (docSnap.exists()) {
+                        const oldScore = docSnap.data().score || 0;
+                        newTotalScore = oldScore + pointsThisRound;
+                    }
+
+                    // 2. Mit neuem Gesamtwert speichern (setDoc überschreibt/erstellt)
+                    await setDoc(userScoreRef, { 
                         name: name, 
-                        score: score, 
-                        date: Date.now() 
-                    });
+                        score: newTotalScore, 
+                        lastPlayed: Date.now(),
+                        uid: user.uid 
+                    }, { merge: true });
                     
-                    showToast(`Score von ${score} gespeichert!`, "success");
+                    showToast(`Gesamtstand: ${newTotalScore} Pkt.`, "success");
                     
-                    // Kleiner Timeout, damit Firebase die Daten verarbeiten kann
                     setTimeout(() => {
                         loadLeaderboard();
                     }, 500);
                     
                 } catch(e) {
-                    console.error("Fehler beim Speichern:", e);
-                    showToast("Score konnte nicht gespeichert werden", "error");
+                    console.error("Fehler beim Score-Update:", e);
+                    showToast("Score-Update fehlgeschlagen", "error");
                 }
             }
         }
