@@ -7,6 +7,8 @@
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script src="words.js"></script>
 
     <style>
         body {
@@ -15,7 +17,6 @@
             font-family: 'Inter', sans-serif;
             min-height: 100vh;
         }
-
         .cell { transition: transform 0.15s ease, border-color 0.15s ease; }
         .flip { animation: flip 0.6s ease forwards; }
         @keyframes flip {
@@ -29,17 +30,28 @@
             20%, 60% { transform: translateX(-5px); }
             40%, 80% { transform: translateX(5px); }
         }
-
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
-        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
-
         .bg-correct { background-color: #22c55e !important; border-color: #22c55e !important; color: white; }
         .bg-present { background-color: #eab308 !important; border-color: #eab308 !important; color: white; }
         .bg-absent { background-color: #3f3f46 !important; border-color: #3f3f46 !important; color: white; }
+        
+        button:focus { outline: none; }
     </style>
 </head>
 <body class="flex flex-col md:flex-row h-screen overflow-hidden">
+
+    <div id="cookie-banner" class="fixed inset-0 bg-slate-900/95 z-[100] flex items-center justify-center p-4 hidden text-center">
+        <div class="max-w-md bg-slate-800 border border-slate-700 rounded-2xl p-8 shadow-2xl">
+            <i data-lucide="shield-check" class="w-12 h-12 text-indigo-400 mx-auto mb-4"></i>
+            <h2 class="text-xl font-bold mb-2">Datenschutz & Cookies</h2>
+            <p class="text-slate-400 text-sm mb-6">
+                Wir nutzen Cookies und lokalen Speicher, um deinen Namen und Punktestand sicher in der Cloud zu speichern. Akzeptiere, um die Bestenliste und Multiplayer zu nutzen.
+            </p>
+            <div class="flex flex-col gap-3">
+                <button onclick="window.acceptCookies()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-bold">Akzeptieren & Spielen</button>
+                <button onclick="window.location.href='https://google.de'" class="text-slate-500 text-xs hover:underline">Ablehnen (Verlassen)</button>
+            </div>
+        </div>
+    </div>
 
     <div id="toast-container" class="fixed top-5 left-1/2 transform -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
@@ -52,11 +64,11 @@
 
         <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
             <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Dein Name</label>
-            <input type="text" id="playerName" maxlength="15" placeholder="Name..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 text-white">
+            <input type="text" id="playerName" maxlength="15" placeholder="Name..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-indigo-500 outline-none">
         </div>
 
         <div class="flex flex-col gap-3">
-            <button onclick="window.startSolo()" class="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-xl border border-slate-700 transition-all">
+            <button id="btnSolo" onclick="window.startSolo()" class="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-xl border border-slate-700 transition-all">
                 <i data-lucide="user"></i> Solo Modus
             </button>
             
@@ -71,11 +83,11 @@
             </button>
 
             <div class="flex gap-2">
-                <input type="text" id="roomInput" placeholder="CODE" class="w-1/2 bg-slate-900 border border-slate-700 rounded-xl px-2 text-center uppercase tracking-widest text-white">
+                <input type="text" id="roomInput" placeholder="CODE" class="w-1/2 bg-slate-900 border border-slate-700 rounded-xl px-2 text-center uppercase tracking-widest text-white outline-none">
                 <button onclick="window.joinRoom()" class="w-1/2 bg-cyan-600 hover:bg-cyan-500 text-white py-2 rounded-xl">Beitreten</button>
             </div>
             
-            <button id="btnShareRoom" onclick="window.shareRoom()" class="hidden w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded-xl transition-all">
+            <button id="btnShareRoom" onclick="window.shareRoom()" class="hidden w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded-xl">
                 <i data-lucide="share-2" class="w-4 h-4"></i> Link kopieren
             </button>
         </div>
@@ -107,33 +119,32 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- Data ---
-        const WORDS = ["APFEL", "STADT", "STUHL", "TISCH", "VOGEL", "STERN", "LICHT", "NACHT", "SPIEL", "FEUER", "KATZE", "HUNDE", "BAUME", "BLUME", "KREIS", "WOLFE", "RADIO", "LAMPE", "GLAUB", "TRAUM"];
+        // FALLBACK-WÖRTER (falls words.js nicht lädt)
+        const FALLBACK = ["APFEL", "STADT", "STUHL", "TISCH", "VOGEL"];
         
+        // Logik: Nutze window.WOLFLE_WORDS aus words.js, falls vorhanden
+        const WORDS = (window.WOLFLE_WORDS && window.WOLFLE_WORDS.length > 0) ? window.WOLFLE_WORDS : FALLBACK;
+
         let targetWord = "";
-        let currentRow = 0;
-        let currentCol = 0;
-        let cells = [];
-        let gameOver = false;
-        let letterStates = {};
-        
-        let currentRoomCode = null;
-        let roomUnsubscribe = null;
-        let user = null;
-        let db = null;
-        let auth = null;
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'wolfle-v1';
+        let currentRow = 0, currentCol = 0, cells = [], gameOver = false, letterStates = {};
+        let currentRoomCode = null, roomUnsubscribe = null, user = null, db = null, auth = null;
+        const appId = 'wolfle-v1';
 
-        // --- Init ---
         async function init() {
             lucide.createIcons();
+            
+            if (!localStorage.getItem('wolfle_consent')) {
+                document.getElementById('cookie-banner').classList.remove('hidden');
+                return;
+            }
+
             createGrid();
             createKeyboard();
             
-            const manualConfig = {
+            const config = {
                 apiKey: "AIzaSyDTPO-01gusabZGy-TthEWZWntwct6LrEQ",
                 authDomain: "wolfle.firebaseapp.com",
                 projectId: "wolfle",
@@ -142,69 +153,46 @@
                 appId: "1:286289741614:web:14e5faad1616fe75755cbf"
             };
 
-            let config = manualConfig;
-            if (typeof __firebase_config !== 'undefined' && __firebase_config && !manualConfig.apiKey.includes("DEIN_")) {
-                try {
-                    config = (typeof __firebase_config === 'string') ? JSON.parse(__firebase_config) : __firebase_config;
-                } catch(e) {}
-            }
-
             try {
                 const app = initializeApp(config);
                 auth = getAuth(app);
                 db = getFirestore(app);
-
                 onAuthStateChanged(auth, (u) => {
                     user = u;
                     if(u) {
                         loadLeaderboard();
-                        document.getElementById('btnCreateRoom').disabled = false;
-                        
-                        // Check for Room in URL after Auth
                         const urlParams = new URLSearchParams(window.location.search);
-                        const roomFromUrl = urlParams.get('room');
-                        if(roomFromUrl) {
-                            document.getElementById('roomInput').value = roomFromUrl;
-                            setTimeout(() => window.joinRoom(), 1000);
-                        }
+                        const r = urlParams.get('room');
+                        if(r) { document.getElementById('roomInput').value = r; window.joinRoom(); }
                     }
                 });
-
                 await signInAnonymously(auth);
-            } catch (e) {
-                console.error("Firebase Verbindung fehlgeschlagen:", e);
-                document.getElementById("leaderboard").innerHTML = "<li class='text-red-400 text-xs p-2 text-center'>Verbindung fehlgeschlagen</li>";
-            }
+            } catch (e) { console.error(e); }
 
             const savedName = localStorage.getItem("wolfle_user_name");
             if(savedName) document.getElementById('playerName').value = savedName;
-
-            startSolo();
+            window.startSolo();
         }
 
-        function selectNewTargetWord() {
-            targetWord = WORDS[Math.floor(Math.random() * WORDS.length)];
-        }
+        window.acceptCookies = () => {
+            localStorage.setItem('wolfle_consent', 'true');
+            window.location.reload();
+        };
 
         window.startSolo = () => {
             const name = document.getElementById("playerName").value.trim();
-            if(!name) {
-                showToast("Bitte gib zuerst einen Namen ein!", "warning");
-                document.getElementById("playerName").focus();
-                return;
-            }
+            if(!name) { showToast("Bitte gib einen Namen ein!", "warning"); return; }
+            document.activeElement.blur(); 
             localStorage.setItem("wolfle_user_name", name);
             window.leaveRoom();
             resetGame();
-            selectNewTargetWord();
+            targetWord = WORDS[Math.floor(Math.random() * WORDS.length)].toUpperCase();
             showToast("Neues Spiel gestartet", "success");
         };
 
-        // --- Game Logic ---
         function createGrid() {
             const gridEl = document.getElementById("grid");
             gridEl.innerHTML = '';
-            cells = [];
             for (let i = 0; i < 6; i++) {
                 cells[i] = [];
                 let row = document.createElement("div");
@@ -221,11 +209,7 @@
 
         function createKeyboard() {
             const kb = document.getElementById("keyboard");
-            const layout = [
-                ['Q','W','E','R','T','Z','U','I','O','P'],
-                ['A','S','D','F','G','H','J','K','L'],
-                ['ENTER','Y','X','C','V','B','N','M','⌫']
-            ];
+            const layout = [['Q','W','E','R','T','Z','U','I','O','P'],['A','S','D','F','G','H','J','K','L'],['ENTER','Y','X','C','V','B','N','M','⌫']];
             kb.innerHTML = '';
             layout.forEach(row => {
                 let rDiv = document.createElement("div");
@@ -236,302 +220,154 @@
                     b.className = "flex-1 h-12 md:h-14 bg-slate-700 text-white font-bold rounded flex items-center justify-center text-sm transition-colors uppercase";
                     if(key === 'ENTER') b.onclick = () => submitGuess();
                     else if(key === '⌫') b.onclick = () => backspace();
-                    else {
-                        b.id = `key-${key}`;
-                        b.onclick = () => typeLetter(key);
-                    }
+                    else { b.id = `key-${key}`; b.onclick = () => typeLetter(key); }
                     rDiv.appendChild(b);
                 });
                 kb.appendChild(rDiv);
             });
         }
 
-        function typeLetter(l) {
-            if (currentCol < 5 && !gameOver) {
-                cells[currentRow][currentCol].textContent = l;
-                cells[currentRow][currentCol].classList.add("border-slate-400");
-                currentCol++;
-            }
-        }
-
-        function backspace() {
-            if (currentCol > 0 && !gameOver) {
-                currentCol--;
-                cells[currentRow][currentCol].textContent = "";
-                cells[currentRow][currentCol].classList.remove("border-slate-400");
-            }
-        }
+        function typeLetter(l) { if (currentCol < 5 && !gameOver) cells[currentRow][currentCol++].textContent = l; }
+        function backspace() { if (currentCol > 0 && !gameOver) cells[currentRow][--currentCol].textContent = ""; }
 
         async function submitGuess() {
             if (currentCol < 5 || gameOver) return;
-            
             let guess = "";
             for (let i = 0; i < 5; i++) guess += cells[currentRow][i].textContent;
 
+            // Wort-Validierung via Wiktionary
             try {
                 const response = await fetch(`https://de.wiktionary.org/w/api.php?action=query&origin=*&format=json&list=search&srsearch=${guess.toLowerCase()}&srlimit=1`);
                 const data = await response.json();
                 const exists = data.query.search.some(result => result.title.toLowerCase() === guess.toLowerCase());
-
                 if (!exists) {
                     showToast("Kein deutsches Wort!", "error");
-                    const rowEl = cells[currentRow][0].parentElement;
-                    rowEl.classList.add("shake");
-                    setTimeout(() => rowEl.classList.remove("shake"), 400);
+                    cells[currentRow][0].parentElement.classList.add("shake");
+                    setTimeout(() => cells[currentRow][0].parentElement.classList.remove("shake"), 400);
                     return;
                 }
-            } catch (e) { console.error("Validierungsfehler", e); }
+            } catch (e) {}
 
             const evaluation = new Array(5).fill('absent');
-            let tempTarget = targetWord.split('');
-            let tempGuess = guess.split('');
-
-            for(let i = 0; i < 5; i++) {
-                if(tempGuess[i] === tempTarget[i]) {
-                    evaluation[i] = 'correct';
-                    tempTarget[i] = null;
-                    tempGuess[i] = null;
-                }
-            }
-            
-            for(let i = 0; i < 5; i++) {
-                if(tempGuess[i] !== null) {
-                    const indexInTarget = tempTarget.indexOf(tempGuess[i]);
-                    if(indexInTarget !== -1) {
-                        evaluation[i] = 'present';
-                        tempTarget[indexInTarget] = null;
-                    }
-                }
-            }
+            let tT = targetWord.split(''), tG = guess.split('');
+            for(let i=0; i<5; i++) if(tG[i]===tT[i]) { evaluation[i]='correct'; tT[i]=tG[i]=null; }
+            for(let i=0; i<5; i++) if(tG[i]) { let idx=tT.indexOf(tG[i]); if(idx!==-1){ evaluation[i]='present'; tT[idx]=null; } }
 
             for (let i = 0; i < 5; i++) {
                 const cell = cells[currentRow][i];
                 const status = evaluation[i];
-                const letter = guess[i];
                 setTimeout(() => {
                     cell.classList.add("flip");
                     setTimeout(() => {
-                        cell.classList.remove("bg-slate-800/50", "border-slate-400", "border-slate-700");
+                        cell.classList.remove("bg-slate-800/50", "border-slate-700");
                         cell.classList.add(`bg-${status}`);
-                        updateKeyColor(letter, status);
+                        updateKeyColor(guess[i], status);
                     }, 300);
                 }, i * 100);
             }
 
-            const isWin = guess === targetWord;
-            const finalRow = currentRow;
-            currentRow++;
-            currentCol = 0;
+            const win = guess === targetWord;
+            const lastRow = currentRow;
+            currentRow++; currentCol = 0;
 
             setTimeout(() => {
-                if (isWin) {
-                    showToast("Gewonnen!", "success");
-                    endGame(true);
-                } else if (finalRow === 5) {
-                    showToast(`Wort war: ${targetWord}`, "error");
-                    endGame(false);
-                } else if(currentRoomCode) {
-                    updateRoomProgress(currentRow, false, false);
-                }
+                if (win) endGame(true);
+                else if (lastRow === 5) endGame(false);
+                else if(currentRoomCode) updateRoomProgress(currentRow, false, false);
             }, 800);
         }
 
-        function updateKeyColor(letter, status) {
-            const btn = document.getElementById(`key-${letter}`);
-            if(!btn) return;
-            if(letterStates[letter] === 'correct') return;
-            if(letterStates[letter] === 'present' && status === 'absent') return;
-            letterStates[letter] = status;
-            btn.className = btn.className.replace(/bg-correct|bg-present|bg-absent|bg-slate-700/g, '');
-            btn.classList.add(`bg-${status}`);
+        function updateKeyColor(l, s) {
+            const b = document.getElementById(`key-${l}`);
+            if(!b || letterStates[l] === 'correct') return;
+            letterStates[l] = s;
+            b.className = b.className.replace(/bg-correct|bg-present|bg-absent|bg-slate-700/g, '') + ` bg-${s}`;
         }
 
-        // --- Room Management ---
-        function resetGame() {
-            createGrid();
-            createKeyboard();
-            currentRow = 0;
-            currentCol = 0;
-            gameOver = false;
-            letterStates = {};
+        async function endGame(win) {
+            gameOver = true;
+            const name = localStorage.getItem("wolfle_user_name") || "Anonym";
+            if(win) {
+                showToast("Gewonnen!", "success");
+                if(user) {
+                    const points = (7 - currentRow) * 10;
+                    const scoreRef = doc(db, 'artifacts', appId, 'public', 'data', 'scores', user.uid);
+                    const snap = await getDoc(scoreRef);
+                    const total = (snap.exists() ? (snap.data().score || 0) : 0) + points;
+                    await setDoc(scoreRef, { name, score: total, uid: user.uid }, { merge: true });
+                    showToast(`+${points} Punkte!`, "info");
+                    loadLeaderboard();
+                }
+            } else { showToast("Wort: " + targetWord, "error"); }
+            if(currentRoomCode) updateRoomProgress(currentRow, true, win);
+        }
+
+        async function loadLeaderboard() {
+            const list = document.getElementById("leaderboard");
+            try {
+                const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'scores'));
+                let d = []; snap.forEach(doc => { if(doc.data().score) d.push(doc.data()); });
+                d.sort((a,b) => b.score - a.score);
+                list.innerHTML = d.slice(0,10).map((s,i) => `<li class="flex justify-between bg-slate-800/40 p-2 rounded text-sm"><span>${i+1}. ${s.name}</span><span class="text-indigo-400 font-bold">${s.score}</span></li>`).join('');
+            } catch(e) {}
         }
 
         window.createRoom = async () => {
-            if(!user) return showToast("Authentifizierung...", "warning");
-            const name = document.getElementById("playerName").value.trim() || "Unbekannt";
-            localStorage.setItem("wolfle_user_name", name);
-            
             const code = Math.random().toString(36).substring(2,7).toUpperCase();
-            const word = WORDS[Math.floor(Math.random() * WORDS.length)];
-            
-            try {
-                const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', code);
-                await setDoc(roomRef, {
-                    word: word,
-                    players: {
-                        [user.uid]: { name, guesses: 0, finished: false, won: false }
-                    }
-                });
-                joinInternal(code, word);
-                document.getElementById('btnShareRoom').classList.remove('hidden');
-                showToast(`Raum ${code} erstellt`, "success");
-            } catch(e) {
-                console.error(e);
-                showToast("Fehler beim Erstellen", "error");
-            }
+            const word = WORDS[Math.floor(Math.random() * WORDS.length)].toUpperCase();
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', code), { word, players: { [user.uid]: { name: localStorage.getItem("wolfle_user_name"), guesses: 0, finished: false, won: false } } });
+            joinInternal(code, word);
+            document.getElementById('btnShareRoom').classList.remove('hidden');
         };
 
         window.joinRoom = async () => {
             const code = document.getElementById("roomInput").value.toUpperCase();
-            if(!code || !user) return;
-            
-            const name = document.getElementById("playerName").value.trim() || "Gast";
-            localStorage.setItem("wolfle_user_name", name);
-
-            try {
-                const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', code);
-                const snap = await getDoc(roomRef);
-                if(snap.exists()) {
-                    await setDoc(roomRef, {
-                        players: { [user.uid]: { name, guesses: 0, finished: false, won: false } }
-                    }, { merge: true });
-                    joinInternal(code, snap.data().word);
-                } else {
-                    showToast("Raum nicht gefunden", "error");
-                }
-            } catch(e) { console.error(e); }
+            const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', code));
+            if(snap.exists()) {
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', code), { players: { [user.uid]: { name: localStorage.getItem("wolfle_user_name"), guesses: 0, finished: false, won: false } } }, { merge: true });
+                joinInternal(code, snap.data().word);
+            }
         };
 
         function joinInternal(code, word) {
-            resetGame();
-            targetWord = word;
-            currentRoomCode = code;
+            resetGame(); targetWord = word; currentRoomCode = code;
             document.getElementById("roomStatus").classList.remove("hidden");
             document.getElementById("currentRoomCode").textContent = code;
             listenToRoom(code);
         }
 
-        window.leaveRoom = () => {
-            currentRoomCode = null;
-            if(roomUnsubscribe) roomUnsubscribe();
-            document.getElementById("roomStatus").classList.add("hidden");
-            document.getElementById('btnShareRoom').classList.add('hidden');
-        };
-
         function listenToRoom(code) {
-            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', code);
-            roomUnsubscribe = onSnapshot(roomRef, (snap) => {
+            roomUnsubscribe = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', code), (snap) => {
                 if(snap.exists()) {
-                    const players = snap.data().players;
                     const list = document.getElementById("roomPlayers");
-                    list.innerHTML = "";
-                    Object.values(players).forEach(p => {
-                        let icon = p.finished ? (p.won ? '🏆' : '💀') : '⌨️';
-                        list.innerHTML += `<li class="flex justify-between bg-slate-800/50 p-2 rounded text-xs">
-                            <span>${p.name}</span>
-                            <span>${icon} ${p.guesses}/6</span>
-                        </li>`;
-                    });
+                    list.innerHTML = Object.values(snap.data().players).map(p => `<li class="flex justify-between bg-slate-800/50 p-2 rounded text-xs"><span>${p.name || 'Spieler'}</span><span>${p.finished?(p.won?'🏆':'💀'):'⌨️'} ${p.guesses}/6</span></li>`).join('');
                 }
-            }, (err) => console.error(err));
+            });
         }
 
         async function updateRoomProgress(g, f, w) {
-            if(!currentRoomCode || !user) return;
-            const name = document.getElementById("playerName").value.trim() || "Spieler";
-            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomCode);
-            await setDoc(roomRef, {
-                players: { [user.uid]: { name, guesses: g, finished: f, won: w } }
-            }, { merge: true });
-        }
-
-        async function endGame(win) {
-            gameOver = true;
-            const nameInput = document.getElementById("playerName").value.trim();
-            const name = nameInput || "Anonym";
-            if(nameInput) localStorage.setItem("wolfle_user_name", nameInput);
-            
-            if(currentRoomCode) {
-                await updateRoomProgress(currentRow, true, win);
-            }
-            
-            if(win && user) {
-                const pointsThisRound = (7 - currentRow) * 10;
-                try {
-                    showToast(`+${pointsThisRound} Punkte!`, "info");
-                    const userScoreRef = doc(db, 'artifacts', appId, 'public', 'data', 'scores', user.uid);
-                    const docSnap = await getDoc(userScoreRef);
-                    let newTotalScore = pointsThisRound;
-
-                    if (docSnap.exists()) {
-                        const oldScore = docSnap.data().score || 0;
-                        newTotalScore = oldScore + pointsThisRound;
-                    }
-
-                    await setDoc(userScoreRef, { 
-                        name: name, 
-                        score: newTotalScore, 
-                        lastPlayed: Date.now(),
-                        uid: user.uid 
-                    }, { merge: true });
-                    
-                    showToast(`Gesamtstand: ${newTotalScore} Pkt.`, "success");
-                    setTimeout(() => loadLeaderboard(), 500);
-                } catch(e) { console.error(e); }
-            }
-        }
-
-        async function loadLeaderboard() {
-            const list = document.getElementById("leaderboard");
-            if (!db) return;
-            try {
-                const ref = collection(db, 'artifacts', appId, 'public', 'data', 'scores');
-                const snap = await getDocs(ref);
-                let data = [];
-                snap.forEach(d => {
-                    const docData = d.data();
-                    if (docData.name && docData.score !== undefined) data.push(docData);
-                });
-                data.sort((a, b) => b.score - a.score);
-                list.innerHTML = "";
-                if (data.length === 0) {
-                    list.innerHTML = "<li class='text-slate-500 text-sm italic'>Noch keine Scores</li>";
-                    return;
-                }
-                data.slice(0, 10).forEach((s, i) => {
-                    list.innerHTML += `<li class="flex justify-between bg-slate-800/40 p-2 rounded-lg border border-slate-700/50 text-sm">
-                        <span class="text-slate-300">${i + 1}. ${s.name}</span>
-                        <span class="text-indigo-400 font-bold">${s.score} Pkt.</span>
-                    </li>`;
-                });
-            } catch (e) { console.error(e); }
-        }
-
-        window.shareRoom = () => {
             if(!currentRoomCode) return;
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomCode), { players: { [user.uid]: { guesses: g, finished: f, won: w } } }, { merge: true });
+        }
+
+        window.leaveRoom = () => { if(roomUnsubscribe) roomUnsubscribe(); currentRoomCode = null; document.getElementById("roomStatus").classList.add("hidden"); };
+        
+        window.shareRoom = () => {
             const url = `${window.location.origin}${window.location.pathname}?room=${currentRoomCode}`;
-            navigator.clipboard.writeText(url).then(() => {
-                showToast("Link kopiert!", "success");
-            });
+            navigator.clipboard.writeText(url).then(() => showToast("Link kopiert!", "success"));
         };
 
+        function resetGame() { createGrid(); createKeyboard(); currentRow = 0; currentCol = 0; gameOver = false; letterStates = {}; }
         function showToast(m, type) {
             const c = document.getElementById("toast-container");
             const t = document.createElement("div");
-            t.className = `px-4 py-2 rounded-full border shadow-lg text-sm font-medium ${type === 'error' ? 'bg-red-900 border-red-700' : 'bg-slate-800 border-slate-600'}`;
-            t.textContent = m;
-            c.appendChild(t);
-            setTimeout(() => t.remove(), 3000);
+            t.className = `px-4 py-2 rounded-full border shadow-lg text-sm bg-slate-800 border-slate-600`;
+            t.textContent = m; c.appendChild(t); setTimeout(() => t.remove(), 3000);
         }
 
         document.addEventListener("keydown", (e) => {
             if(document.activeElement.tagName === "INPUT") return;
-            const name = document.getElementById("playerName").value.trim();
-            if(!name && /^[a-zA-Z]$/.test(e.key)) {
-                showToast("Bitte gib oben deinen Namen ein!", "warning");
-                return;
-            }
-            if(e.key === "Enter") submitGuess();
+            if(e.key === "Enter") { e.preventDefault(); submitGuess(); }
             else if(e.key === "Backspace") backspace();
             else if(/^[a-zA-Z]$/.test(e.key)) typeLetter(e.key.toUpperCase());
         });
