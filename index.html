@@ -232,7 +232,7 @@
             <div id="end-word" class="flex justify-center gap-2 mb-4"></div>
             <div id="end-points" class="hidden mb-4 inline-block bg-indigo-900/50 border border-indigo-500/40 text-indigo-300 text-sm font-semibold px-4 py-1.5 rounded-full"></div>
             <div class="flex flex-col gap-3 mt-2">
-                <button onclick="window.playAgain()"
+                <button id="modal-play-again-btn" onclick="window.playAgain()"
                     class="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-bold transition-colors">
                     <i data-lucide="refresh-cw" class="w-4 h-4"></i> Nochmal spielen
                 </button>
@@ -303,10 +303,15 @@
             </div>
             <div class="room-status hidden bg-indigo-900/20 p-3 rounded-xl border border-indigo-500/30">
                 <div class="flex justify-between items-center mb-3">
-                    <h3 class="text-sm font-semibold text-indigo-300">Raum: <span class="room-code-display text-white font-mono"></span></h3>
+                    <div>
+                        <h3 class="text-sm font-semibold text-indigo-300">Raum: <span class="room-code-display text-white font-mono"></span></h3>
+                        <span class="round-display hidden text-xs text-slate-400"></span>
+                    </div>
                     <button onclick="window.leaveRoom()" class="text-red-400 hover:text-red-300"><i data-lucide="log-out" class="w-4 h-4"></i></button>
                 </div>
                 <ul class="room-players-list space-y-1.5 text-sm"></ul>
+                <button onclick="window.nextRound()" class="next-round-btn hidden mt-2 w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded-lg text-sm font-semibold transition-colors">Nächste Runde →</button>
+                <div class="game-ended-notice hidden mt-2 text-center text-sm text-yellow-400 font-semibold">Spiel beendet! 🏆</div>
             </div>
         </div>
 
@@ -362,6 +367,7 @@
     let targetWord = "";
     let currentRow = 0, currentCol = 0, cells = [], gameOver = false, letterStates = {};
     let currentRoomCode = null, roomUnsubscribe = null, db = null;
+    let currentRound = 1, maxRounds = 3, playerTotalScore = 0, playerRoundsWon = 0;
 
     // ── Firebase ──────────────────────────────────────────────
     async function getDB() {
@@ -493,6 +499,10 @@
         let points = 0;
         if (win) {
             points = (7 - currentRow) * 10;
+            if (currentRoomCode) {
+                playerTotalScore += points;
+                playerRoundsWon += 1;
+            }
             const name = getPlayerName();
             if (name) {
                 const firestore = await getDB();
@@ -507,16 +517,17 @@
                 }
             }
         }
-        if (currentRoomCode) updateRoomProgress(currentRow, true, win);
+        if (currentRoomCode) updateRoomProgress(currentRow, true, win, playerTotalScore, playerRoundsWon);
         setTimeout(() => showEndModal(win, points), 400);
     }
 
     function showEndModal(win, points) {
         document.getElementById('end-emoji').textContent = win ? '🎉' : '😔';
         document.getElementById('end-title').textContent = win ? 'Gewonnen!' : 'Verloren!';
+        const roundInfo = currentRoomCode ? ` · Runde ${currentRound}/${maxRounds}` : '';
         document.getElementById('end-subtitle').textContent = win
-            ? `In ${currentRow} ${currentRow===1?'Versuch':'Versuchen'}`
-            : 'Kein Versuch mehr übrig';
+            ? `In ${currentRow} ${currentRow===1?'Versuch':'Versuchen'}${roundInfo}`
+            : `Kein Versuch mehr übrig${roundInfo}`;
 
         const wordEl = document.getElementById('end-word');
         wordEl.innerHTML = '';
@@ -531,10 +542,18 @@
         if (win && points > 0) { pts.textContent = `+${points} Punkte`; pts.classList.remove('hidden'); pts.classList.add('inline-block'); }
         else pts.classList.add('hidden');
 
+        const playAgainBtn = document.getElementById('modal-play-again-btn');
+        if (currentRoomCode) {
+            playAgainBtn.innerHTML = 'Schließen';
+        } else {
+            playAgainBtn.innerHTML = '<i data-lucide="refresh-cw" class="w-4 h-4"></i> Nochmal spielen';
+        }
+
         document.getElementById('end-modal').classList.remove('hidden');
-        requestAnimationFrame(() => requestAnimationFrame(() =>
-            document.getElementById('end-modal-box').classList.add('visible')
-        ));
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+            document.getElementById('end-modal-box').classList.add('visible');
+            lucide.createIcons();
+        }));
     }
 
     window.closeModal = () => {
@@ -543,6 +562,7 @@
     };
 
     window.playAgain = () => {
+        if (currentRoomCode) { window.closeModal(); return; }
         window.closeModal();
         setTimeout(() => {
             resetGame();
@@ -582,8 +602,8 @@
         const code = Math.random().toString(36).substring(2,7).toUpperCase();
         const word = WORDS[Math.floor(Math.random() * WORDS.length)].toUpperCase();
         await setDoc(doc(firestore,'artifacts',appId,'public','data','rooms',code),
-            { word, players: { [name]: { name, guesses:0, finished:false, won:false } } });
-        joinInternal(code, word);
+            { word, round: 1, maxRounds: 3, players: { [name]: { name, guesses:0, finished:false, won:false, totalScore:0, roundsWon:0 } } });
+        joinInternal(code, word, 1, 3);
         document.querySelectorAll('.share-btn').forEach(b => b.classList.remove('hidden'));
     };
 
@@ -596,17 +616,23 @@
         if (!code) { showToast("Bitte Raumcode eingeben!", "warning"); return; }
         const snap = await getDoc(doc(firestore,'artifacts',appId,'public','data','rooms',code));
         if (snap.exists()) {
+            const data = snap.data();
+            const round = data.round || 1;
+            const mRounds = data.maxRounds || 3;
             await setDoc(doc(firestore,'artifacts',appId,'public','data','rooms',code),
-                { players: { [name]: { name, guesses:0, finished:false, won:false } } }, { merge:true });
-            joinInternal(code, snap.data().word);
+                { players: { [name]: { name, guesses:0, finished:false, won:false, totalScore:0, roundsWon:0 } } }, { merge:true });
+            joinInternal(code, data.word, round, mRounds);
         } else { showToast("Raum nicht gefunden!", "error"); }
     };
 
-    function joinInternal(code, word) {
+    function joinInternal(code, word, round = 1, mRounds = 3) {
         resetGame(); targetWord = word; currentRoomCode = code;
+        currentRound = round; maxRounds = mRounds;
+        playerTotalScore = 0; playerRoundsWon = 0;
         document.querySelectorAll('.room-code-display').forEach(el => el.textContent = code);
         document.querySelectorAll('.room-status').forEach(el => el.classList.remove('hidden'));
         listenToRoom(code);
+        updateRoundDisplay();
         showToast("Raum " + code + " beigetreten", "success");
         window.closeDrawer();
     }
@@ -616,28 +642,91 @@
         if (roomUnsubscribe) roomUnsubscribe();
         roomUnsubscribe = onSnapshot(doc(firestore,'artifacts',appId,'public','data','rooms',code), snap => {
             if (!snap.exists()) return;
-            const html = Object.values(snap.data().players).map(p =>
+            const data = snap.data();
+            const players = data.players || {};
+            const newRound = data.round || 1;
+            const mRounds = data.maxRounds || 3;
+
+            // Detect round change → auto-start new round locally
+            if (newRound > currentRound) {
+                currentRound = newRound;
+                maxRounds = mRounds;
+                targetWord = data.word;
+                resetGame();
+                window.closeModal();
+                showToast(`Runde ${newRound} von ${mRounds} startet!`, "success");
+                updateRoundDisplay();
+            } else {
+                maxRounds = mRounds;
+            }
+
+            const playerList = Object.values(players);
+            const allFinished = playerList.length > 0 && playerList.every(p => p.finished);
+            const roundsDone = newRound >= mRounds;
+
+            // Render players list with per-round and cumulative info
+            const html = playerList.map(p =>
                 `<li class="flex justify-between bg-slate-800/50 p-2 rounded text-xs">
                     <span class="font-medium">${p.name||'Spieler'}</span>
-                    <span>${p.finished?(p.won?'🏆':'💀'):'⌨️'} ${p.guesses}/6</span>
+                    <span class="flex items-center gap-1.5">
+                        ${p.finished?(p.won?'🏆':'💀'):'⌨️'} ${p.guesses}/6
+                        ${(p.roundsWon||0)>0?`<span class="text-yellow-400 font-bold">${p.roundsWon}W</span>`:''}
+                        ${(p.totalScore||0)>0?`<span class="text-indigo-400">${p.totalScore}P</span>`:''}
+                    </span>
                 </li>`).join('');
             document.querySelectorAll('.room-players-list').forEach(el => el.innerHTML = html);
+
+            // Show/hide next-round button and game-ended notice
+            document.querySelectorAll('.next-round-btn').forEach(btn => {
+                btn.classList.toggle('hidden', !(allFinished && !roundsDone));
+            });
+            document.querySelectorAll('.game-ended-notice').forEach(el => {
+                el.classList.toggle('hidden', !(allFinished && roundsDone));
+            });
         });
     }
 
-    async function updateRoomProgress(g, f, w) {
+    function updateRoundDisplay() {
+        if (!currentRoomCode) return;
+        document.querySelectorAll('.round-display').forEach(el => {
+            el.textContent = `Runde ${currentRound}/${maxRounds}`;
+            el.classList.remove('hidden');
+        });
+    }
+
+    async function updateRoomProgress(g, f, w, totalScore = playerTotalScore, roundsWon = playerRoundsWon) {
         if (!currentRoomCode) return;
         const firestore = await getDB(); if (!firestore) return;
         const name = getPlayerName();
         await setDoc(doc(firestore,'artifacts',appId,'public','data','rooms',currentRoomCode),
-            { players: { [name]: { name, guesses:g, finished:f, won:w } } }, { merge:true });
+            { players: { [name]: { name, guesses:g, finished:f, won:w, totalScore, roundsWon } } }, { merge:true });
     }
 
     window.leaveRoom = () => {
         if (roomUnsubscribe) roomUnsubscribe();
         currentRoomCode = null; roomUnsubscribe = null;
+        currentRound = 1; maxRounds = 3; playerTotalScore = 0; playerRoundsWon = 0;
         document.querySelectorAll('.room-status').forEach(el => el.classList.add('hidden'));
         document.querySelectorAll('.share-btn').forEach(b => b.classList.add('hidden'));
+        document.querySelectorAll('.round-display').forEach(el => el.classList.add('hidden'));
+    };
+
+    window.nextRound = async () => {
+        if (!currentRoomCode) return;
+        const firestore = await getDB(); if (!firestore) return;
+        const snap = await getDoc(doc(firestore,'artifacts',appId,'public','data','rooms',currentRoomCode));
+        if (!snap.exists()) return;
+        const data = snap.data();
+        const newRound = (data.round || 1) + 1;
+        if (newRound > (data.maxRounds || 3)) return;
+        const newWord = WORDS[Math.floor(Math.random() * WORDS.length)].toUpperCase();
+        const resetPlayers = {};
+        Object.entries(data.players || {}).forEach(([k, v]) => {
+            resetPlayers[k] = { name: v.name, guesses: 0, finished: false, won: false,
+                totalScore: v.totalScore || 0, roundsWon: v.roundsWon || 0 };
+        });
+        await setDoc(doc(firestore,'artifacts',appId,'public','data','rooms',currentRoomCode),
+            { word: newWord, round: newRound, maxRounds: data.maxRounds || 3, players: resetPlayers });
     };
 
     window.shareRoom = () => {
@@ -707,10 +796,15 @@
                 </button>
                 <div class="room-status hidden bg-indigo-900/20 p-3 rounded-xl border border-indigo-500/30">
                     <div class="flex justify-between items-center mb-2">
-                        <h3 class="text-sm font-semibold text-indigo-300">Raum: <span class="room-code-display text-white font-mono"></span></h3>
+                        <div>
+                            <h3 class="text-sm font-semibold text-indigo-300">Raum: <span class="room-code-display text-white font-mono"></span></h3>
+                            <span class="round-display hidden text-xs text-slate-400"></span>
+                        </div>
                         <button onclick="window.leaveRoom()" class="text-red-400 text-sm">Verlassen</button>
                     </div>
                     <ul class="room-players-list space-y-1.5 text-sm"></ul>
+                    <button onclick="window.nextRound()" class="next-round-btn hidden mt-2 w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded-lg text-sm font-semibold transition-colors">Nächste Runde →</button>
+                    <div class="game-ended-notice hidden mt-2 text-center text-sm text-yellow-400 font-semibold">Spiel beendet! 🏆</div>
                 </div>
             </div>`;
             // Restore room state in drawer if active
@@ -718,6 +812,10 @@
                 drawerContent.querySelectorAll('.room-status').forEach(el => el.classList.remove('hidden'));
                 drawerContent.querySelectorAll('.room-code-display').forEach(el => el.textContent = currentRoomCode);
                 drawerContent.querySelectorAll('.share-btn').forEach(b => b.classList.remove('hidden'));
+                drawerContent.querySelectorAll('.round-display').forEach(el => {
+                    el.textContent = `Runde ${currentRound}/${maxRounds}`;
+                    el.classList.remove('hidden');
+                });
             }
         } else {
             drawerContent.innerHTML = `
