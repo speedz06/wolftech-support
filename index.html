@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Wolfle</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#6366f1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="words.js"></script>
@@ -211,6 +215,44 @@
         button:focus { outline: none; }
         input:focus { border-color: #6366f1 !important; outline: none; }
 
+        /* Confetti */
+        #confetti-canvas {
+            position: fixed; inset: 0; pointer-events: none;
+            z-index: 200; display: none;
+        }
+
+        /* Light mode overrides */
+        html.light body { background: linear-gradient(135deg, #dde3ed, #f0f4f8); color: #1e293b; }
+        html.light #sidebar-left,
+        html.light #sidebar-right { background: rgba(248,250,252,0.97) !important; border-color: #cbd5e1 !important; }
+        html.light #bottom-nav { background: #f1f5f9 !important; border-color: #cbd5e1 !important; }
+        html.light #mobile-header { border-color: #cbd5e1 !important; background: #f1f5f9; }
+        html.light #drawer { background: #f8fafc !important; border-color: #cbd5e1 !important; }
+        html.light .kb-key { background: #cbd5e1 !important; color: #1e293b !important; }
+        html.light .cell { border-color: #94a3b8 !important; background: rgba(241,245,249,0.8) !important; color: #1e293b !important; }
+        html.light #end-modal-box { background: #f1f5f9 !important; border-color: #cbd5e1 !important; }
+        html.light .text-white { color: #0f172a !important; }
+        html.light .text-slate-200 { color: #1e293b !important; }
+        html.light .text-slate-300 { color: #334155 !important; }
+        html.light .text-slate-400 { color: #475569 !important; }
+        html.light .text-slate-500 { color: #64748b !important; }
+        html.light .bg-slate-800\/50,
+        html.light .bg-slate-800\/40 { background-color: rgba(226,232,240,0.8) !important; }
+        html.light .bg-slate-800 { background-color: #e2e8f0 !important; }
+        html.light .bg-slate-900 { background-color: #f1f5f9 !important; }
+        html.light .bg-slate-700 { background-color: #cbd5e1 !important; }
+        html.light .border-slate-700 { border-color: #cbd5e1 !important; }
+        html.light .border-slate-800 { border-color: #e2e8f0 !important; }
+        html.light .bg-indigo-900\/20 { background-color: rgba(199,210,254,0.25) !important; }
+        html.light .bg-indigo-900\/40 { background-color: rgba(199,210,254,0.45) !important; }
+        html.light .nav-btn { color: #94a3b8; }
+        html.light .nav-btn.active { color: #6366f1; }
+
+        /* Chat */
+        .chat-messages { scrollbar-width: thin; scrollbar-color: #334155 transparent; }
+        .chat-messages::-webkit-scrollbar { width: 2px; }
+        .chat-messages::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+
         @media (max-width: 768px) {
             #app { flex-direction: column; }
             #sidebar-left, #sidebar-right { display: none !important; }
@@ -220,6 +262,8 @@
     </style>
 </head>
 <body>
+
+    <canvas id="confetti-canvas"></canvas>
 
     <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 pointer-events-none items-center"></div>
 
@@ -249,9 +293,17 @@
         <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400 flex items-center gap-1.5">
             <i data-lucide="paw-print" class="w-5 h-5 text-indigo-400"></i> Wolfle
         </h1>
-        <button onclick="window.playAgain()" class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors">
-            <i data-lucide="refresh-cw" class="w-3 h-3"></i> Neu
-        </button>
+        <div class="flex items-center gap-1.5">
+            <button id="theme-btn-mobile" onclick="window.toggleTheme()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Design wechseln">
+                <i data-lucide="sun" class="w-4 h-4"></i>
+            </button>
+            <button id="sound-btn-mobile" onclick="window.toggleSound()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Ton">
+                <i data-lucide="volume-2" class="w-4 h-4"></i>
+            </button>
+            <button onclick="window.playAgain()" class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors">
+                <i data-lucide="refresh-cw" class="w-3 h-3"></i> Neu
+            </button>
+        </div>
     </div>
 
     <!-- DRAWER OVERLAY -->
@@ -268,9 +320,19 @@
 
         <!-- LEFT SIDEBAR (desktop) -->
         <div id="sidebar-left" class="bg-slate-900/50 border-r border-slate-800 p-5 flex flex-col gap-5 overflow-y-auto">
-            <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400 flex items-center gap-2">
-                <i data-lucide="paw-print"></i> Wolfle
-            </h1>
+            <div class="flex items-center justify-between">
+                <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400 flex items-center gap-2">
+                    <i data-lucide="paw-print"></i> Wolfle
+                </h1>
+                <div class="flex gap-1">
+                    <button id="theme-btn-desktop" onclick="window.toggleTheme()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Design wechseln">
+                        <i data-lucide="sun" class="w-4 h-4"></i>
+                    </button>
+                    <button id="sound-btn-desktop" onclick="window.toggleSound()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Ton">
+                        <i data-lucide="volume-2" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
             <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
                 <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Dein Name</label>
                 <input type="text" id="playerName" maxlength="15" placeholder="Name für Bestenliste..."
@@ -312,6 +374,14 @@
                 <ul class="room-players-list space-y-1.5 text-sm"></ul>
                 <button onclick="window.nextRound()" class="next-round-btn hidden mt-2 w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded-lg text-sm font-semibold transition-colors">Nächste Runde →</button>
                 <div class="game-ended-notice hidden mt-2 text-center text-sm text-yellow-400 font-semibold">Spiel beendet! 🏆</div>
+                <button onclick="window.rematch()" class="rematch-btn hidden mt-2 w-full bg-purple-600 hover:bg-purple-500 text-white py-2 rounded-lg text-sm font-semibold transition-colors">Rematch! 🔄</button>
+                <div class="chat-section mt-3 border-t border-slate-700/50 pt-2">
+                    <div class="chat-messages h-20 overflow-y-auto flex flex-col gap-0.5 mb-1.5 text-xs"></div>
+                    <div class="flex gap-1">
+                        <input type="text" class="chat-input flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-white" placeholder="Nachricht..." maxlength="80">
+                        <button onclick="window.sendChat(this)" class="bg-indigo-600 hover:bg-indigo-500 px-2.5 py-1 rounded text-xs text-white font-bold">→</button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -323,9 +393,13 @@
 
         <!-- RIGHT SIDEBAR (desktop) -->
         <div id="sidebar-right" class="bg-slate-900/50 border-l border-slate-800 p-5 flex flex-col">
-            <h2 class="text-lg font-bold flex items-center gap-2 mb-4 text-slate-200">
+            <h2 class="text-lg font-bold flex items-center gap-2 mb-3 text-slate-200">
                 <i data-lucide="trophy" class="text-yellow-500 w-5 h-5"></i> Top Liste
             </h2>
+            <div class="flex gap-1 mb-3 bg-slate-800/50 p-0.5 rounded-lg">
+                <button onclick="window.setLeaderboardTab('total')" class="lb-tab-total flex-1 text-xs py-1.5 rounded-md bg-indigo-600 text-white font-semibold transition-colors">Gesamt</button>
+                <button onclick="window.setLeaderboardTab('week')" class="lb-tab-week flex-1 text-xs py-1.5 rounded-md text-slate-400 transition-colors">Woche</button>
+            </div>
             <ul id="leaderboard" class="leaderboard-list space-y-2 overflow-y-auto flex-1">
                 <li class="text-slate-500 text-sm italic">Gib einen Namen ein...</li>
             </ul>
@@ -350,7 +424,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot, getDocs, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     const FALLBACK = ["APFEL","STADT","STUHL","TISCH","VOGEL"];
     const WORDS = (window.WOLFLE_WORDS?.length > 0) ? window.WOLFLE_WORDS : FALLBACK;
@@ -368,6 +442,14 @@
     let currentRow = 0, currentCol = 0, cells = [], gameOver = false, letterStates = {};
     let currentRoomCode = null, roomUnsubscribe = null, db = null;
     let currentRound = 1, maxRounds = 3, playerTotalScore = 0, playerRoundsWon = 0;
+    let leaderboardTab = 'total';
+
+    function getWeekKey() {
+        const d = new Date();
+        const start = new Date(d.getFullYear(), 0, 1);
+        const week = Math.ceil(((d - start) / 86400000 + start.getDay() + 1) / 7);
+        return `${d.getFullYear()}-W${String(week).padStart(2, '0')}`;
+    }
 
     // ── Firebase ──────────────────────────────────────────────
     async function getDB() {
@@ -439,8 +521,8 @@
         });
     }
 
-    function typeLetter(l) { if (currentCol < 5 && !gameOver) cells[currentRow][currentCol++].textContent = l; }
-    function backspace()   { if (currentCol > 0 && !gameOver) cells[currentRow][--currentCol].textContent = ""; }
+    function typeLetter(l) { if (currentCol < 5 && !gameOver) { cells[currentRow][currentCol++].textContent = l; playSound('type'); } }
+    function backspace()   { if (currentCol > 0 && !gameOver) { cells[currentRow][--currentCol].textContent = ""; playSound('type'); } }
 
     // ── Submit ────────────────────────────────────────────────
     async function submitGuess() {
@@ -471,6 +553,7 @@
                 setTimeout(() => {
                     cell.classList.add(`bg-${evaluation[i]}`);
                     updateKeyColor(guess[i], evaluation[i]);
+                    playSound(evaluation[i]);
                 }, 300);
             }, i * 100);
         }
@@ -498,6 +581,8 @@
         gameOver = true;
         let points = 0;
         if (win) {
+            launchConfetti();
+            playWinSound();
             points = (7 - currentRow) * 10;
             if (currentRoomCode) {
                 playerTotalScore += points;
@@ -510,13 +595,17 @@
                     try {
                         const ref = doc(firestore,'artifacts',appId,'public','data','scores',name.toLowerCase());
                         const snap = await getDoc(ref);
-                        const total = (snap.exists() ? (snap.data().score||0) : 0) + points;
-                        await setDoc(ref, { name, score: total }, { merge: true });
+                        const existing = snap.exists() ? snap.data() : {};
+                        const weekKey = getWeekKey();
+                        const total = (existing.score || 0) + points;
+                        const weekScore = (existing.weekKey === weekKey ? (existing.weekScore || 0) : 0) + points;
+                        await setDoc(ref, { name, score: total, weekScore, weekKey }, { merge: true });
                         loadLeaderboard();
                     } catch(e) {}
                 }
             }
         }
+        if (!win) playSound('lose');
         if (currentRoomCode) updateRoomProgress(currentRow, true, win, playerTotalScore, playerRoundsWon);
         setTimeout(() => showEndModal(win, points), 400);
     }
@@ -574,25 +663,50 @@
     // ── Leaderboard ───────────────────────────────────────────
     async function loadLeaderboard() {
         const firestore = await getDB(); if (!firestore) return;
+        // Update tab button styles
+        document.querySelectorAll('.lb-tab-total').forEach(b => {
+            b.classList.toggle('bg-indigo-600', leaderboardTab === 'total');
+            b.classList.toggle('text-white', leaderboardTab === 'total');
+            b.classList.toggle('font-semibold', leaderboardTab === 'total');
+            b.classList.toggle('text-slate-400', leaderboardTab !== 'total');
+        });
+        document.querySelectorAll('.lb-tab-week').forEach(b => {
+            b.classList.toggle('bg-indigo-600', leaderboardTab === 'week');
+            b.classList.toggle('text-white', leaderboardTab === 'week');
+            b.classList.toggle('font-semibold', leaderboardTab === 'week');
+            b.classList.toggle('text-slate-400', leaderboardTab !== 'week');
+        });
         document.querySelectorAll('.leaderboard-list').forEach(l =>
             l.innerHTML = '<li class="text-slate-500 text-sm italic">Lade...</li>');
         try {
             const snap = await getDocs(collection(firestore,'artifacts',appId,'public','data','scores'));
             let d = [];
             snap.forEach(doc => { if (doc.data().score) d.push(doc.data()); });
-            d.sort((a,b) => b.score - a.score);
+            const weekKey = getWeekKey();
+            if (leaderboardTab === 'week') {
+                d = d.filter(s => s.weekKey === weekKey && (s.weekScore || 0) > 0);
+                d.sort((a,b) => (b.weekScore||0) - (a.weekScore||0));
+            } else {
+                d.sort((a,b) => b.score - a.score);
+            }
             const me = getPlayerName().toLowerCase();
             const html = d.length === 0
                 ? '<li class="text-slate-500 text-sm italic">Noch keine Einträge.</li>'
                 : d.slice(0,10).map((s,i) => {
                     const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}.`;
                     const isMe = s.name.toLowerCase() === me;
+                    const pts = leaderboardTab === 'week' ? (s.weekScore||0) : s.score;
                     return `<li class="flex justify-between ${isMe?'bg-indigo-900/40 border border-indigo-500/30':'bg-slate-800/40'} p-2 rounded text-sm">
-                        <span>${medal} ${s.name}</span><span class="text-indigo-400 font-bold">${s.score}</span></li>`;
+                        <span>${medal} ${s.name}</span><span class="text-indigo-400 font-bold">${pts}</span></li>`;
                 }).join('');
             document.querySelectorAll('.leaderboard-list').forEach(l => l.innerHTML = html);
         } catch(e) {}
     }
+
+    window.setLeaderboardTab = (tab) => {
+        leaderboardTab = tab;
+        loadLeaderboard();
+    };
 
     // ── Multiplayer ───────────────────────────────────────────
     window.createRoom = async () => {
@@ -647,14 +761,20 @@
             const newRound = data.round || 1;
             const mRounds = data.maxRounds || 3;
 
-            // Detect round change → auto-start new round locally
-            if (newRound > currentRound) {
+            // Detect round change or rematch → auto-start new round locally
+            if (newRound !== currentRound) {
+                const isRematch = newRound < currentRound || (newRound === 1 && currentRound > 1);
                 currentRound = newRound;
                 maxRounds = mRounds;
                 targetWord = data.word;
                 resetGame();
                 window.closeModal();
-                showToast(`Runde ${newRound} von ${mRounds} startet!`, "success");
+                if (isRematch) {
+                    playerTotalScore = 0; playerRoundsWon = 0;
+                    showToast(`Rematch! Runde 1/${mRounds} 🔄`, "success");
+                } else {
+                    showToast(`Runde ${newRound} von ${mRounds} startet!`, "success");
+                }
                 updateRoundDisplay();
             } else {
                 maxRounds = mRounds;
@@ -682,6 +802,18 @@
             });
             document.querySelectorAll('.game-ended-notice').forEach(el => {
                 el.classList.toggle('hidden', !(allFinished && roundsDone));
+            });
+            document.querySelectorAll('.rematch-btn').forEach(btn => {
+                btn.classList.toggle('hidden', !(allFinished && roundsDone));
+            });
+
+            // Render chat messages
+            const chatHtml = (data.chat || []).slice(-20).map(c =>
+                `<div><span class="font-semibold text-indigo-400">${c.n}:</span> <span class="text-slate-300">${c.m}</span></div>`
+            ).join('');
+            document.querySelectorAll('.chat-messages').forEach(el => {
+                el.innerHTML = chatHtml;
+                el.scrollTop = el.scrollHeight;
             });
         });
     }
@@ -727,6 +859,32 @@
         });
         await setDoc(doc(firestore,'artifacts',appId,'public','data','rooms',currentRoomCode),
             { word: newWord, round: newRound, maxRounds: data.maxRounds || 3, players: resetPlayers });
+    };
+
+    window.rematch = async () => {
+        if (!currentRoomCode) return;
+        const firestore = await getDB(); if (!firestore) return;
+        const snap = await getDoc(doc(firestore,'artifacts',appId,'public','data','rooms',currentRoomCode));
+        if (!snap.exists()) return;
+        const data = snap.data();
+        const newWord = WORDS[Math.floor(Math.random() * WORDS.length)].toUpperCase();
+        const resetPlayers = {};
+        Object.entries(data.players || {}).forEach(([k, v]) => {
+            resetPlayers[k] = { name: v.name, guesses: 0, finished: false, won: false, totalScore: 0, roundsWon: 0 };
+        });
+        await setDoc(doc(firestore,'artifacts',appId,'public','data','rooms',currentRoomCode),
+            { word: newWord, round: 1, maxRounds: data.maxRounds || 3, players: resetPlayers });
+    };
+
+    window.sendChat = async (btn) => {
+        if (!currentRoomCode) return;
+        const firestore = await getDB(); if (!firestore) return;
+        const name = getPlayerName(); if (!name) return;
+        const input = btn?.closest('.chat-section')?.querySelector('.chat-input');
+        const msg = input?.value.trim(); if (!msg) return;
+        input.value = '';
+        await updateDoc(doc(firestore,'artifacts',appId,'public','data','rooms',currentRoomCode),
+            { chat: arrayUnion({ n: name, m: msg, t: Date.now() }) });
     };
 
     window.shareRoom = () => {
@@ -805,6 +963,14 @@
                     <ul class="room-players-list space-y-1.5 text-sm"></ul>
                     <button onclick="window.nextRound()" class="next-round-btn hidden mt-2 w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded-lg text-sm font-semibold transition-colors">Nächste Runde →</button>
                     <div class="game-ended-notice hidden mt-2 text-center text-sm text-yellow-400 font-semibold">Spiel beendet! 🏆</div>
+                    <button onclick="window.rematch()" class="rematch-btn hidden mt-2 w-full bg-purple-600 hover:bg-purple-500 text-white py-2 rounded-lg text-sm font-semibold transition-colors">Rematch! 🔄</button>
+                    <div class="chat-section mt-3 border-t border-slate-700/50 pt-2">
+                        <div class="chat-messages h-20 overflow-y-auto flex flex-col gap-0.5 mb-1.5 text-xs"></div>
+                        <div class="flex gap-1">
+                            <input type="text" class="chat-input flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-white" placeholder="Nachricht..." maxlength="80">
+                            <button onclick="window.sendChat(this)" class="bg-indigo-600 hover:bg-indigo-500 px-2.5 py-1 rounded text-xs text-white font-bold">→</button>
+                        </div>
+                    </div>
                 </div>
             </div>`;
             // Restore room state in drawer if active
@@ -820,9 +986,13 @@
         } else {
             drawerContent.innerHTML = `
             <div>
-                <h2 class="text-lg font-bold flex items-center gap-2 mb-4 text-slate-200">
+                <h2 class="text-lg font-bold flex items-center gap-2 mb-3 text-slate-200">
                     🏆 Top Liste
                 </h2>
+                <div class="flex gap-1 mb-3 bg-slate-800/50 p-0.5 rounded-lg">
+                    <button onclick="window.setLeaderboardTab('total')" class="lb-tab-total flex-1 text-xs py-1.5 rounded-md ${leaderboardTab==='total'?'bg-indigo-600 text-white font-semibold':'text-slate-400'} transition-colors">Gesamt</button>
+                    <button onclick="window.setLeaderboardTab('week')" class="lb-tab-week flex-1 text-xs py-1.5 rounded-md ${leaderboardTab==='week'?'bg-indigo-600 text-white font-semibold':'text-slate-400'} transition-colors">Woche</button>
+                </div>
                 <ul class="leaderboard-list space-y-2">
                     <li class="text-slate-500 text-sm italic">Lade...</li>
                 </ul>
@@ -844,8 +1014,125 @@
         document.getElementById('nav-lb').classList.remove('active');
     };
 
+    // ── Sound ─────────────────────────────────────────────────
+    let soundEnabled = localStorage.getItem('wolfle_sound') !== 'false';
+    let audioCtx = null;
+
+    function getAudioCtx() {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        return audioCtx;
+    }
+
+    function playTone(freq, type, duration, volume = 0.25) {
+        if (!soundEnabled) return;
+        try {
+            const ctx = getAudioCtx();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.type = type; osc.frequency.setValueAtTime(freq, ctx.currentTime);
+            gain.gain.setValueAtTime(volume, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+            osc.start(ctx.currentTime); osc.stop(ctx.currentTime + duration);
+        } catch(e) {}
+    }
+
+    function playSound(type) {
+        const sounds = {
+            type:    [440, 'sine', 0.05, 0.1],
+            correct: [523, 'sine', 0.18],
+            present: [392, 'sine', 0.18],
+            absent:  [220, 'square', 0.1, 0.15],
+            lose:    [165, 'sawtooth', 0.5],
+        };
+        const s = sounds[type]; if (!s) return;
+        playTone(...s);
+    }
+
+    function playWinSound() {
+        if (!soundEnabled) return;
+        [523, 659, 784, 1047].forEach((freq, i) => {
+            setTimeout(() => playTone(freq, 'sine', 0.4), i * 110);
+        });
+    }
+
+    function updateSoundBtn() {
+        const icon = soundEnabled ? 'volume-2' : 'volume-x';
+        document.querySelectorAll('[id^="sound-btn"]').forEach(btn => {
+            btn.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4"></i>`;
+        });
+        lucide.createIcons();
+    }
+
+    window.toggleSound = () => {
+        soundEnabled = !soundEnabled;
+        localStorage.setItem('wolfle_sound', soundEnabled);
+        updateSoundBtn();
+        if (soundEnabled) playTone(523, 'sine', 0.15);
+    };
+
+    // ── Confetti ──────────────────────────────────────────────
+    function launchConfetti() {
+        const canvas = document.getElementById('confetti-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        canvas.style.display = 'block';
+        const colors = ['#6366f1','#22c55e','#eab308','#06b6d4','#f43f5e','#a78bfa'];
+        const pieces = Array.from({ length: 120 }, () => ({
+            x: Math.random() * canvas.width,
+            y: Math.random() * -canvas.height,
+            w: Math.random() * 10 + 5,
+            h: Math.random() * 5 + 3,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            rotation: Math.random() * Math.PI * 2,
+            vx: (Math.random() - 0.5) * 3,
+            vy: Math.random() * 3 + 2,
+            vr: (Math.random() - 0.5) * 0.15,
+        }));
+        let frame = 0;
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            pieces.forEach(p => {
+                p.x += p.vx; p.y += p.vy; p.vy += 0.04; p.rotation += p.vr;
+                if (p.y > canvas.height) p.y = -20;
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.rotation);
+                ctx.fillStyle = p.color;
+                ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+                ctx.restore();
+            });
+            frame++;
+            if (frame < 200) requestAnimationFrame(draw);
+            else { ctx.clearRect(0, 0, canvas.width, canvas.height); canvas.style.display = 'none'; }
+        }
+        draw();
+    }
+
+    // ── Theme ─────────────────────────────────────────────────
+    function applyTheme(light) {
+        document.documentElement.classList.toggle('light', light);
+        const icon = light ? 'moon' : 'sun';
+        document.querySelectorAll('[id^="theme-btn"]').forEach(btn => {
+            btn.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4"></i>`;
+        });
+        lucide.createIcons();
+    }
+
+    window.toggleTheme = () => {
+        const isLight = document.documentElement.classList.toggle('light');
+        localStorage.setItem('wolfle_theme', isLight ? 'light' : 'dark');
+        applyTheme(isLight);
+    };
+
     // ── Keyboard events ───────────────────────────────────────
     document.addEventListener("keydown", (e) => {
+        if (e.target.classList.contains('chat-input') && e.key === 'Enter') {
+            e.preventDefault();
+            window.sendChat(e.target.nextElementSibling);
+            return;
+        }
         if (document.activeElement.tagName === "INPUT") return;
         if (e.key === "Enter") { e.preventDefault(); submitGuess(); }
         else if (e.key === "Backspace") backspace();
@@ -853,7 +1140,9 @@
     });
 
     // ── Init ──────────────────────────────────────────────────
+    applyTheme(localStorage.getItem('wolfle_theme') === 'light');
     lucide.createIcons();
+    updateSoundBtn();
     createGrid();
     createKeyboard();
     targetWord = WORDS[Math.floor(Math.random() * WORDS.length)].toUpperCase();
@@ -870,6 +1159,14 @@
         if (inp) inp.value = roomFromURL;
         if (savedName) window.joinRoom();
         else showToast("Gib deinen Namen ein um beizutreten", "warning");
+    }
+</script>
+
+<script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
     }
 </script>
 </body>
