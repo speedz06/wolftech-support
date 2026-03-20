@@ -2,18 +2,26 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Wolfle</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#6366f1">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="words.js"></script>
     <style>
         * { box-sizing: border-box; }
-
+        
+        /* BLOCK ZOOM GESTURES */
+        html {
+            touch-action: manipulation;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        
         body {
             background: radial-gradient(circle at top, #1e293b, #020617);
             color: #f8fafc;
@@ -22,6 +30,8 @@
             overflow: hidden;
             display: flex;
             flex-direction: column;
+            touch-action: manipulation;
+            overscroll-behavior: none;
         }
 
         /* Animations */
@@ -36,6 +46,11 @@
             0%,100% { transform: translateX(0); }
             20%,60% { transform: translateX(-5px); }
             40%,80% { transform: translateX(5px); }
+        }
+        .bounce { animation: bounce 0.5s; }
+        @keyframes bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
         }
 
         /* Tile colours */
@@ -82,7 +97,7 @@
             height: 100%;
         }
 
-        /* Keyboard */
+        /* Keyboard with improved hints */
         #keyboard {
             padding: 4px 6px max(8px, env(safe-area-inset-bottom));
             display: flex;
@@ -112,11 +127,53 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: background 0.15s;
+            transition: all 0.15s;
             -webkit-tap-highlight-color: transparent;
             touch-action: manipulation;
+            position: relative;
         }
-        .kb-key:active { filter: brightness(0.75); }
+        .kb-key:active { filter: brightness(0.75); transform: scale(0.95); }
+        
+        /* Keyboard hints indicator */
+        .kb-key.hint-correct::after {
+            content: '';
+            position: absolute;
+            bottom: 3px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 6px;
+            height: 6px;
+            background: #22c55e;
+            border-radius: 50%;
+        }
+        .kb-key.hint-present::after {
+            content: '';
+            position: absolute;
+            bottom: 3px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 6px;
+            height: 6px;
+            background: #eab308;
+            border-radius: 50%;
+        }
+        
+        /* Tooltip for keyboard */
+        .kb-key[data-tooltip]:hover::before {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e293b;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            white-space: nowrap;
+            z-index: 100;
+            border: 1px solid #334155;
+        }
 
         /* Desktop layout */
         #app {
@@ -253,6 +310,88 @@
         .chat-messages::-webkit-scrollbar { width: 2px; }
         .chat-messages::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
 
+        /* Timer display */
+        .timer-display {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #f8fafc;
+        }
+        .timer-display.warning { color: #eab308; }
+        .timer-display.danger { color: #ef4444; animation: pulse 0.5s infinite; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Mode badges */
+        .mode-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            border-radius: 9999px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .mode-badge.hard { background: #ef4444; color: white; }
+        .mode-badge.daily { background: #8b5cf6; color: white; }
+        .mode-badge.timed { background: #f59e0b; color: white; }
+
+        /* Settings section */
+        .settings-section {
+            background: rgba(30,41,59,0.5);
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        .settings-section h4 {
+            font-size: 12px;
+            font-weight: 600;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+        }
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+        }
+        .setting-row label {
+            font-size: 13px;
+            color: #e2e8f0;
+        }
+        .setting-row input[type="number"],
+        .setting-row select {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            padding: 4px 8px;
+            color: white;
+            font-size: 13px;
+            width: 80px;
+        }
+        .setting-row input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #6366f1;
+        }
+
+        /* Hard mode indicator */
+        .hard-mode-hint {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 12px;
+            color: #fca5a5;
+            margin-top: 8px;
+        }
+
         @media (max-width: 768px) {
             #app { flex-direction: column; }
             #sidebar-left, #sidebar-right { display: none !important; }
@@ -260,6 +399,7 @@
             #bottom-nav { display: flex; }
         }
     </style>
+<script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
 </head>
 <body>
 
@@ -278,13 +418,86 @@
             <div class="flex flex-col gap-3 mt-2">
                 <button id="modal-play-again-btn" onclick="window.playAgain()"
                     class="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-bold transition-colors">
-                    <i data-lucide="refresh-cw" class="w-4 h-4"></i> Nochmal spielen
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i> <span data-i18n="playAgain">Nochmal spielen</span>
                 </button>
                 <button onclick="window.closeModal()"
                     class="w-full text-slate-400 hover:text-slate-200 py-2 text-sm transition-colors">
-                    Board ansehen
+                    <span data-i18n="viewBoard">Board ansehen</span>
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div id="settings-modal" class="hidden fixed inset-0 bg-slate-900/80 z-[90] flex items-center justify-center p-4">
+        <div id="settings-modal-box" class="w-full max-w-md bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i data-lucide="settings" class="w-5 h-5"></i> <span data-i18n="settings">Einstellungen</span>
+                </h2>
+                <button onclick="window.closeSettingsModal()" class="text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <!-- Language Settings -->
+            <div class="settings-section">
+                <h4><i data-lucide="globe" class="inline w-4 h-4 mr-1"></i> <span data-i18n="language">Sprache</span></h4>
+                <div class="setting-row">
+                    <label data-i18n="selectLanguage">Sprache wählen</label>
+                    <select id="language-select" onchange="window.changeLanguage(this.value)">
+                        <option value="de">Deutsch</option>
+                        <option value="en">English</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Game Mode Settings -->
+            <div class="settings-section">
+                <h4><i data-lucide="gamepad-2" class="inline w-4 h-4 mr-1"></i> <span data-i18n="gameMode">Spielmodus</span></h4>
+                <div class="setting-row">
+                    <label data-i18n="hardMode">Hard Mode</label>
+                    <input type="checkbox" id="hard-mode-toggle" onchange="window.toggleHardMode(this.checked)">
+                </div>
+                <div class="setting-row">
+                    <label data-i18n="dailyMode">Daily Wordle</label>
+                    <input type="checkbox" id="daily-mode-toggle" onchange="window.toggleDailyMode(this.checked)">
+                </div>
+            </div>
+
+            <!-- Timer Settings -->
+            <div class="settings-section" id="timer-settings">
+                <h4><i data-lucide="timer" class="inline w-4 h-4 mr-1"></i> <span data-i18n="timer">Timer</span></h4>
+                <div class="setting-row">
+                    <label data-i18n="timeLimit">Zeitlimit (Sekunden)</label>
+                    <input type="number" id="time-limit-input" min="30" max="300" value="120" onchange="window.updateTimeLimit(this.value)">
+                </div>
+                <div class="setting-row">
+                    <label data-i18n="enableTimer">Timer aktivieren</label>
+                    <input type="checkbox" id="timer-toggle" onchange="window.toggleTimer(this.checked)">
+                </div>
+            </div>
+
+            <!-- Host Settings (for multiplayer) -->
+            <div class="settings-section" id="host-settings">
+                <h4><i data-lucide="crown" class="inline w-4 h-4 mr-1"></i> <span data-i18n="hostSettings">Host-Einstellungen</span></h4>
+                <div class="setting-row">
+                    <label data-i18n="rounds">Runden</label>
+                    <input type="number" id="rounds-input" min="1" max="10" value="3">
+                </div>
+                <div class="setting-row">
+                    <label data-i18n="maxAttempts">Max. Versuche</label>
+                    <input type="number" id="attempts-input" min="4" max="8" value="6">
+                </div>
+                <div class="setting-row">
+                    <label data-i18n="roundTime">Zeit pro Runde (Sek.)</label>
+                    <input type="number" id="round-time-input" min="30" max="300" value="120">
+                </div>
+            </div>
+
+            <button onclick="window.closeSettingsModal()" class="w-full mt-4 bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl font-semibold transition-colors">
+                <span data-i18n="save">Speichern</span>
+            </button>
         </div>
     </div>
 
@@ -293,7 +506,14 @@
         <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400 flex items-center gap-1.5">
             <i data-lucide="paw-print" class="w-5 h-5 text-indigo-400"></i> Wolfle
         </h1>
-        <div class="flex items-center gap-1.5">
+        <div class="flex items-center gap-2">
+            <!-- Timer Display -->
+            <div id="mobile-timer" class="hidden timer-display text-sm"></div>
+            <!-- Mode Badges -->
+            <div id="mode-badges" class="flex gap-1"></div>
+            <button id="settings-btn-mobile" onclick="window.openSettingsModal()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Einstellungen">
+                <i data-lucide="settings" class="w-4 h-4"></i>
+            </button>
             <button id="theme-btn-mobile" onclick="window.toggleTheme()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Design wechseln">
                 <i data-lucide="sun" class="w-4 h-4"></i>
             </button>
@@ -301,7 +521,7 @@
                 <i data-lucide="volume-2" class="w-4 h-4"></i>
             </button>
             <button onclick="window.playAgain()" class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors">
-                <i data-lucide="refresh-cw" class="w-3 h-3"></i> Neu
+                <i data-lucide="refresh-cw" class="w-3 h-3"></i> <span data-i18n="new">Neu</span>
             </button>
         </div>
     </div>
@@ -325,6 +545,9 @@
                     <i data-lucide="paw-print"></i> Wolfle
                 </h1>
                 <div class="flex gap-1">
+                    <button onclick="window.openSettingsModal()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Einstellungen">
+                        <i data-lucide="settings" class="w-4 h-4"></i>
+                    </button>
                     <button id="theme-btn-desktop" onclick="window.toggleTheme()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Design wechseln">
                         <i data-lucide="sun" class="w-4 h-4"></i>
                     </button>
@@ -333,52 +556,70 @@
                     </button>
                 </div>
             </div>
+            
+            <!-- Timer Display (Desktop) -->
+            <div id="desktop-timer-container" class="hidden bg-slate-800/50 p-3 rounded-xl border border-slate-700 text-center">
+                <div class="text-xs text-slate-400 mb-1" data-i18n="timeRemaining">Verbleibende Zeit</div>
+                <div id="desktop-timer" class="timer-display"></div>
+            </div>
+            
+            <!-- Mode Badges Desktop -->
+            <div id="desktop-mode-badges" class="flex gap-2 flex-wrap"></div>
+            
             <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
-                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Dein Name</label>
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2" data-i18n="yourName">Dein Name</label>
                 <input type="text" id="playerName" maxlength="15" placeholder="Name für Bestenliste..."
                     class="name-input w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white transition-colors">
-                <p class="text-xs text-slate-500 mt-2"><i data-lucide="info" class="inline w-3 h-3 mr-1"></i>Mit Name → Punkte werden veröffentlicht</p>
+                <p class="text-xs text-slate-500 mt-2"><i data-lucide="info" class="inline w-3 h-3 mr-1"></i><span data-i18n="nameHint">Mit Name → Punkte werden veröffentlicht</span></p>
             </div>
+            
             <button onclick="window.startSolo()"
                 class="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-xl border border-slate-700 transition-all">
-                <i data-lucide="refresh-cw" class="w-4 h-4"></i> Neues Spiel
+                <i data-lucide="refresh-cw" class="w-4 h-4"></i> <span data-i18n="newGame">Neues Spiel</span>
             </button>
+            
+            <!-- Daily Wordle Button -->
+            <button onclick="window.startDaily()"
+                class="w-full flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-500 text-white py-2.5 rounded-xl transition-colors">
+                <i data-lucide="calendar" class="w-4 h-4"></i> <span data-i18n="dailyWordle">Daily Wordle</span>
+            </button>
+            
             <div>
                 <div class="relative flex items-center py-1 mb-3">
                     <div class="flex-grow border-t border-slate-700"></div>
-                    <span class="mx-3 text-slate-500 text-xs uppercase">Multiplayer</span>
+                    <span class="mx-3 text-slate-500 text-xs uppercase" data-i18n="multiplayer">Multiplayer</span>
                     <div class="flex-grow border-t border-slate-700"></div>
                 </div>
                 <button onclick="window.createRoom()"
                     class="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl mb-2 transition-colors">
-                    <i data-lucide="plus-circle" class="w-4 h-4"></i> Raum erstellen
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i> <span data-i18n="createRoom">Raum erstellen</span>
                 </button>
                 <div class="flex gap-2 mb-2">
                     <input type="text" id="roomInput" placeholder="CODE" maxlength="5"
                         class="w-1/2 bg-slate-900 border border-slate-700 rounded-xl px-2 py-2 text-center uppercase tracking-widest text-white transition-colors">
                     <button onclick="window.joinRoom()"
-                        class="w-1/2 bg-cyan-600 hover:bg-cyan-500 text-white py-2 rounded-xl transition-colors text-sm">Beitreten</button>
+                        class="w-1/2 bg-cyan-600 hover:bg-cyan-500 text-white py-2 rounded-xl transition-colors text-sm" data-i18n="join">Beitreten</button>
                 </div>
                 <button class="share-btn hidden w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded-xl transition-colors text-sm" onclick="window.shareRoom()">
-                    <i data-lucide="share-2" class="w-4 h-4"></i> Link kopieren
+                    <i data-lucide="share-2" class="w-4 h-4"></i> <span data-i18n="copyLink">Link kopieren</span>
                 </button>
             </div>
             <div class="room-status hidden bg-indigo-900/20 p-3 rounded-xl border border-indigo-500/30">
                 <div class="flex justify-between items-center mb-3">
                     <div>
-                        <h3 class="text-sm font-semibold text-indigo-300">Raum: <span class="room-code-display text-white font-mono"></span></h3>
+                        <h3 class="text-sm font-semibold text-indigo-300"><span data-i18n="room">Raum</span>: <span class="room-code-display text-white font-mono"></span></h3>
                         <span class="round-display hidden text-xs text-slate-400"></span>
                     </div>
                     <button onclick="window.leaveRoom()" class="text-red-400 hover:text-red-300"><i data-lucide="log-out" class="w-4 h-4"></i></button>
                 </div>
                 <ul class="room-players-list space-y-1.5 text-sm"></ul>
-                <button onclick="window.nextRound()" class="next-round-btn hidden mt-2 w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded-lg text-sm font-semibold transition-colors">Nächste Runde →</button>
-                <div class="game-ended-notice hidden mt-2 text-center text-sm text-yellow-400 font-semibold">Spiel beendet! 🏆</div>
-                <button onclick="window.rematch()" class="rematch-btn hidden mt-2 w-full bg-purple-600 hover:bg-purple-500 text-white py-2 rounded-lg text-sm font-semibold transition-colors">Rematch! 🔄</button>
+                <button onclick="window.nextRound()" class="next-round-btn hidden mt-2 w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded-lg text-sm font-semibold transition-colors"><span data-i18n="nextRound">Nächste Runde</span> →</button>
+                <div class="game-ended-notice hidden mt-2 text-center text-sm text-yellow-400 font-semibold"><span data-i18n="gameEnded">Spiel beendet!</span> 🏆</div>
+                <button onclick="window.rematch()" class="rematch-btn hidden mt-2 w-full bg-purple-600 hover:bg-purple-500 text-white py-2 rounded-lg text-sm font-semibold transition-colors"><span data-i18n="rematch">Rematch!</span> 🔄</button>
                 <div class="chat-section mt-3 border-t border-slate-700/50 pt-2">
                     <div class="chat-messages h-20 overflow-y-auto flex flex-col gap-0.5 mb-1.5 text-xs"></div>
                     <div class="flex gap-1">
-                        <input type="text" class="chat-input flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-white" placeholder="Nachricht..." maxlength="80">
+                        <input type="text" class="chat-input flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-white" data-i18n-placeholder="message" placeholder="Nachricht..." maxlength="80">
                         <button onclick="window.sendChat(this)" class="bg-indigo-600 hover:bg-indigo-500 px-2.5 py-1 rounded text-xs text-white font-bold">→</button>
                     </div>
                 </div>
@@ -394,14 +635,14 @@
         <!-- RIGHT SIDEBAR (desktop) -->
         <div id="sidebar-right" class="bg-slate-900/50 border-l border-slate-800 p-5 flex flex-col">
             <h2 class="text-lg font-bold flex items-center gap-2 mb-3 text-slate-200">
-                <i data-lucide="trophy" class="text-yellow-500 w-5 h-5"></i> Top Liste
+                <i data-lucide="trophy" class="text-yellow-500 w-5 h-5"></i> <span data-i18n="topList">Top Liste</span>
             </h2>
             <div class="flex gap-1 mb-3 bg-slate-800/50 p-0.5 rounded-lg">
-                <button onclick="window.setLeaderboardTab('total')" class="lb-tab-total flex-1 text-xs py-1.5 rounded-md bg-indigo-600 text-white font-semibold transition-colors">Gesamt</button>
-                <button onclick="window.setLeaderboardTab('week')" class="lb-tab-week flex-1 text-xs py-1.5 rounded-md text-slate-400 transition-colors">Woche</button>
+                <button onclick="window.setLeaderboardTab('total')" class="lb-tab-total flex-1 text-xs py-1.5 rounded-md bg-indigo-600 text-white font-semibold transition-colors" data-i18n="total">Gesamt</button>
+                <button onclick="window.setLeaderboardTab('week')" class="lb-tab-week flex-1 text-xs py-1.5 rounded-md text-slate-400 transition-colors" data-i18n="week">Woche</button>
             </div>
             <ul id="leaderboard" class="leaderboard-list space-y-2 overflow-y-auto flex-1">
-                <li class="text-slate-500 text-sm italic">Gib einen Namen ein...</li>
+                <li class="text-slate-500 text-sm italic" data-i18n="enterName">Gib einen Namen ein...</li>
             </ul>
         </div>
     </div>
@@ -410,15 +651,15 @@
     <div id="bottom-nav">
         <button class="nav-btn" onclick="window.openDrawer('menu')" id="nav-menu">
             <i data-lucide="menu" class="w-5 h-5"></i>
-            <span>Menü</span>
+            <span data-i18n="menu">Menü</span>
         </button>
         <button class="nav-btn active" id="nav-game" onclick="window.closeDrawer()">
             <i data-lucide="grid-2x2" class="w-5 h-5"></i>
-            <span>Spiel</span>
+            <span data-i18n="game">Spiel</span>
         </button>
         <button class="nav-btn" onclick="window.openDrawer('leaderboard')" id="nav-lb">
             <i data-lucide="trophy" class="w-5 h-5"></i>
-            <span>Top Liste</span>
+            <span data-i18n="topList">Top Liste</span>
         </button>
     </div>
 
@@ -438,11 +679,174 @@
         appId: "1:286289741614:web:14e5faad1616fe75755cbf"
     };
 
+    // ═══════════════════════════════════════════════════════════
+    // TRANSLATIONS (i18n)
+    // ═══════════════════════════════════════════════════════════
+    const translations = {
+        de: {
+            playAgain: "Nochmal spielen",
+            viewBoard: "Board ansehen",
+            settings: "Einstellungen",
+            language: "Sprache",
+            selectLanguage: "Sprache wählen",
+            gameMode: "Spielmodus",
+            hardMode: "Hard Mode",
+            dailyMode: "Daily Wordle",
+            timer: "Timer",
+            timeLimit: "Zeitlimit (Sekunden)",
+            enableTimer: "Timer aktivieren",
+            hostSettings: "Host-Einstellungen",
+            rounds: "Runden",
+            maxAttempts: "Max. Versuche",
+            roundTime: "Zeit pro Runde (Sek.)",
+            save: "Speichern",
+            new: "Neu",
+            yourName: "Dein Name",
+            nameHint: "Mit Name → Punkte werden veröffentlicht",
+            newGame: "Neues Spiel",
+            dailyWordle: "Daily Wordle",
+            multiplayer: "Multiplayer",
+            createRoom: "Raum erstellen",
+            join: "Beitreten",
+            copyLink: "Link kopieren",
+            room: "Raum",
+            nextRound: "Nächste Runde",
+            gameEnded: "Spiel beendet!",
+            rematch: "Rematch!",
+            message: "Nachricht...",
+            topList: "Top Liste",
+            total: "Gesamt",
+            week: "Woche",
+            enterName: "Gib einen Namen ein...",
+            menu: "Menü",
+            game: "Spiel",
+            timeRemaining: "Verbleibende Zeit",
+            won: "Gewonnen!",
+            lost: "Verloren!",
+            attempts: "Versuch",
+            attemptsPlural: "Versuchen",
+            noAttemptsLeft: "Kein Versuch mehr übrig",
+            points: "Punkte",
+            notAGermanWord: "Kein deutsches Wort!",
+            newGameStarted: "Neues Spiel!",
+            roomJoined: "Raum beigetreten",
+            enterNameFirst: "Bitte zuerst Namen eingeben!",
+            enterRoomCode: "Bitte Raumcode eingeben!",
+            roomNotFound: "Raum nicht gefunden!",
+            linkCopied: "Link kopiert!",
+            hardModeHint: "Hard Mode: Du musst gefundene Hinweise verwenden!",
+            mustUseHint: "Du musst den Buchstaben '{letter}' verwenden!",
+            dailyAlreadyPlayed: "Du hast das Daily Wordle heute schon gespielt!",
+            dailyComplete: "Daily Wordle abgeschlossen!",
+            timesUp: "Zeit abgelaufen!",
+            loading: "Lade...",
+            noEntries: "Noch keine Einträge.",
+            leave: "Verlassen"
+        },
+        en: {
+            playAgain: "Play Again",
+            viewBoard: "View Board",
+            settings: "Settings",
+            language: "Language",
+            selectLanguage: "Select Language",
+            gameMode: "Game Mode",
+            hardMode: "Hard Mode",
+            dailyMode: "Daily Wordle",
+            timer: "Timer",
+            timeLimit: "Time Limit (Seconds)",
+            enableTimer: "Enable Timer",
+            hostSettings: "Host Settings",
+            rounds: "Rounds",
+            maxAttempts: "Max. Attempts",
+            roundTime: "Time per Round (Sec.)",
+            save: "Save",
+            new: "New",
+            yourName: "Your Name",
+            nameHint: "With name → points will be published",
+            newGame: "New Game",
+            dailyWordle: "Daily Wordle",
+            multiplayer: "Multiplayer",
+            createRoom: "Create Room",
+            join: "Join",
+            copyLink: "Copy Link",
+            room: "Room",
+            nextRound: "Next Round",
+            gameEnded: "Game Ended!",
+            rematch: "Rematch!",
+            message: "Message...",
+            topList: "Leaderboard",
+            total: "Total",
+            week: "Week",
+            enterName: "Enter a name...",
+            menu: "Menu",
+            game: "Game",
+            timeRemaining: "Time Remaining",
+            won: "Won!",
+            lost: "Lost!",
+            attempts: "attempt",
+            attemptsPlural: "attempts",
+            noAttemptsLeft: "No attempts left",
+            points: "points",
+            notAGermanWord: "Not a German word!",
+            newGameStarted: "New game!",
+            roomJoined: "Joined room",
+            enterNameFirst: "Please enter your name first!",
+            enterRoomCode: "Please enter a room code!",
+            roomNotFound: "Room not found!",
+            linkCopied: "Link copied!",
+            hardModeHint: "Hard Mode: You must use revealed hints!",
+            mustUseHint: "You must use the letter '{letter}'!",
+            dailyAlreadyPlayed: "You've already played today's Daily Wordle!",
+            dailyComplete: "Daily Wordle completed!",
+            timesUp: "Time's up!",
+            loading: "Loading...",
+            noEntries: "No entries yet.",
+            leave: "Leave"
+        }
+    };
+
+    let currentLanguage = localStorage.getItem('wolfle_language') || 'de';
+    
+    function t(key) {
+        return translations[currentLanguage]?.[key] || translations['de']?.[key] || key;
+    }
+    
+    window.changeLanguage = (lang) => {
+        currentLanguage = lang;
+        localStorage.setItem('wolfle_language', lang);
+        applyTranslations();
+        lucide.createIcons();
+    };
+    
+    function applyTranslations() {
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            el.textContent = t(key);
+        });
+        document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+            const key = el.getAttribute('data-i18n-placeholder');
+            el.placeholder = t(key);
+        });
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // GAME STATE
+    // ═══════════════════════════════════════════════════════════
     let targetWord = "";
     let currentRow = 0, currentCol = 0, cells = [], gameOver = false, letterStates = {};
     let currentRoomCode = null, roomUnsubscribe = null, db = null;
     let currentRound = 1, maxRounds = 3, playerTotalScore = 0, playerRoundsWon = 0;
     let leaderboardTab = 'total';
+    
+    // New settings
+    let hardMode = localStorage.getItem('wolfle_hardMode') === 'true';
+    let dailyMode = false;
+    let timerEnabled = localStorage.getItem('wolfle_timerEnabled') === 'true';
+    let timeLimit = parseInt(localStorage.getItem('wolfle_timeLimit')) || 120;
+    let timerInterval = null;
+    let timeRemaining = 0;
+    let requiredLetters = []; // For hard mode
+    let maxAttempts = 6;
 
     function getWeekKey() {
         const d = new Date();
@@ -451,7 +855,199 @@
         return `${d.getFullYear()}-W${String(week).padStart(2, '0')}`;
     }
 
-    // ── Firebase ──────────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════
+    // DAILY WORDLE
+    // ═══════════════════════════════════════════════════════════
+    function getDailyWord() {
+        const today = new Date();
+        const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+        // Use seeded random for consistent daily word
+        const random = seededRandom(seed);
+        const wordIndex = Math.floor(random * WORDS.length);
+        return WORDS[wordIndex].toUpperCase();
+    }
+    
+    function seededRandom(seed) {
+        const x = Math.sin(seed) * 10000;
+        return x - Math.floor(x);
+    }
+    
+    function getDailyKey() {
+        const today = new Date();
+        return `wolfle_daily_${today.getFullYear()}_${today.getMonth() + 1}_${today.getDate()}`;
+    }
+    
+    function hasPlayedDaily() {
+        return localStorage.getItem(getDailyKey()) !== null;
+    }
+    
+    function markDailyPlayed(won, attempts) {
+        localStorage.setItem(getDailyKey(), JSON.stringify({ won, attempts, date: new Date().toISOString() }));
+    }
+    
+    window.startDaily = () => {
+        if (hasPlayedDaily()) {
+            showToast(t('dailyAlreadyPlayed'), "warning");
+            return;
+        }
+        window.leaveRoom();
+        resetGame();
+        targetWord = getDailyWord();
+        dailyMode = true;
+        updateModeBadges();
+        showToast(t('dailyWordle'), "success");
+        window.closeDrawer();
+    };
+
+    // ═══════════════════════════════════════════════════════════
+    // HARD MODE
+    // ═══════════════════════════════════════════════════════════
+    window.toggleHardMode = (enabled) => {
+        hardMode = enabled;
+        localStorage.setItem('wolfle_hardMode', enabled);
+        updateModeBadges();
+        if (enabled && !gameOver) {
+            showToast(t('hardModeHint'), "info");
+        }
+    };
+    
+    function updateRequiredLetters() {
+        requiredLetters = [];
+        if (!hardMode) return;
+        
+        // Collect all correct and present letters from previous rows
+        for (let r = 0; r < currentRow; r++) {
+            for (let c = 0; c < 5; c++) {
+                const cell = cells[r][c];
+                const letter = cell.textContent;
+                if (cell.classList.contains('bg-correct') || cell.classList.contains('bg-present')) {
+                    if (!requiredLetters.includes(letter)) {
+                        requiredLetters.push(letter);
+                    }
+                }
+            }
+        }
+    }
+    
+    function checkHardModeCompliance(guess) {
+        if (!hardMode || requiredLetters.length === 0) return { valid: true };
+        
+        const guessLetters = guess.split('');
+        for (const letter of requiredLetters) {
+            if (!guessLetters.includes(letter)) {
+                return { valid: false, letter };
+            }
+        }
+        return { valid: true };
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // TIMER
+    // ═══════════════════════════════════════════════════════════
+    window.toggleTimer = (enabled) => {
+        timerEnabled = enabled;
+        localStorage.setItem('wolfle_timerEnabled', enabled);
+        if (enabled && !gameOver) {
+            startTimer();
+        } else {
+            stopTimer();
+        }
+        updateModeBadges();
+    };
+    
+    window.updateTimeLimit = (seconds) => {
+        timeLimit = parseInt(seconds) || 120;
+        localStorage.setItem('wolfle_timeLimit', timeLimit);
+    };
+    
+    function startTimer() {
+        stopTimer();
+        timeRemaining = timeLimit;
+        updateTimerDisplay();
+        
+        document.getElementById('desktop-timer-container')?.classList.remove('hidden');
+        document.getElementById('mobile-timer')?.classList.remove('hidden');
+        
+        timerInterval = setInterval(() => {
+            timeRemaining--;
+            updateTimerDisplay();
+            
+            if (timeRemaining <= 0) {
+                stopTimer();
+                if (!gameOver) {
+                    gameOver = true;
+                    showToast(t('timesUp'), "error");
+                    setTimeout(() => endGame(false), 500);
+                }
+            }
+        }, 1000);
+    }
+    
+    function stopTimer() {
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+    }
+    
+    function updateTimerDisplay() {
+        const minutes = Math.floor(timeRemaining / 60);
+        const seconds = timeRemaining % 60;
+        const display = `${minutes}:${String(seconds).padStart(2, '0')}`;
+        
+        const desktopTimer = document.getElementById('desktop-timer');
+        const mobileTimer = document.getElementById('mobile-timer');
+        
+        if (desktopTimer) {
+            desktopTimer.textContent = display;
+            desktopTimer.className = 'timer-display';
+            if (timeRemaining <= 30) desktopTimer.classList.add('danger');
+            else if (timeRemaining <= 60) desktopTimer.classList.add('warning');
+        }
+        if (mobileTimer) {
+            mobileTimer.textContent = display;
+            mobileTimer.className = 'timer-display text-sm';
+            if (timeRemaining <= 30) mobileTimer.classList.add('danger');
+            else if (timeRemaining <= 60) mobileTimer.classList.add('warning');
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // MODE BADGES
+    // ═══════════════════════════════════════════════════════════
+    function updateModeBadges() {
+        const badges = [];
+        if (hardMode) badges.push('<span class="mode-badge hard"><i data-lucide="flame" class="w-3 h-3"></i> Hard</span>');
+        if (dailyMode) badges.push('<span class="mode-badge daily"><i data-lucide="calendar" class="w-3 h-3"></i> Daily</span>');
+        if (timerEnabled) badges.push('<span class="mode-badge timed"><i data-lucide="timer" class="w-3 h-3"></i> Timed</span>');
+        
+        const html = badges.join('');
+        document.getElementById('mode-badges').innerHTML = html;
+        document.getElementById('desktop-mode-badges').innerHTML = html;
+        lucide.createIcons();
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // SETTINGS MODAL
+    // ═══════════════════════════════════════════════════════════
+    window.openSettingsModal = () => {
+        document.getElementById('settings-modal').classList.remove('hidden');
+        document.getElementById('hard-mode-toggle').checked = hardMode;
+        document.getElementById('daily-mode-toggle').checked = dailyMode;
+        document.getElementById('timer-toggle').checked = timerEnabled;
+        document.getElementById('time-limit-input').value = timeLimit;
+        document.getElementById('language-select').value = currentLanguage;
+        lucide.createIcons();
+        applyTranslations();
+    };
+    
+    window.closeSettingsModal = () => {
+        document.getElementById('settings-modal').classList.add('hidden');
+    };
+
+    // ═══════════════════════════════════════════════════════════
+    // FIREBASE
+    // ═══════════════════════════════════════════════════════════
     async function getDB() {
         if (db) return db;
         if (!getPlayerName()) return null;
@@ -466,7 +1062,6 @@
         return (document.getElementById('playerName')?.value || '').trim();
     }
 
-    // Sync all name inputs (desktop sidebar + mobile drawer)
     document.addEventListener('input', async (e) => {
         if (!e.target.classList.contains('name-input')) return;
         const val = e.target.value;
@@ -479,11 +1074,14 @@
         }
     });
 
-    // ── Grid ──────────────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════
+    // GRID
+    // ═══════════════════════════════════════════════════════════
     function createGrid() {
         const gridEl = document.getElementById("grid");
         gridEl.innerHTML = ''; cells = [];
-        for (let i = 0; i < 6; i++) {
+        const rows = maxAttempts;
+        for (let i = 0; i < rows; i++) {
             cells[i] = [];
             const row = document.createElement("div");
             row.className = "grid-row";
@@ -496,7 +1094,9 @@
         }
     }
 
-    // ── Keyboard ──────────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════
+    // KEYBOARD with improved hints
+    // ═══════════════════════════════════════════════════════════
     function createKeyboard() {
         const kb = document.getElementById("keyboard");
         const layout = [
@@ -512,29 +1112,63 @@
                 const b = document.createElement("button");
                 b.textContent = key;
                 b.className = "kb-key";
-                if (key === 'ENTER') { b.style.flex = '1.6'; b.onclick = () => submitGuess(); }
-                else if (key === '⌫') { b.style.flex = '1.6'; b.onclick = () => backspace(); }
-                else { b.id = `key-${key}`; b.onclick = () => typeLetter(key); }
+                if (key === 'ENTER') { 
+                    b.style.flex = '1.6'; 
+                    b.onclick = () => submitGuess();
+                    b.setAttribute('data-tooltip', 'Enter');
+                }
+                else if (key === '⌫') { 
+                    b.style.flex = '1.6'; 
+                    b.onclick = () => backspace();
+                    b.setAttribute('data-tooltip', 'Backspace');
+                }
+                else { 
+                    b.id = `key-${key}`; 
+                    b.onclick = () => typeLetter(key);
+                }
                 rDiv.appendChild(b);
             });
             kb.appendChild(rDiv);
         });
     }
 
-    function typeLetter(l) { if (currentCol < 5 && !gameOver) { cells[currentRow][currentCol++].textContent = l; playSound('type'); } }
-    function backspace()   { if (currentCol > 0 && !gameOver) { cells[currentRow][--currentCol].textContent = ""; playSound('type'); } }
+    function typeLetter(l) { 
+        if (currentCol < 5 && !gameOver) { 
+            cells[currentRow][currentCol++].textContent = l; 
+            playSound('type'); 
+        } 
+    }
+    
+    function backspace() { 
+        if (currentCol > 0 && !gameOver) { 
+            cells[currentRow][--currentCol].textContent = ""; 
+            playSound('type'); 
+        } 
+    }
 
-    // ── Submit ────────────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════
+    // SUBMIT
+    // ═══════════════════════════════════════════════════════════
     async function submitGuess() {
         if (currentCol < 5 || gameOver) return;
         let guess = "";
         for (let i = 0; i < 5; i++) guess += cells[currentRow][i].textContent;
 
+        // Hard mode check
+        const hardModeCheck = checkHardModeCompliance(guess);
+        if (!hardModeCheck.valid) {
+            showToast(t('mustUseHint').replace('{letter}', hardModeCheck.letter), "warning");
+            cells[currentRow][0].parentElement.classList.add("shake");
+            setTimeout(() => cells[currentRow][0].parentElement.classList.remove("shake"), 400);
+            return;
+        }
+
+        // Word validation (German dictionary)
         try {
             const res = await fetch(`https://de.wiktionary.org/w/api.php?action=query&origin=*&format=json&list=search&srsearch=${guess.toLowerCase()}&srlimit=1`);
             const data = await res.json();
             if (!data.query.search.some(r => r.title.toLowerCase() === guess.toLowerCase())) {
-                showToast("Kein deutsches Wort!", "error");
+                showToast(t('notAGermanWord'), "error");
                 cells[currentRow][0].parentElement.classList.add("shake");
                 setTimeout(() => cells[currentRow][0].parentElement.classList.remove("shake"), 400);
                 return;
@@ -561,10 +1195,13 @@
         const win = guess === targetWord;
         const lastRow = currentRow;
         currentRow++; currentCol = 0;
+        
+        // Update required letters for hard mode
+        updateRequiredLetters();
 
         setTimeout(async () => {
             if (win) await endGame(true);
-            else if (lastRow === 5) await endGame(false);
+            else if (lastRow === maxAttempts - 1) await endGame(false);
             else if (currentRoomCode) updateRoomProgress(currentRow, false, false);
         }, 800);
     }
@@ -574,11 +1211,27 @@
         if (!b || letterStates[l] === 'correct') return;
         letterStates[l] = s;
         b.className = 'kb-key bg-' + s;
+        
+        // Add hint indicator
+        if (s === 'correct') b.classList.add('hint-correct');
+        else if (s === 'present') b.classList.add('hint-present');
     }
 
-    // ── End Game ──────────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════
+    // END GAME
+    // ═══════════════════════════════════════════════════════════
     async function endGame(win) {
         gameOver = true;
+        stopTimer();
+        
+        // Daily mode: mark as played
+        if (dailyMode && win) {
+            markDailyPlayed(true, currentRow);
+            showToast(t('dailyComplete'), "success");
+        } else if (dailyMode && !win) {
+            markDailyPlayed(false, 6);
+        }
+        
         let points = 0;
         if (win) {
             launchConfetti();
@@ -612,11 +1265,11 @@
 
     function showEndModal(win, points) {
         document.getElementById('end-emoji').textContent = win ? '🎉' : '😔';
-        document.getElementById('end-title').textContent = win ? 'Gewonnen!' : 'Verloren!';
-        const roundInfo = currentRoomCode ? ` · Runde ${currentRound}/${maxRounds}` : '';
+        document.getElementById('end-title').textContent = win ? t('won') : t('lost');
+        const roundInfo = currentRoomCode ? ` · ${t('round')} ${currentRound}/${maxRounds}` : '';
         document.getElementById('end-subtitle').textContent = win
-            ? `In ${currentRow} ${currentRow===1?'Versuch':'Versuchen'}${roundInfo}`
-            : `Kein Versuch mehr übrig${roundInfo}`;
+            ? `In ${currentRow} ${currentRow===1?t('attempts'):t('attemptsPlural')}${roundInfo}`
+            : `${t('noAttemptsLeft')}${roundInfo}`;
 
         const wordEl = document.getElementById('end-word');
         wordEl.innerHTML = '';
@@ -628,14 +1281,14 @@
         });
 
         const pts = document.getElementById('end-points');
-        if (win && points > 0) { pts.textContent = `+${points} Punkte`; pts.classList.remove('hidden'); pts.classList.add('inline-block'); }
+        if (win && points > 0) { pts.textContent = `+${points} ${t('points')}`; pts.classList.remove('hidden'); pts.classList.add('inline-block'); }
         else pts.classList.add('hidden');
 
         const playAgainBtn = document.getElementById('modal-play-again-btn');
         if (currentRoomCode) {
-            playAgainBtn.innerHTML = 'Schließen';
+            playAgainBtn.innerHTML = t('viewBoard');
         } else {
-            playAgainBtn.innerHTML = '<i data-lucide="refresh-cw" class="w-4 h-4"></i> Nochmal spielen';
+            playAgainBtn.innerHTML = `<i data-lucide="refresh-cw" class="w-4 h-4"></i> ${t('playAgain')}`;
         }
 
         document.getElementById('end-modal').classList.remove('hidden');
@@ -655,15 +1308,19 @@
         window.closeModal();
         setTimeout(() => {
             resetGame();
+            dailyMode = false;
             targetWord = WORDS[Math.floor(Math.random() * WORDS.length)].toUpperCase();
-            showToast("Neues Spiel!", "success");
+            updateModeBadges();
+            showToast(t('newGameStarted'), "success");
+            if (timerEnabled) startTimer();
         }, 260);
     };
 
-    // ── Leaderboard ───────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════
+    // LEADERBOARD
+    // ═══════════════════════════════════════════════════════════
     async function loadLeaderboard() {
         const firestore = await getDB(); if (!firestore) return;
-        // Update tab button styles
         document.querySelectorAll('.lb-tab-total').forEach(b => {
             b.classList.toggle('bg-indigo-600', leaderboardTab === 'total');
             b.classList.toggle('text-white', leaderboardTab === 'total');
@@ -677,7 +1334,7 @@
             b.classList.toggle('text-slate-400', leaderboardTab !== 'week');
         });
         document.querySelectorAll('.leaderboard-list').forEach(l =>
-            l.innerHTML = '<li class="text-slate-500 text-sm italic">Lade...</li>');
+            l.innerHTML = `<li class="text-slate-500 text-sm italic">${t('loading')}</li>`);
         try {
             const snap = await getDocs(collection(firestore,'artifacts',appId,'public','data','scores'));
             let d = [];
@@ -691,7 +1348,7 @@
             }
             const me = getPlayerName().toLowerCase();
             const html = d.length === 0
-                ? '<li class="text-slate-500 text-sm italic">Noch keine Einträge.</li>'
+                ? `<li class="text-slate-500 text-sm italic">${t('noEntries')}</li>`
                 : d.slice(0,10).map((s,i) => {
                     const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}.`;
                     const isMe = s.name.toLowerCase() === me;
@@ -708,46 +1365,61 @@
         loadLeaderboard();
     };
 
-    // ── Multiplayer ───────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════
+    // MULTIPLAYER
+    // ═══════════════════════════════════════════════════════════
     window.createRoom = async () => {
         const name = getPlayerName();
-        if (!name) { showToast("Bitte zuerst Namen eingeben!", "warning"); return; }
+        if (!name) { showToast(t('enterNameFirst'), "warning"); return; }
         const firestore = await getDB(); if (!firestore) return;
         const code = Math.random().toString(36).substring(2,7).toUpperCase();
         const word = WORDS[Math.floor(Math.random() * WORDS.length)].toUpperCase();
+        
+        // Get host settings
+        const hostSettings = {
+            maxRounds: parseInt(document.getElementById('rounds-input')?.value) || 3,
+            timeLimit: parseInt(document.getElementById('round-time-input')?.value) || 120,
+            maxAttempts: parseInt(document.getElementById('attempts-input')?.value) || 6
+        };
+        
         await setDoc(doc(firestore,'artifacts',appId,'public','data','rooms',code),
-            { word, round: 1, maxRounds: 3, players: { [name]: { name, guesses:0, finished:false, won:false, totalScore:0, roundsWon:0 } } });
-        joinInternal(code, word, 1, 3);
+            { word, round: 1, maxRounds: hostSettings.maxRounds, timeLimit: hostSettings.timeLimit, maxAttempts: hostSettings.maxAttempts, players: { [name]: { name, guesses:0, finished:false, won:false, totalScore:0, roundsWon:0 } } });
+        joinInternal(code, word, 1, hostSettings.maxRounds, hostSettings.timeLimit, hostSettings.maxAttempts);
         document.querySelectorAll('.share-btn').forEach(b => b.classList.remove('hidden'));
     };
 
     window.joinRoom = async () => {
         const name = getPlayerName();
-        if (!name) { showToast("Bitte zuerst Namen eingeben!", "warning"); return; }
+        if (!name) { showToast(t('enterNameFirst'), "warning"); return; }
         const firestore = await getDB(); if (!firestore) return;
         const input = document.getElementById("roomInput");
         const code = (input?.value||'').toUpperCase().trim();
-        if (!code) { showToast("Bitte Raumcode eingeben!", "warning"); return; }
+        if (!code) { showToast(t('enterRoomCode'), "warning"); return; }
         const snap = await getDoc(doc(firestore,'artifacts',appId,'public','data','rooms',code));
         if (snap.exists()) {
             const data = snap.data();
             const round = data.round || 1;
             const mRounds = data.maxRounds || 3;
+            const timeLim = data.timeLimit || 120;
+            const mAttempts = data.maxAttempts || 6;
             await setDoc(doc(firestore,'artifacts',appId,'public','data','rooms',code),
                 { players: { [name]: { name, guesses:0, finished:false, won:false, totalScore:0, roundsWon:0 } } }, { merge:true });
-            joinInternal(code, data.word, round, mRounds);
-        } else { showToast("Raum nicht gefunden!", "error"); }
+            joinInternal(code, data.word, round, mRounds, timeLim, mAttempts);
+        } else { showToast(t('roomNotFound'), "error"); }
     };
 
-    function joinInternal(code, word, round = 1, mRounds = 3) {
+    function joinInternal(code, word, round = 1, mRounds = 3, timeLim = 120, mAttempts = 6) {
         resetGame(); targetWord = word; currentRoomCode = code;
         currentRound = round; maxRounds = mRounds;
+        maxAttempts = mAttempts;
+        timeLimit = timeLim;
         playerTotalScore = 0; playerRoundsWon = 0;
         document.querySelectorAll('.room-code-display').forEach(el => el.textContent = code);
         document.querySelectorAll('.room-status').forEach(el => el.classList.remove('hidden'));
         listenToRoom(code);
         updateRoundDisplay();
-        showToast("Raum " + code + " beigetreten", "success");
+        showToast(t('roomJoined') + ": " + code, "success");
+        if (timerEnabled) startTimer();
         window.closeDrawer();
     }
 
@@ -760,43 +1432,47 @@
             const players = data.players || {};
             const newRound = data.round || 1;
             const mRounds = data.maxRounds || 3;
+            const mAttempts = data.maxAttempts || 6;
+            const timeLim = data.timeLimit || 120;
 
-            // Detect round change or rematch → auto-start new round locally
             if (newRound !== currentRound) {
                 const isRematch = newRound < currentRound || (newRound === 1 && currentRound > 1);
                 currentRound = newRound;
                 maxRounds = mRounds;
+                maxAttempts = mAttempts;
+                timeLimit = timeLim;
                 targetWord = data.word;
                 resetGame();
                 window.closeModal();
                 if (isRematch) {
                     playerTotalScore = 0; playerRoundsWon = 0;
-                    showToast(`Rematch! Runde 1/${mRounds} 🔄`, "success");
+                    showToast(`Rematch! ${t('round')} 1/${mRounds} 🔄`, "success");
                 } else {
-                    showToast(`Runde ${newRound} von ${mRounds} startet!`, "success");
+                    showToast(`${t('round')} ${newRound} ${t('of')} ${mRounds}!`, "success");
                 }
                 updateRoundDisplay();
+                if (timerEnabled) startTimer();
             } else {
                 maxRounds = mRounds;
+                maxAttempts = mAttempts;
+                timeLimit = timeLim;
             }
 
             const playerList = Object.values(players);
             const allFinished = playerList.length > 0 && playerList.every(p => p.finished);
             const roundsDone = newRound >= mRounds;
 
-            // Render players list with per-round and cumulative info
             const html = playerList.map(p =>
                 `<li class="flex justify-between bg-slate-800/50 p-2 rounded text-xs">
                     <span class="font-medium">${p.name||'Spieler'}</span>
                     <span class="flex items-center gap-1.5">
-                        ${p.finished?(p.won?'🏆':'💀'):'⌨️'} ${p.guesses}/6
+                        ${p.finished?(p.won?'🏆':'💀'):'⌨️'} ${p.guesses}/${maxAttempts}
                         ${(p.roundsWon||0)>0?`<span class="text-yellow-400 font-bold">${p.roundsWon}W</span>`:''}
                         ${(p.totalScore||0)>0?`<span class="text-indigo-400">${p.totalScore}P</span>`:''}
                     </span>
                 </li>`).join('');
             document.querySelectorAll('.room-players-list').forEach(el => el.innerHTML = html);
 
-            // Show/hide next-round button and game-ended notice
             document.querySelectorAll('.next-round-btn').forEach(btn => {
                 btn.classList.toggle('hidden', !(allFinished && !roundsDone));
             });
@@ -807,7 +1483,6 @@
                 btn.classList.toggle('hidden', !(allFinished && roundsDone));
             });
 
-            // Render chat messages
             const chatHtml = (data.chat || []).slice(-20).map(c =>
                 `<div><span class="font-semibold text-indigo-400">${c.n}:</span> <span class="text-slate-300">${c.m}</span></div>`
             ).join('');
@@ -821,7 +1496,7 @@
     function updateRoundDisplay() {
         if (!currentRoomCode) return;
         document.querySelectorAll('.round-display').forEach(el => {
-            el.textContent = `Runde ${currentRound}/${maxRounds}`;
+            el.textContent = `${t('round')} ${currentRound}/${maxRounds}`;
             el.classList.remove('hidden');
         });
     }
@@ -838,9 +1513,11 @@
         if (roomUnsubscribe) roomUnsubscribe();
         currentRoomCode = null; roomUnsubscribe = null;
         currentRound = 1; maxRounds = 3; playerTotalScore = 0; playerRoundsWon = 0;
+        maxAttempts = 6;
         document.querySelectorAll('.room-status').forEach(el => el.classList.add('hidden'));
         document.querySelectorAll('.share-btn').forEach(b => b.classList.add('hidden'));
         document.querySelectorAll('.round-display').forEach(el => el.classList.add('hidden'));
+        stopTimer();
     };
 
     window.nextRound = async () => {
@@ -858,7 +1535,7 @@
                 totalScore: v.totalScore || 0, roundsWon: v.roundsWon || 0 };
         });
         await setDoc(doc(firestore,'artifacts',appId,'public','data','rooms',currentRoomCode),
-            { word: newWord, round: newRound, maxRounds: data.maxRounds || 3, players: resetPlayers });
+            { word: newWord, round: newRound, maxRounds: data.maxRounds || 3, maxAttempts: data.maxAttempts || 6, timeLimit: data.timeLimit || 120, players: resetPlayers });
     };
 
     window.rematch = async () => {
@@ -873,7 +1550,7 @@
             resetPlayers[k] = { name: v.name, guesses: 0, finished: false, won: false, totalScore: 0, roundsWon: 0 };
         });
         await setDoc(doc(firestore,'artifacts',appId,'public','data','rooms',currentRoomCode),
-            { word: newWord, round: 1, maxRounds: data.maxRounds || 3, players: resetPlayers });
+            { word: newWord, round: 1, maxRounds: data.maxRounds || 3, maxAttempts: data.maxAttempts || 6, timeLimit: data.timeLimit || 120, players: resetPlayers });
     };
 
     window.sendChat = async (btn) => {
@@ -889,31 +1566,37 @@
 
     window.shareRoom = () => {
         const url = `${location.origin}${location.pathname}?room=${currentRoomCode}`;
-        navigator.clipboard.writeText(url).then(() => showToast("Link kopiert!", "success"));
+        navigator.clipboard.writeText(url).then(() => showToast(t('linkCopied'), "success"));
     };
 
     window.startSolo = () => {
         window.leaveRoom(); resetGame();
+        dailyMode = false;
         targetWord = WORDS[Math.floor(Math.random() * WORDS.length)].toUpperCase();
-        showToast("Neues Spiel!", "success");
+        showToast(t('newGameStarted'), "success");
+        updateModeBadges();
         window.closeDrawer();
+        if (timerEnabled) startTimer();
     };
 
     function resetGame() {
         createGrid(); createKeyboard();
         currentRow = 0; currentCol = 0; gameOver = false; letterStates = {};
+        requiredLetters = [];
     }
 
     function showToast(m, type) {
         const c = document.getElementById("toast-container");
         const t = document.createElement("div");
-        const colors = { success:'border-green-500/50', error:'border-red-500/50', warning:'border-yellow-500/50' };
+        const colors = { success:'border-green-500/50', error:'border-red-500/50', warning:'border-yellow-500/50', info:'border-blue-500/50' };
         t.className = `px-4 py-2 rounded-full border shadow-lg text-sm bg-slate-800 ${colors[type]||'border-slate-600'}`;
         t.textContent = m; c.appendChild(t);
         setTimeout(() => t.remove(), 3000);
     }
 
-    // ── Drawer ────────────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════
+    // DRAWER
+    // ═══════════════════════════════════════════════════════════
     window.openDrawer = (tab) => {
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(tab === 'menu' ? 'nav-menu' : 'nav-lb')?.classList.add('active');
@@ -925,61 +1608,64 @@
             drawerContent.innerHTML = `
             <div class="flex flex-col gap-4">
                 <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
-                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Dein Name</label>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">${t('yourName')}</label>
                     <input type="text" class="name-input w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"
                         maxlength="15" placeholder="Name für Bestenliste..." value="${savedName}">
-                    <p class="text-xs text-slate-500 mt-2">Mit Name → Punkte werden veröffentlicht</p>
+                    <p class="text-xs text-slate-500 mt-2">${t('nameHint')}</p>
                 </div>
                 <button onclick="window.startSolo()"
                     class="w-full flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-xl transition-colors">
-                    Neues Solo-Spiel
+                    ${t('newGame')}
+                </button>
+                <button onclick="window.startDaily()"
+                    class="w-full flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-500 text-white py-2.5 rounded-xl transition-colors">
+                    <i data-lucide="calendar" class="w-4 h-4"></i> ${t('dailyWordle')}
                 </button>
                 <div class="relative flex items-center py-1">
                     <div class="flex-grow border-t border-slate-700"></div>
-                    <span class="mx-3 text-slate-500 text-xs uppercase">Multiplayer</span>
+                    <span class="mx-3 text-slate-500 text-xs uppercase">${t('multiplayer')}</span>
                     <div class="flex-grow border-t border-slate-700"></div>
                 </div>
                 <button onclick="window.createRoom()"
                     class="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl transition-colors">
-                    Raum erstellen
+                    ${t('createRoom')}
                 </button>
                 <div class="flex gap-2">
                     <input type="text" id="roomInput" placeholder="CODE" maxlength="5"
                         class="w-1/2 bg-slate-900 border border-slate-700 rounded-xl px-2 py-2.5 text-center uppercase tracking-widest text-white">
                     <button onclick="window.joinRoom()"
-                        class="w-1/2 bg-cyan-600 hover:bg-cyan-500 text-white py-2 rounded-xl transition-colors">Beitreten</button>
+                        class="w-1/2 bg-cyan-600 hover:bg-cyan-500 text-white py-2 rounded-xl transition-colors">${t('join')}</button>
                 </div>
                 <button class="share-btn hidden w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 rounded-xl transition-colors" onclick="window.shareRoom()">
-                    Link kopieren
+                    <i data-lucide="share-2" class="w-4 h-4"></i> ${t('copyLink')}
                 </button>
                 <div class="room-status hidden bg-indigo-900/20 p-3 rounded-xl border border-indigo-500/30">
                     <div class="flex justify-between items-center mb-2">
                         <div>
-                            <h3 class="text-sm font-semibold text-indigo-300">Raum: <span class="room-code-display text-white font-mono"></span></h3>
+                            <h3 class="text-sm font-semibold text-indigo-300">${t('room')}: <span class="room-code-display text-white font-mono"></span></h3>
                             <span class="round-display hidden text-xs text-slate-400"></span>
                         </div>
-                        <button onclick="window.leaveRoom()" class="text-red-400 text-sm">Verlassen</button>
+                        <button onclick="window.leaveRoom()" class="text-red-400 text-sm">${t('leave')}</button>
                     </div>
                     <ul class="room-players-list space-y-1.5 text-sm"></ul>
-                    <button onclick="window.nextRound()" class="next-round-btn hidden mt-2 w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded-lg text-sm font-semibold transition-colors">Nächste Runde →</button>
-                    <div class="game-ended-notice hidden mt-2 text-center text-sm text-yellow-400 font-semibold">Spiel beendet! 🏆</div>
-                    <button onclick="window.rematch()" class="rematch-btn hidden mt-2 w-full bg-purple-600 hover:bg-purple-500 text-white py-2 rounded-lg text-sm font-semibold transition-colors">Rematch! 🔄</button>
+                    <button onclick="window.nextRound()" class="next-round-btn hidden mt-2 w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded-lg text-sm font-semibold transition-colors">${t('nextRound')} →</button>
+                    <div class="game-ended-notice hidden mt-2 text-center text-sm text-yellow-400 font-semibold">${t('gameEnded')} 🏆</div>
+                    <button onclick="window.rematch()" class="rematch-btn hidden mt-2 w-full bg-purple-600 hover:bg-purple-500 text-white py-2 rounded-lg text-sm font-semibold transition-colors">${t('rematch')} 🔄</button>
                     <div class="chat-section mt-3 border-t border-slate-700/50 pt-2">
                         <div class="chat-messages h-20 overflow-y-auto flex flex-col gap-0.5 mb-1.5 text-xs"></div>
                         <div class="flex gap-1">
-                            <input type="text" class="chat-input flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-white" placeholder="Nachricht..." maxlength="80">
+                            <input type="text" class="chat-input flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-white" placeholder="${t('message')}" maxlength="80">
                             <button onclick="window.sendChat(this)" class="bg-indigo-600 hover:bg-indigo-500 px-2.5 py-1 rounded text-xs text-white font-bold">→</button>
                         </div>
                     </div>
                 </div>
             </div>`;
-            // Restore room state in drawer if active
             if (currentRoomCode) {
                 drawerContent.querySelectorAll('.room-status').forEach(el => el.classList.remove('hidden'));
                 drawerContent.querySelectorAll('.room-code-display').forEach(el => el.textContent = currentRoomCode);
                 drawerContent.querySelectorAll('.share-btn').forEach(b => b.classList.remove('hidden'));
                 drawerContent.querySelectorAll('.round-display').forEach(el => {
-                    el.textContent = `Runde ${currentRound}/${maxRounds}`;
+                    el.textContent = `${t('round')} ${currentRound}/${maxRounds}`;
                     el.classList.remove('hidden');
                 });
             }
@@ -987,23 +1673,24 @@
             drawerContent.innerHTML = `
             <div>
                 <h2 class="text-lg font-bold flex items-center gap-2 mb-3 text-slate-200">
-                    🏆 Top Liste
+                    🏆 ${t('topList')}
                 </h2>
                 <div class="flex gap-1 mb-3 bg-slate-800/50 p-0.5 rounded-lg">
-                    <button onclick="window.setLeaderboardTab('total')" class="lb-tab-total flex-1 text-xs py-1.5 rounded-md ${leaderboardTab==='total'?'bg-indigo-600 text-white font-semibold':'text-slate-400'} transition-colors">Gesamt</button>
-                    <button onclick="window.setLeaderboardTab('week')" class="lb-tab-week flex-1 text-xs py-1.5 rounded-md ${leaderboardTab==='week'?'bg-indigo-600 text-white font-semibold':'text-slate-400'} transition-colors">Woche</button>
+                    <button onclick="window.setLeaderboardTab('total')" class="lb-tab-total flex-1 text-xs py-1.5 rounded-md ${leaderboardTab==='total'?'bg-indigo-600 text-white font-semibold':'text-slate-400'} transition-colors">${t('total')}</button>
+                    <button onclick="window.setLeaderboardTab('week')" class="lb-tab-week flex-1 text-xs py-1.5 rounded-md ${leaderboardTab==='week'?'bg-indigo-600 text-white font-semibold':'text-slate-400'} transition-colors">${t('week')}</button>
                 </div>
                 <ul class="leaderboard-list space-y-2">
-                    <li class="text-slate-500 text-sm italic">Lade...</li>
+                    <li class="text-slate-500 text-sm italic">${t('loading')}</li>
                 </ul>
             </div>`;
             if (db) loadLeaderboard();
             else drawerContent.querySelector('.leaderboard-list').innerHTML =
-                '<li class="text-slate-500 text-sm italic">Gib einen Namen ein...</li>';
+                `<li class="text-slate-500 text-sm italic">${t('enterName')}</li>`;
         }
 
         document.getElementById('drawer').classList.add('open');
         document.getElementById('drawer-overlay').classList.add('open');
+        lucide.createIcons();
     };
 
     window.closeDrawer = () => {
@@ -1014,7 +1701,9 @@
         document.getElementById('nav-lb').classList.remove('active');
     };
 
-    // ── Sound ─────────────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════
+    // SOUND
+    // ═══════════════════════════════════════════════════════════
     let soundEnabled = localStorage.getItem('wolfle_sound') !== 'false';
     let audioCtx = null;
 
@@ -1071,7 +1760,9 @@
         if (soundEnabled) playTone(523, 'sine', 0.15);
     };
 
-    // ── Confetti ──────────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════
+    // CONFETTI
+    // ═══════════════════════════════════════════════════════════
     function launchConfetti() {
         const canvas = document.getElementById('confetti-canvas');
         const ctx = canvas.getContext('2d');
@@ -1110,7 +1801,9 @@
         draw();
     }
 
-    // ── Theme ─────────────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════
+    // THEME
+    // ═══════════════════════════════════════════════════════════
     function applyTheme(light) {
         document.documentElement.classList.toggle('light', light);
         const icon = light ? 'moon' : 'sun';
@@ -1126,7 +1819,9 @@
         applyTheme(isLight);
     };
 
-    // ── Keyboard events ───────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════
+    // KEYBOARD EVENTS
+    // ═══════════════════════════════════════════════════════════
     document.addEventListener("keydown", (e) => {
         if (e.target.classList.contains('chat-input') && e.key === 'Enter') {
             e.preventDefault();
@@ -1139,13 +1834,52 @@
         else if (/^[a-zA-Z]$/.test(e.key)) typeLetter(e.key.toUpperCase());
     });
 
-    // ── Init ──────────────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════
+    // PREVENT ZOOM GESTURES
+    // ═══════════════════════════════════════════════════════════
+    document.addEventListener('touchstart', (e) => {
+        if (e.touches.length > 1) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+
+    document.addEventListener('touchmove', (e) => {
+        if (e.touches.length > 1) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+
+    document.addEventListener('gesturestart', (e) => {
+        e.preventDefault();
+    });
+
+    document.addEventListener('gesturechange', (e) => {
+        e.preventDefault();
+    });
+
+    document.addEventListener('gestureend', (e) => {
+        e.preventDefault();
+    });
+
+    // ═══════════════════════════════════════════════════════════
+    // INIT
+    // ═══════════════════════════════════════════════════════════
     applyTheme(localStorage.getItem('wolfle_theme') === 'light');
     lucide.createIcons();
     updateSoundBtn();
     createGrid();
     createKeyboard();
     targetWord = WORDS[Math.floor(Math.random() * WORDS.length)].toUpperCase();
+    updateModeBadges();
+    applyTranslations();
+
+    // Load saved settings
+    if (hardMode) {
+        document.getElementById('hard-mode-toggle').checked = true;
+    }
+    if (timerEnabled) {
+        document.getElementById('timer-toggle').checked = true;
+    }
 
     const savedName = localStorage.getItem('wolfle_user_name');
     if (savedName) {
@@ -1158,7 +1892,7 @@
         const inp = document.getElementById('roomInput');
         if (inp) inp.value = roomFromURL;
         if (savedName) window.joinRoom();
-        else showToast("Gib deinen Namen ein um beizutreten", "warning");
+        else showToast(t('enterNameFirst'), "warning");
     }
 </script>
 
