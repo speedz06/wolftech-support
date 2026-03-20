@@ -429,7 +429,7 @@
     </div>
 
     <!-- SETTINGS MODAL -->
-    <div id="settings-modal" class="hidden fixed inset-0 bg-slate-900/80 z-[90] flex items-center justify-center p-4">
+    <div id="settings-modal" onclick="if (event.target === this) window.closeSettingsModal()" class="hidden fixed inset-0 bg-slate-900/80 z-[90] flex items-center justify-center p-4">
         <div id="settings-modal-box" class="w-full max-w-md bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-bold text-white flex items-center gap-2">
@@ -480,7 +480,7 @@
 
 
             <button onclick="window.closeSettingsModal()" class="w-full mt-4 bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl font-semibold transition-colors">
-                <span data-i18n="save">Speichern</span>
+                <span data-i18n="close">Schließen</span>
             </button>
         </div>
     </div>
@@ -776,7 +776,8 @@
             settingsSaved: "Einstellungen gespeichert",
             hostSettingsSaved: "Host-Einstellungen gespeichert",
             roomSetup: "Raum eröffnen",
-            cancel: "Abbrechen"
+            cancel: "Abbrechen",
+            close: "Schließen"
         },
         en: {
             playAgain: "Play Again",
@@ -850,7 +851,8 @@
             settingsSaved: "Settings saved",
             hostSettingsSaved: "Host settings saved",
             roomSetup: "Open room",
-            cancel: "Cancel"
+            cancel: "Cancel",
+            close: "Close"
         }
     };
 
