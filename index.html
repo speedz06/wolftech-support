@@ -478,26 +478,47 @@
                 </div>
             </div>
 
-            <!-- Host Settings (for multiplayer) -->
-            <div class="settings-section" id="host-settings">
-                <h4><i data-lucide="crown" class="inline w-4 h-4 mr-1"></i> <span data-i18n="hostSettings">Host-Einstellungen</span></h4>
-                <div class="setting-row">
-                    <label data-i18n="rounds">Runden</label>
-                    <input type="number" id="rounds-input" min="1" max="10" value="3">
-                </div>
-                <div class="setting-row">
-                    <label data-i18n="maxAttempts">Max. Versuche</label>
-                    <input type="number" id="attempts-input" min="4" max="8" value="6">
-                </div>
-                <div class="setting-row">
-                    <label data-i18n="roundTime">Zeit pro Runde (Sek.)</label>
-                    <input type="number" id="round-time-input" min="30" max="300" value="120">
-                </div>
-            </div>
 
             <button onclick="window.closeSettingsModal()" class="w-full mt-4 bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl font-semibold transition-colors">
                 <span data-i18n="save">Speichern</span>
             </button>
+        </div>
+    </div>
+
+    <!-- CREATE ROOM MODAL -->
+    <div id="create-room-modal" class="hidden fixed inset-0 bg-slate-900/80 z-[90] flex items-center justify-center p-4">
+        <div class="w-full max-w-md bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i data-lucide="crown" class="w-5 h-5"></i> <span data-i18n="roomSetup">Raum eröffnen</span>
+                </h2>
+                <button onclick="window.closeCreateRoomModal()" class="text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="settings-section !mb-0">
+                <h4><i data-lucide="sliders-horizontal" class="inline w-4 h-4 mr-1"></i> <span data-i18n="hostSettings">Host-Einstellungen</span></h4>
+                <div class="setting-row">
+                    <label data-i18n="rounds">Runden</label>
+                    <input type="number" id="create-room-rounds-input" min="1" max="10" value="3">
+                </div>
+                <div class="setting-row">
+                    <label data-i18n="maxAttempts">Max. Versuche</label>
+                    <input type="number" id="create-room-attempts-input" min="4" max="8" value="6">
+                </div>
+                <div class="setting-row">
+                    <label data-i18n="roundTime">Zeit pro Runde (Sek.)</label>
+                    <input type="number" id="create-room-time-input" min="30" max="300" value="120">
+                </div>
+            </div>
+            <div class="flex gap-3 mt-5">
+                <button onclick="window.closeCreateRoomModal()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-2.5 rounded-xl font-semibold transition-colors">
+                    <span data-i18n="cancel">Abbrechen</span>
+                </button>
+                <button onclick="window.confirmCreateRoom()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl font-semibold transition-colors">
+                    <span data-i18n="createRoom">Raum erstellen</span>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -590,7 +611,7 @@
                     <span class="mx-3 text-slate-500 text-xs uppercase" data-i18n="multiplayer">Multiplayer</span>
                     <div class="flex-grow border-t border-slate-700"></div>
                 </div>
-                <button onclick="window.createRoom()"
+                <button onclick="window.openCreateRoomModal()"
                     class="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl mb-2 transition-colors">
                     <i data-lucide="plus-circle" class="w-4 h-4"></i> <span data-i18n="createRoom">Raum erstellen</span>
                 </button>
@@ -753,7 +774,9 @@
             keyboardHintPresent: "Buchstabe ist im Wort",
             keyboardHintAbsent: "Buchstabe ist nicht im Wort",
             settingsSaved: "Einstellungen gespeichert",
-            hostSettingsSaved: "Host-Einstellungen gespeichert"
+            hostSettingsSaved: "Host-Einstellungen gespeichert",
+            roomSetup: "Raum eröffnen",
+            cancel: "Abbrechen"
         },
         en: {
             playAgain: "Play Again",
@@ -825,7 +848,9 @@
             keyboardHintPresent: "Letter is in the word",
             keyboardHintAbsent: "Letter is not in the word",
             settingsSaved: "Settings saved",
-            hostSettingsSaved: "Host settings saved"
+            hostSettingsSaved: "Host settings saved",
+            roomSetup: "Open room",
+            cancel: "Cancel"
         }
     };
 
@@ -872,9 +897,9 @@
     let timerInterval = null;
     let timeRemaining = 0;
     let requiredLetters = []; // For hard mode
-    let maxAttempts = parseInt(localStorage.getItem('wolfle_hostAttempts')) || 6;
-    let hostMaxRounds = parseInt(localStorage.getItem('wolfle_hostRounds')) || 3;
-    let hostRoundTime = parseInt(localStorage.getItem('wolfle_hostRoundTime')) || 120;
+    let maxAttempts = 6;
+    let hostMaxRounds = 3;
+    let hostRoundTime = 120;
 
     function getWeekKey() {
         const d = new Date();
@@ -1090,34 +1115,34 @@
         lucide.createIcons();
         applyTranslations();
     };
-    
+
     function clampSetting(value, min, max, fallback) {
         const parsed = parseInt(value, 10);
         if (Number.isNaN(parsed)) return fallback;
         return Math.min(max, Math.max(min, parsed));
     }
 
-    function syncHostSettingsUI() {
-        const roundsInput = document.getElementById('rounds-input');
-        const attemptsInput = document.getElementById('attempts-input');
-        const roundTimeInput = document.getElementById('round-time-input');
-        if (roundsInput) roundsInput.value = hostMaxRounds;
-        if (attemptsInput) attemptsInput.value = maxAttempts;
-        if (roundTimeInput) roundTimeInput.value = hostRoundTime;
+    function getCreateRoomSettings() {
+        return {
+            maxRounds: clampSetting(document.getElementById('create-room-rounds-input')?.value, 1, 10, 3),
+            maxAttempts: clampSetting(document.getElementById('create-room-attempts-input')?.value, 4, 8, 6),
+            timeLimit: clampSetting(document.getElementById('create-room-time-input')?.value, 30, 300, 120)
+        };
     }
 
-    window.saveHostSettings = (notify = true) => {
-        hostMaxRounds = clampSetting(document.getElementById('rounds-input')?.value, 1, 10, hostMaxRounds);
-        maxAttempts = clampSetting(document.getElementById('attempts-input')?.value, 4, 8, maxAttempts);
-        hostRoundTime = clampSetting(document.getElementById('round-time-input')?.value, 30, 300, hostRoundTime);
-        localStorage.setItem('wolfle_hostRounds', hostMaxRounds);
-        localStorage.setItem('wolfle_hostAttempts', maxAttempts);
-        localStorage.setItem('wolfle_hostRoundTime', hostRoundTime);
-        syncHostSettingsUI();
-        if (!currentRoomCode) {
-            resetGame();
-        }
-        if (notify) showToast(t('hostSettingsSaved'), 'success');
+    window.openCreateRoomModal = () => {
+        const name = getPlayerName();
+        if (!name) { showToast(t('enterNameFirst'), 'warning'); return; }
+        document.getElementById('create-room-rounds-input').value = hostMaxRounds;
+        document.getElementById('create-room-attempts-input').value = maxAttempts;
+        document.getElementById('create-room-time-input').value = hostRoundTime;
+        document.getElementById('create-room-modal').classList.remove('hidden');
+        lucide.createIcons();
+        applyTranslations();
+    };
+
+    window.closeCreateRoomModal = () => {
+        document.getElementById('create-room-modal').classList.add('hidden');
     };
 
     window.closeSettingsModal = () => {
@@ -1456,23 +1481,21 @@
     // ═══════════════════════════════════════════════════════════
     // MULTIPLAYER
     // ═══════════════════════════════════════════════════════════
-    window.createRoom = async () => {
+    window.confirmCreateRoom = async () => {
         const name = getPlayerName();
         if (!name) { showToast(t('enterNameFirst'), "warning"); return; }
         const firestore = await getDB(); if (!firestore) return;
         const code = Math.random().toString(36).substring(2,7).toUpperCase();
         const word = WORDS[Math.floor(Math.random() * WORDS.length)].toUpperCase();
-        
-        // Get host settings
-        window.saveHostSettings();
-        const hostSettings = {
-            maxRounds: hostMaxRounds,
-            timeLimit: hostRoundTime,
-            maxAttempts
-        };
-        
+        const hostSettings = getCreateRoomSettings();
+
+        hostMaxRounds = hostSettings.maxRounds;
+        maxAttempts = hostSettings.maxAttempts;
+        hostRoundTime = hostSettings.timeLimit;
+
         await setDoc(doc(firestore,'artifacts',appId,'public','data','rooms',code),
             { word, round: 1, maxRounds: hostSettings.maxRounds, timeLimit: hostSettings.timeLimit, maxAttempts: hostSettings.maxAttempts, players: { [name]: { name, guesses:0, finished:false, won:false, totalScore:0, roundsWon:0 } } });
+        window.closeCreateRoomModal();
         joinInternal(code, word, 1, hostSettings.maxRounds, hostSettings.timeLimit, hostSettings.maxAttempts);
         document.querySelectorAll('.share-btn').forEach(b => b.classList.remove('hidden'));
     };
@@ -1601,10 +1624,10 @@
     window.leaveRoom = () => {
         if (roomUnsubscribe) roomUnsubscribe();
         currentRoomCode = null; roomUnsubscribe = null;
-        currentRound = 1; maxRounds = hostMaxRounds; playerTotalScore = 0; playerRoundsWon = 0;
-        maxAttempts = parseInt(localStorage.getItem('wolfle_hostAttempts')) || 6;
-        hostRoundTime = parseInt(localStorage.getItem('wolfle_hostRoundTime')) || hostRoundTime;
-        syncHostSettingsUI();
+        currentRound = 1; maxRounds = 3; playerTotalScore = 0; playerRoundsWon = 0;
+        hostMaxRounds = 3;
+        maxAttempts = 6;
+        hostRoundTime = 120;
         document.querySelectorAll('.room-status').forEach(el => el.classList.add('hidden'));
         document.querySelectorAll('.share-btn').forEach(b => b.classList.add('hidden'));
         document.querySelectorAll('.round-display').forEach(el => el.classList.add('hidden'));
@@ -1717,7 +1740,7 @@
                     <span class="mx-3 text-slate-500 text-xs uppercase">${t('multiplayer')}</span>
                     <div class="flex-grow border-t border-slate-700"></div>
                 </div>
-                <button onclick="window.createRoom()"
+                <button onclick="window.openCreateRoomModal()"
                     class="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl transition-colors">
                     ${t('createRoom')}
                 </button>
