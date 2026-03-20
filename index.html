@@ -429,7 +429,7 @@
     </div>
 
     <!-- SETTINGS MODAL -->
-    <div id="settings-modal" class="hidden fixed inset-0 bg-slate-900/80 z-[90] flex items-center justify-center p-4">
+    <div id="settings-modal" onclick="if (event.target === this) window.closeSettingsModal()" class="hidden fixed inset-0 bg-slate-900/80 z-[90] flex items-center justify-center p-4">
         <div id="settings-modal-box" class="w-full max-w-md bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-bold text-white flex items-center gap-2">
@@ -1118,6 +1118,9 @@
         document.getElementById('daily-mode-toggle').checked = dailyMode;
         document.getElementById('timer-toggle').checked = timerEnabled;
         document.getElementById('time-limit-input').value = timeLimit;
+        document.getElementById('rounds-input').value = hostMaxRounds;
+        document.getElementById('attempts-input').value = maxAttempts;
+        document.getElementById('round-time-input').value = hostRoundTime;
         document.getElementById('language-select').value = currentLanguage;
         lucide.createIcons();
         applyTranslations();
@@ -2022,6 +2025,7 @@
     targetWord = WORDS[Math.floor(Math.random() * WORDS.length)].toUpperCase();
     updateModeBadges();
     applyTranslations();
+    syncHostSettingsUI();
 
     // Load saved settings
     if (hardMode) {
