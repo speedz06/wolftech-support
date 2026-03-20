@@ -1104,8 +1104,16 @@
     // ═══════════════════════════════════════════════════════════
     // SETTINGS MODAL
     // ═══════════════════════════════════════════════════════════
+    function setModalOpen(modalId, isOpen) {
+        const modal = document.getElementById(modalId);
+        if (!modal) return;
+        modal.classList.toggle('hidden', !isOpen);
+        modal.style.display = isOpen ? 'flex' : 'none';
+        modal.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+    }
+
     window.openSettingsModal = () => {
-        document.getElementById('settings-modal').classList.remove('hidden');
+        setModalOpen('settings-modal', true);
         document.getElementById('hard-mode-toggle').checked = hardMode;
         document.getElementById('daily-mode-toggle').checked = dailyMode;
         document.getElementById('timer-toggle').checked = timerEnabled;
@@ -1138,19 +1146,17 @@
         document.getElementById('create-room-rounds-input').value = hostMaxRounds;
         document.getElementById('create-room-attempts-input').value = maxAttempts;
         document.getElementById('create-room-time-input').value = hostRoundTime;
-        document.getElementById('create-room-modal').classList.remove('hidden');
+        setModalOpen('create-room-modal', true);
         lucide.createIcons();
         applyTranslations();
     };
 
     window.closeCreateRoomModal = () => {
-        document.getElementById('create-room-modal').classList.add('hidden');
+        setModalOpen('create-room-modal', false);
     };
 
     window.closeSettingsModal = () => {
-        window.saveHostSettings(false);
-        document.getElementById('settings-modal').classList.add('hidden');
-        showToast(t('settingsSaved'), 'success');
+        setModalOpen('settings-modal', false);
     };
 
     // ═══════════════════════════════════════════════════════════
@@ -1939,6 +1945,11 @@
     // KEYBOARD EVENTS
     // ═══════════════════════════════════════════════════════════
     document.addEventListener("keydown", (e) => {
+        if (e.key === 'Escape') {
+            window.closeSettingsModal();
+            window.closeCreateRoomModal();
+            return;
+        }
         if (e.target.classList.contains('chat-input') && e.key === 'Enter') {
             e.preventDefault();
             window.sendChat(e.target.nextElementSibling);
@@ -1993,6 +2004,15 @@
     document.addEventListener('wheel', (e) => {
         if (e.ctrlKey) e.preventDefault();
     }, { passive: false });
+
+
+    document.getElementById('settings-modal')?.addEventListener('click', (e) => {
+        if (e.target.id === 'settings-modal') window.closeSettingsModal();
+    });
+
+    document.getElementById('create-room-modal')?.addEventListener('click', (e) => {
+        if (e.target.id === 'create-room-modal') window.closeCreateRoomModal();
+    });
 
     // ═══════════════════════════════════════════════════════════
     // INIT
