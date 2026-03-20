@@ -1110,6 +1110,9 @@
         document.getElementById('daily-mode-toggle').checked = dailyMode;
         document.getElementById('timer-toggle').checked = timerEnabled;
         document.getElementById('time-limit-input').value = timeLimit;
+        document.getElementById('rounds-input').value = hostMaxRounds;
+        document.getElementById('attempts-input').value = maxAttempts;
+        document.getElementById('round-time-input').value = hostRoundTime;
         document.getElementById('language-select').value = currentLanguage;
         lucide.createIcons();
         applyTranslations();
@@ -1145,7 +1148,9 @@
     };
 
     window.closeSettingsModal = () => {
+        window.saveHostSettings(false);
         document.getElementById('settings-modal').classList.add('hidden');
+        showToast(t('settingsSaved'), 'success');
     };
 
     // ═══════════════════════════════════════════════════════════
@@ -2000,6 +2005,7 @@
     targetWord = WORDS[Math.floor(Math.random() * WORDS.length)].toUpperCase();
     updateModeBadges();
     applyTranslations();
+    syncHostSettingsUI();
 
     // Load saved settings
     if (hardMode) {
