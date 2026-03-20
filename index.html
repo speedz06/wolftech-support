@@ -741,7 +741,19 @@
             timesUp: "Zeit abgelaufen!",
             loading: "Lade...",
             noEntries: "Noch keine Einträge.",
-            leave: "Verlassen"
+            leave: "Verlassen",
+            round: "Runde",
+            of: "von",
+            hardBadge: "Hard",
+            dailyBadge: "Daily",
+            timedBadge: "Timer",
+            keyboardHintEnter: "Tipp abgeben",
+            keyboardHintBackspace: "Buchstabe löschen",
+            keyboardHintCorrect: "Buchstabe ist richtig platziert",
+            keyboardHintPresent: "Buchstabe ist im Wort",
+            keyboardHintAbsent: "Buchstabe ist nicht im Wort",
+            settingsSaved: "Einstellungen gespeichert",
+            hostSettingsSaved: "Host-Einstellungen gespeichert"
         },
         en: {
             playAgain: "Play Again",
@@ -801,7 +813,19 @@
             timesUp: "Time's up!",
             loading: "Loading...",
             noEntries: "No entries yet.",
-            leave: "Leave"
+            leave: "Leave",
+            round: "Round",
+            of: "of",
+            hardBadge: "Hard",
+            dailyBadge: "Daily",
+            timedBadge: "Timed",
+            keyboardHintEnter: "Submit guess",
+            keyboardHintBackspace: "Delete letter",
+            keyboardHintCorrect: "Letter is in the correct spot",
+            keyboardHintPresent: "Letter is in the word",
+            keyboardHintAbsent: "Letter is not in the word",
+            settingsSaved: "Settings saved",
+            hostSettingsSaved: "Host settings saved"
         }
     };
 
@@ -827,6 +851,8 @@
             const key = el.getAttribute('data-i18n-placeholder');
             el.placeholder = t(key);
         });
+        updateModeBadges();
+        createKeyboard();
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -846,7 +872,9 @@
     let timerInterval = null;
     let timeRemaining = 0;
     let requiredLetters = []; // For hard mode
-    let maxAttempts = 6;
+    let maxAttempts = parseInt(localStorage.getItem('wolfle_hostAttempts')) || 6;
+    let hostMaxRounds = parseInt(localStorage.getItem('wolfle_hostRounds')) || 3;
+    let hostRoundTime = parseInt(localStorage.getItem('wolfle_hostRoundTime')) || 120;
 
     function getWeekKey() {
         const d = new Date();
@@ -897,6 +925,25 @@
         updateModeBadges();
         showToast(t('dailyWordle'), "success");
         window.closeDrawer();
+        if (timerEnabled) startTimer();
+    };
+
+    window.toggleDailyMode = (enabled) => {
+        if (enabled) {
+            if (hasPlayedDaily()) {
+                document.getElementById('daily-mode-toggle').checked = false;
+                showToast(t('dailyAlreadyPlayed'), "warning");
+                return;
+            }
+            window.startDaily();
+        } else if (dailyMode) {
+            dailyMode = false;
+            targetWord = WORDS[Math.floor(Math.random() * WORDS.length)].toUpperCase();
+            resetGame();
+            updateModeBadges();
+            showToast(t('newGameStarted'), "info");
+            if (timerEnabled) startTimer();
+        }
     };
 
     // ═══════════════════════════════════════════════════════════
@@ -1017,9 +1064,9 @@
     // ═══════════════════════════════════════════════════════════
     function updateModeBadges() {
         const badges = [];
-        if (hardMode) badges.push('<span class="mode-badge hard"><i data-lucide="flame" class="w-3 h-3"></i> Hard</span>');
-        if (dailyMode) badges.push('<span class="mode-badge daily"><i data-lucide="calendar" class="w-3 h-3"></i> Daily</span>');
-        if (timerEnabled) badges.push('<span class="mode-badge timed"><i data-lucide="timer" class="w-3 h-3"></i> Timed</span>');
+        if (hardMode) badges.push(`<span class="mode-badge hard"><i data-lucide="flame" class="w-3 h-3"></i> ${t('hardBadge')}</span>`);
+        if (dailyMode) badges.push(`<span class="mode-badge daily"><i data-lucide="calendar" class="w-3 h-3"></i> ${t('dailyBadge')}</span>`);
+        if (timerEnabled) badges.push(`<span class="mode-badge timed"><i data-lucide="timer" class="w-3 h-3"></i> ${t('timedBadge')}</span>`);
         
         const html = badges.join('');
         document.getElementById('mode-badges').innerHTML = html;
@@ -1036,13 +1083,47 @@
         document.getElementById('daily-mode-toggle').checked = dailyMode;
         document.getElementById('timer-toggle').checked = timerEnabled;
         document.getElementById('time-limit-input').value = timeLimit;
+        document.getElementById('rounds-input').value = hostMaxRounds;
+        document.getElementById('attempts-input').value = maxAttempts;
+        document.getElementById('round-time-input').value = hostRoundTime;
         document.getElementById('language-select').value = currentLanguage;
         lucide.createIcons();
         applyTranslations();
     };
     
+    function clampSetting(value, min, max, fallback) {
+        const parsed = parseInt(value, 10);
+        if (Number.isNaN(parsed)) return fallback;
+        return Math.min(max, Math.max(min, parsed));
+    }
+
+    function syncHostSettingsUI() {
+        const roundsInput = document.getElementById('rounds-input');
+        const attemptsInput = document.getElementById('attempts-input');
+        const roundTimeInput = document.getElementById('round-time-input');
+        if (roundsInput) roundsInput.value = hostMaxRounds;
+        if (attemptsInput) attemptsInput.value = maxAttempts;
+        if (roundTimeInput) roundTimeInput.value = hostRoundTime;
+    }
+
+    window.saveHostSettings = (notify = true) => {
+        hostMaxRounds = clampSetting(document.getElementById('rounds-input')?.value, 1, 10, hostMaxRounds);
+        maxAttempts = clampSetting(document.getElementById('attempts-input')?.value, 4, 8, maxAttempts);
+        hostRoundTime = clampSetting(document.getElementById('round-time-input')?.value, 30, 300, hostRoundTime);
+        localStorage.setItem('wolfle_hostRounds', hostMaxRounds);
+        localStorage.setItem('wolfle_hostAttempts', maxAttempts);
+        localStorage.setItem('wolfle_hostRoundTime', hostRoundTime);
+        syncHostSettingsUI();
+        if (!currentRoomCode) {
+            resetGame();
+        }
+        if (notify) showToast(t('hostSettingsSaved'), 'success');
+    };
+
     window.closeSettingsModal = () => {
+        window.saveHostSettings(false);
         document.getElementById('settings-modal').classList.add('hidden');
+        showToast(t('settingsSaved'), 'success');
     };
 
     // ═══════════════════════════════════════════════════════════
@@ -1115,12 +1196,12 @@
                 if (key === 'ENTER') { 
                     b.style.flex = '1.6'; 
                     b.onclick = () => submitGuess();
-                    b.setAttribute('data-tooltip', 'Enter');
+                    b.setAttribute('data-tooltip', t('keyboardHintEnter'));
                 }
                 else if (key === '⌫') { 
                     b.style.flex = '1.6'; 
                     b.onclick = () => backspace();
-                    b.setAttribute('data-tooltip', 'Backspace');
+                    b.setAttribute('data-tooltip', t('keyboardHintBackspace'));
                 }
                 else { 
                     b.id = `key-${key}`; 
@@ -1211,6 +1292,13 @@
         if (!b || letterStates[l] === 'correct') return;
         letterStates[l] = s;
         b.className = 'kb-key bg-' + s;
+
+        const tooltipMap = {
+            correct: t('keyboardHintCorrect'),
+            present: t('keyboardHintPresent'),
+            absent: t('keyboardHintAbsent')
+        };
+        b.setAttribute('data-tooltip', tooltipMap[s] || l);
         
         // Add hint indicator
         if (s === 'correct') b.classList.add('hint-correct');
@@ -1376,10 +1464,11 @@
         const word = WORDS[Math.floor(Math.random() * WORDS.length)].toUpperCase();
         
         // Get host settings
+        window.saveHostSettings();
         const hostSettings = {
-            maxRounds: parseInt(document.getElementById('rounds-input')?.value) || 3,
-            timeLimit: parseInt(document.getElementById('round-time-input')?.value) || 120,
-            maxAttempts: parseInt(document.getElementById('attempts-input')?.value) || 6
+            maxRounds: hostMaxRounds,
+            timeLimit: hostRoundTime,
+            maxAttempts
         };
         
         await setDoc(doc(firestore,'artifacts',appId,'public','data','rooms',code),
@@ -1512,8 +1601,10 @@
     window.leaveRoom = () => {
         if (roomUnsubscribe) roomUnsubscribe();
         currentRoomCode = null; roomUnsubscribe = null;
-        currentRound = 1; maxRounds = 3; playerTotalScore = 0; playerRoundsWon = 0;
-        maxAttempts = 6;
+        currentRound = 1; maxRounds = hostMaxRounds; playerTotalScore = 0; playerRoundsWon = 0;
+        maxAttempts = parseInt(localStorage.getItem('wolfle_hostAttempts')) || 6;
+        hostRoundTime = parseInt(localStorage.getItem('wolfle_hostRoundTime')) || hostRoundTime;
+        syncHostSettingsUI();
         document.querySelectorAll('.room-status').forEach(el => el.classList.add('hidden'));
         document.querySelectorAll('.share-btn').forEach(b => b.classList.add('hidden'));
         document.querySelectorAll('.round-display').forEach(el => el.classList.add('hidden'));
@@ -1837,6 +1928,7 @@
     // ═══════════════════════════════════════════════════════════
     // PREVENT ZOOM GESTURES
     // ═══════════════════════════════════════════════════════════
+    let lastTouchEnd = 0;
     document.addEventListener('touchstart', (e) => {
         if (e.touches.length > 1) {
             e.preventDefault();
@@ -1861,6 +1953,22 @@
         e.preventDefault();
     });
 
+    document.addEventListener('dblclick', (e) => {
+        e.preventDefault();
+    }, { passive: false });
+
+    document.addEventListener('touchend', (e) => {
+        const now = Date.now();
+        if (now - lastTouchEnd <= 300) {
+            e.preventDefault();
+        }
+        lastTouchEnd = now;
+    }, { passive: false });
+
+    document.addEventListener('wheel', (e) => {
+        if (e.ctrlKey) e.preventDefault();
+    }, { passive: false });
+
     // ═══════════════════════════════════════════════════════════
     // INIT
     // ═══════════════════════════════════════════════════════════
@@ -1872,6 +1980,7 @@
     targetWord = WORDS[Math.floor(Math.random() * WORDS.length)].toUpperCase();
     updateModeBadges();
     applyTranslations();
+    syncHostSettingsUI();
 
     // Load saved settings
     if (hardMode) {
