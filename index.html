@@ -555,6 +555,11 @@
             #mobile-header { display: flex; }
             #bottom-nav { display: flex; }
         }
+        html.mobile-forced #app { flex-direction: column; }
+        html.mobile-forced #sidebar-left,
+        html.mobile-forced #sidebar-right { display: none !important; }
+        html.mobile-forced #mobile-header { display: flex; }
+        html.mobile-forced #bottom-nav { display: flex; }
     </style>
 <script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
 </head>
@@ -2283,6 +2288,26 @@
                 await registration.update();
             } catch (error) {}
         });
+
+        // Automatically switch to mobile layout when sidebars would overlap the game field
+        (function () {
+            const SIDEBAR_LEFT_W = 280;
+            const SIDEBAR_RIGHT_W = 240;
+            const MIN_GAME_W = 300;
+            const THRESHOLD = SIDEBAR_LEFT_W + SIDEBAR_RIGHT_W + MIN_GAME_W;
+
+            function checkLayout() {
+                const app = document.getElementById('app');
+                if (!app) return;
+                const forced = app.offsetWidth < THRESHOLD;
+                document.documentElement.classList.toggle('mobile-forced', forced);
+            }
+
+            const ro = new ResizeObserver(checkLayout);
+            const app = document.getElementById('app');
+            if (app) ro.observe(app);
+            checkLayout();
+        })();
     }
 </script>
 </body>
