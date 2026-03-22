@@ -415,9 +415,8 @@
             <section id="hm-board">
                 <div class="hm-panel hm-hero">
                     <div class="hm-hero-copy">
-                        <div class="hm-eyebrow"><i data-lucide="sparkles" class="w-4 h-4"></i> Hangman Deluxe</div>
-                        <h2>Größere Buttons und Online-Multiplayer wie beim Wordle.</h2>
-                        <p>Du kannst weiterhin solo spielen oder einen Raum erstellen und gemeinsam online Hangman spielen – mit Raumcode, Host-Einstellungen und wechselnden Wortgeber:innen pro Runde.</p>
+                        <div class="hm-eyebrow"><i data-lucide="sparkles" class="w-4 h-4"></i> Hangman</div>
+                        <h2>Bereit für die nächste Runde?</h2>
                         <div class="hm-badges" id="hm-hero-badges"></div>
                     </div>
                     <div class="hm-hidden-word">
@@ -459,7 +458,7 @@
                         <button class="hm-btn hm-btn-primary" id="solo-mode-btn" onclick="switchMode('solo')">Solo</button>
                         <button class="hm-btn hm-btn-secondary" id="multi-mode-btn" onclick="switchMode('multi')">Online Multiplayer</button>
                     </div>
-                    <p class="mt-3">Im Multiplayer läuft Hangman jetzt wie beim Wordle über Räume: Host erstellt einen Code, andere treten online bei und die Runde synchronisiert sich für alle.</p>
+                    
                 </div>
 
                 <div class="hm-panel" id="hm-multiplayer-panel">
@@ -898,7 +897,7 @@
         if (!gameState.word) {
             statusEl.innerHTML = gameState.mode === 'solo'
                 ? '<span class="text-cyan-300">Bereit für eine neue Solo-Runde.</span>'
-                : '<span class="text-cyan-300">Wie beim Wordle: Raum erstellen, beitreten und dann Runde starten.</span>';
+                : '<span class="text-cyan-300">Raum erstellen oder beitreten und dann Runde starten.</span>';
             return;
         }
         if (solved) {
