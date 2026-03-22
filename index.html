@@ -2291,16 +2291,29 @@
 
         // Automatically switch to mobile layout when sidebars would overlap the game field
         (function () {
-            const SIDEBAR_LEFT_W = 280;
+            const SIDEBAR_LEFT_W  = 280;
             const SIDEBAR_RIGHT_W = 240;
-            const MIN_GAME_W = 300;
-            const THRESHOLD = SIDEBAR_LEFT_W + SIDEBAR_RIGHT_W + MIN_GAME_W;
+            // Switch TO mobile when game-center would be below this
+            const ENTER_MOBILE_GAME_W = 500;
+            // Switch BACK to desktop when game-center would exceed this (hysteresis)
+            const EXIT_MOBILE_GAME_W  = 580;
+
+            const THRESHOLD_ENTER = SIDEBAR_LEFT_W + SIDEBAR_RIGHT_W + ENTER_MOBILE_GAME_W; // 1020
+            const THRESHOLD_EXIT  = SIDEBAR_LEFT_W + SIDEBAR_RIGHT_W + EXIT_MOBILE_GAME_W;  // 1100
+
+            let isMobile = false;
 
             function checkLayout() {
                 const app = document.getElementById('app');
                 if (!app) return;
-                const forced = app.offsetWidth < THRESHOLD;
-                document.documentElement.classList.toggle('mobile-forced', forced);
+                const w = app.offsetWidth;
+                if (!isMobile && w < THRESHOLD_ENTER) {
+                    isMobile = true;
+                    document.documentElement.classList.add('mobile-forced');
+                } else if (isMobile && w >= THRESHOLD_EXIT) {
+                    isMobile = false;
+                    document.documentElement.classList.remove('mobile-forced');
+                }
             }
 
             const ro = new ResizeObserver(checkLayout);
