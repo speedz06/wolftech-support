@@ -20,18 +20,16 @@
             user-select: none;
         }
         body {
-            background: radial-gradient(circle at top, #1e293b, #020617);
+            background: radial-gradient(circle at top, #1e293b, #020617 72%);
             color: #f8fafc;
             font-family: 'Inter', sans-serif;
-            height: 100dvh;
-            overflow: hidden;
+            min-height: 100dvh;
+            margin: 0;
             display: flex;
             flex-direction: column;
             touch-action: manipulation;
             overscroll-behavior: none;
         }
-
-        /* ── GAME TABS ── */
         #game-tabs {
             display: flex;
             background: #0f172a;
@@ -52,13 +50,8 @@
             transition: all 0.15s;
             -webkit-tap-highlight-color: transparent;
         }
-        .tab-link.active {
-            color: #f43f5e;
-            border-bottom-color: #f43f5e;
-        }
+        .tab-link.active { color: #f43f5e; border-bottom-color: #f43f5e; }
         .tab-link:hover:not(.active) { color: #94a3b8; }
-
-        /* ── HEADER ── */
         #hm-header {
             display: flex;
             align-items: center;
@@ -66,229 +59,334 @@
             padding: max(10px, env(safe-area-inset-top)) 16px 8px;
             border-bottom: 1px solid #1e293b;
             flex-shrink: 0;
-            background: rgba(15,23,42,0.8);
+            background: rgba(15,23,42,0.85);
+            backdrop-filter: blur(12px);
         }
-
-        /* ── GAME AREA ── */
         #hm-game {
             flex: 1;
+            overflow-y: auto;
+            padding: 14px 14px max(18px, env(safe-area-inset-bottom));
+        }
+        #hm-layout {
+            max-width: 1440px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: minmax(250px, 300px) minmax(0, 1fr) minmax(250px, 300px);
+            gap: 16px;
+            align-items: start;
+        }
+        .hm-panel {
+            background: rgba(15,23,42,0.72);
+            border: 1px solid rgba(148,163,184,0.16);
+            box-shadow: 0 12px 36px rgba(2,6,23,0.28);
+            border-radius: 24px;
+            padding: 16px;
+            backdrop-filter: blur(14px);
+        }
+        #hm-left-sidebar, #hm-right-sidebar {
             display: flex;
             flex-direction: column;
+            gap: 14px;
+            position: sticky;
+            top: 14px;
+        }
+        #hm-left-sidebar { grid-column: 1; grid-row: 1; }
+        #hm-board {
+            grid-column: 2;
+            grid-row: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            min-width: 0;
+            max-width: 760px;
+            width: 100%;
+            justify-self: center;
+        }
+        #hm-right-sidebar { grid-column: 3; grid-row: 1; }
+        .hm-hero {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            align-items: stretch;
+            padding: 18px;
+            border-radius: 24px;
+            background: linear-gradient(135deg, rgba(99,102,241,0.18), rgba(6,182,212,0.12));
+            border: 1px solid rgba(99,102,241,0.22);
+        }
+        .hm-hero-copy { display: flex; flex-direction: column; gap: 10px; max-width: 100%; }
+        .hm-eyebrow {
+            display: inline-flex;
             align-items: center;
-            justify-content: flex-start;
-            overflow: hidden;
-            padding: 10px 12px max(10px, env(safe-area-inset-bottom));
             gap: 8px;
-            min-height: 0;
+            width: fit-content;
+            padding: 7px 12px;
+            border-radius: 999px;
+            background: rgba(15,23,42,0.46);
+            color: #cbd5e1;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
         }
-
-        /* ── SCAFFOLD ── */
-        #hm-scaffold-wrap {
-            flex-shrink: 0;
+        .hm-hero h2 {
+            margin: 0;
+            font-size: clamp(1.35rem, 3vw, 2rem);
+            font-weight: 800;
+            line-height: 1.1;
         }
-        #hangman-scaffold {
-            width: clamp(120px, 25vw, 180px);
-            height: clamp(130px, 28vw, 200px);
+        .hm-hero p {
+            margin: 0;
+            color: #cbd5e1;
+            line-height: 1.5;
+            font-size: 0.97rem;
         }
-        #hangman-scaffold line, #hangman-scaffold circle {
-            stroke-linecap: round;
+        .hm-badges, .hm-stat-grid, .hm-player-list { display: flex; flex-wrap: wrap; gap: 10px; }
+        .hm-badges { width: 100%; }
+        .hm-badge, .hm-stat-card, .hm-player-chip, .hm-pill {
+            border-radius: 18px;
+            border: 1px solid rgba(148,163,184,0.18);
+            background: rgba(15,23,42,0.52);
         }
-
-        /* ── STATUS ── */
+        .hm-badge {
+            padding: 10px 12px;
+            min-width: 120px;
+            flex: 1 1 160px;
+        }
+        .hm-badge strong, .hm-stat-card strong { display: block; font-size: 1rem; }
+        .hm-badge span, .hm-stat-card span { color: #94a3b8; font-size: 0.82rem; }
         #hm-status {
-            font-size: clamp(14px, 3.5vw, 18px);
+            font-size: clamp(15px, 2.5vw, 20px);
             font-weight: 700;
             text-align: center;
-            min-height: 24px;
-            flex-shrink: 0;
+            min-height: 28px;
         }
-
-        /* ── LIVES ── */
-        #hm-lives {
-            font-size: clamp(11px, 2.5vw, 14px);
-            font-weight: 600;
-            color: #94a3b8;
-            letter-spacing: 0.04em;
-            flex-shrink: 0;
+        #hm-main-card {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
         }
-
-        /* ── WORD DISPLAY ── */
+        #hm-stats {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+        }
+        .hm-stat-card { padding: 12px 14px; }
+        #hm-scaffold-wrap { display: flex; justify-content: center; }
+        #hangman-scaffold { width: clamp(170px, 28vw, 240px); height: clamp(180px, 30vw, 260px); }
+        #hangman-scaffold line, #hangman-scaffold circle { stroke-linecap: round; }
         #hm-word-wrap {
             display: flex;
-            gap: clamp(4px, 1.5vw, 10px);
+            gap: clamp(6px, 1.5vw, 11px);
             flex-wrap: wrap;
             justify-content: center;
-            padding: 4px 8px;
+            padding: 8px 8px 2px;
             max-width: 100%;
-            flex-shrink: 0;
         }
         .hm-letter-box {
-            width: clamp(22px, 5.5vw, 38px);
-            height: clamp(26px, 6.5vw, 44px);
+            width: clamp(30px, 7vw, 48px);
+            height: clamp(40px, 8vw, 58px);
             border-bottom: 3px solid currentColor;
             display: flex;
             align-items: flex-end;
             justify-content: center;
-            font-size: clamp(13px, 3vw, 20px);
-            font-weight: bold;
+            font-size: clamp(18px, 3.8vw, 26px);
+            font-weight: 800;
             text-transform: uppercase;
-            padding-bottom: 2px;
+            padding-bottom: 4px;
             color: #94a3b8;
             transition: color 0.2s;
         }
         .hm-letter-box.revealed { color: #22c55e; }
-        .hm-letter-box.space {
-            border-bottom: none;
-            width: clamp(10px, 2vw, 18px);
-        }
-
-        /* ── KEYBOARD ── */
+        .hm-letter-box.space { border-bottom: none; width: clamp(12px, 2.5vw, 18px); }
         #hm-keyboard {
             display: flex;
             flex-direction: column;
-            gap: 4px;
-            flex-shrink: 0;
+            gap: 8px;
             width: 100%;
-            max-width: 480px;
         }
         .hm-kb-row {
             display: flex;
-            gap: clamp(3px, 0.8vw, 5px);
+            gap: 6px;
             justify-content: center;
         }
         .hm-key {
-            width: clamp(26px, 6vw, 40px);
-            height: clamp(28px, 5.5vw, 38px);
-            border-radius: 5px;
-            font-size: clamp(10px, 2vw, 13px);
-            font-weight: bold;
-            border: none;
+            min-width: clamp(34px, 8vw, 52px);
+            min-height: clamp(46px, 7vh, 60px);
+            padding: 0 6px;
+            border-radius: 14px;
+            font-size: clamp(15px, 2.6vw, 18px);
+            font-weight: 800;
+            border: 1px solid transparent;
             cursor: pointer;
             text-transform: uppercase;
             transition: all 0.12s;
             -webkit-tap-highlight-color: transparent;
             touch-action: manipulation;
         }
-        .hm-key:not(:disabled) {
-            background: #334155;
-            color: white;
-        }
-        .hm-key:not(:disabled):active {
-            filter: brightness(0.75);
-            transform: scale(0.93);
-        }
-        .hm-key:disabled {
-            cursor: not-allowed;
-        }
-        .hm-key:disabled.correct {
-            background: #22c55e;
-            color: white;
-            opacity: 1;
-        }
-        .hm-key:disabled.wrong {
-            background: #ef4444;
-            color: white;
-            opacity: 0.65;
-        }
-        .hm-key:disabled:not(.correct):not(.wrong) {
-            background: #1e293b;
-            color: #475569;
-        }
-
-        /* ── END BUTTONS ── */
-        #hm-end-buttons {
-            display: none;
-            gap: 8px;
+        .hm-key:not(:disabled) { background: #334155; color: white; }
+        .hm-key:not(:disabled):active { filter: brightness(0.8); transform: scale(0.96); }
+        .hm-key:disabled.correct { background: #22c55e; color: white; opacity: 1; }
+        .hm-key:disabled.wrong { background: #ef4444; color: white; opacity: 0.72; }
+        .hm-key:disabled:not(.correct):not(.wrong) { background: #1e293b; color: #475569; }
+        #hm-end-buttons, .hm-inline-actions {
+            display: flex;
+            gap: 10px;
             justify-content: center;
-            flex-shrink: 0;
+            flex-wrap: wrap;
         }
-        #hm-end-buttons.show { display: flex; }
         .hm-btn {
-            padding: 10px 22px;
-            border-radius: 12px;
-            font-weight: 700;
+            padding: 12px 18px;
+            border-radius: 16px;
+            font-weight: 800;
             font-size: 14px;
-            border: none;
+            border: 1px solid transparent;
             cursor: pointer;
             transition: all 0.15s;
             -webkit-tap-highlight-color: transparent;
         }
+        .hm-btn:active { transform: scale(0.98); }
         .hm-btn-primary { background: #be123c; color: white; }
-        .hm-btn-primary:hover { background: #9f1239; }
         .hm-btn-secondary { background: #334155; color: white; }
-        .hm-btn-secondary:hover { background: #475569; }
-
-        /* ── SCROLLBAR ── */
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
-        button:focus { outline: none; }
-
-        /* ── LIGHT MODE ── */
+        .hm-btn-ghost { background: transparent; color: #cbd5e1; border-color: rgba(148,163,184,0.22); }
+        .hm-panel h3 { margin: 0 0 10px; font-size: 1rem; font-weight: 800; }
+        .hm-panel p { margin: 0; color: #cbd5e1; line-height: 1.45; }
+        .hm-input, .hm-select {
+            width: 100%;
+            margin-top: 6px;
+            border-radius: 14px;
+            border: 1px solid rgba(148,163,184,0.24);
+            background: rgba(2,6,23,0.5);
+            color: inherit;
+            padding: 12px 13px;
+            font-size: 15px;
+        }
+        .hm-label { display: block; font-size: 0.92rem; font-weight: 700; margin-bottom: 10px; }
+        .hm-grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+        .hm-player-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .hm-player-row .hm-input { margin-top: 0; }
+        .hm-player-chip {
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            min-width: 120px;
+        }
+        .hm-player-chip.active { border-color: rgba(34,197,94,0.6); box-shadow: 0 0 0 1px rgba(34,197,94,0.25) inset; }
+        .hm-player-chip small { color: #94a3b8; }
+        .hm-info-list { display: grid; gap: 10px; }
+        .hm-info-item {
+            padding: 12px;
+            border-radius: 16px;
+            background: rgba(15,23,42,0.45);
+            border: 1px solid rgba(148,163,184,0.12);
+        }
+        .hm-info-item strong { display: block; margin-bottom: 4px; }
+        .hm-hidden-word {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 16px;
+            background: rgba(30,41,59,0.5);
+            border: 1px solid rgba(148,163,184,0.18);
+        }
+        .hm-hidden-word code {
+            font-size: 0.86rem;
+            letter-spacing: 0.15em;
+            color: #fda4af;
+        }
+        .hm-muted { color: #94a3b8; }
+        .hm-empty { display: none; }
         html.light body { background: linear-gradient(135deg, #dde3ed, #f0f4f8); color: #1e293b; }
-        html.light #hm-header { background: #f1f5f9; border-color: #cbd5e1; }
-        html.light #game-tabs { background: #f1f5f9; border-color: #cbd5e1; }
+        html.light #hm-header, html.light #game-tabs { background: #f1f5f9; border-color: #cbd5e1; }
         html.light .tab-link { color: #94a3b8; }
         html.light .tab-link.active { color: #be123c; border-bottom-color: #be123c; }
+        html.light .hm-panel, html.light .hm-badge, html.light .hm-stat-card, html.light .hm-player-chip, html.light .hm-pill, html.light .hm-info-item, html.light .hm-hidden-word {
+            background: rgba(255,255,255,0.78);
+            border-color: rgba(148,163,184,0.25);
+            color: #1e293b;
+        }
+        html.light .hm-hero { background: linear-gradient(135deg, rgba(99,102,241,0.14), rgba(34,197,94,0.11)); }
+        html.light .hm-hero p, html.light .hm-panel p, html.light .hm-muted, html.light .hm-badge span, html.light .hm-stat-card span, html.light .hm-player-chip small { color: #64748b; }
         html.light .hm-letter-box { color: #64748b; }
         html.light .hm-letter-box.revealed { color: #16a34a; }
         html.light .hm-key:not(:disabled) { background: #cbd5e1 !important; color: #1e293b !important; }
         html.light .hm-key:disabled.correct { background: #16a34a !important; color: white !important; opacity: 1; }
         html.light .hm-key:disabled.wrong { background: #dc2626 !important; color: white !important; opacity: 0.75; }
         html.light .hm-key:disabled:not(.correct):not(.wrong) { background: #e2e8f0 !important; color: #94a3b8 !important; }
-        html.light #hm-lives { color: #64748b; }
         html.light .hm-btn-secondary { background: #cbd5e1; color: #1e293b; }
+        html.light .hm-input, html.light .hm-select { background: #fff; border-color: #cbd5e1; color: #1e293b; }
         html.light #hangman-scaffold line { stroke: #64748b; }
-        html.light #hangman-scaffold circle { stroke: #ef4444; }
-        html.light #hangman-scaffold .hm-body-part { stroke: #ef4444; }
-
-        /* ── RETRO THEME ── */
+        html.light #hangman-scaffold circle, html.light #hangman-scaffold .hm-body-part { stroke: #ef4444; }
         html.retro body { background: #000 !important; color: #00ff41; font-family: 'Courier New', monospace !important; }
         html.retro * { font-family: 'Courier New', monospace !important; }
-        html.retro #hm-header { background: #000 !important; border-color: #00ff41 !important; }
-        html.retro #game-tabs { background: #000 !important; border-color: #00ff41 !important; }
+        html.retro #hm-header, html.retro #game-tabs, html.retro .hm-panel, html.retro .hm-badge, html.retro .hm-stat-card, html.retro .hm-player-chip, html.retro .hm-info-item, html.retro .hm-hidden-word { background: #000 !important; border-color: #00ff41 !important; box-shadow: none !important; }
         html.retro .tab-link { color: #007a1f; }
         html.retro .tab-link.active { color: #00ff41; border-bottom-color: #00ff41; }
-        html.retro .hm-key:not(:disabled) { background: #001a00 !important; color: #00ff41 !important; border: 1px solid #00ff41 !important; }
+        html.retro .hm-key:not(:disabled), html.retro .hm-btn-secondary, html.retro .hm-btn-ghost, html.retro .hm-input, html.retro .hm-select { background: #001a00 !important; color: #00ff41 !important; border: 1px solid #00ff41 !important; }
         html.retro .hm-key:disabled.correct { background: #00ff41 !important; color: #000 !important; }
         html.retro .hm-key:disabled.wrong { background: #ff0000 !important; color: #fff !important; }
         html.retro .hm-letter-box { color: #007a1f; }
         html.retro .hm-letter-box.revealed { color: #00ff41; }
-        html.retro #hm-lives { color: #007a1f; }
         html.retro .hm-btn-primary { background: #003300; border: 1px solid #00ff41; color: #00ff41; }
-        html.retro .hm-btn-secondary { background: #001a00; border: 1px solid #00ff41; color: #00ff41; }
-        html.retro h1 { background: none !important; -webkit-background-clip: unset !important; -webkit-text-fill-color: #00ff41 !important; }
-
-        /* ── OCEAN THEME ── */
         html.ocean body { background: radial-gradient(circle at top, #0c2340, #020d1a) !important; color: #e0f4ff; }
-        html.ocean #hm-header { background: #05101f !important; border-color: #1d4e6e !important; }
-        html.ocean #game-tabs { background: #05101f !important; border-color: #1d4e6e !important; }
+        html.ocean #hm-header, html.ocean #game-tabs, html.ocean .hm-panel, html.ocean .hm-badge, html.ocean .hm-stat-card, html.ocean .hm-player-chip, html.ocean .hm-info-item, html.ocean .hm-hidden-word { background: rgba(5,16,31,0.85) !important; border-color: #1d4e6e !important; }
         html.ocean .tab-link { color: #4d89ac; }
         html.ocean .tab-link.active { color: #38bdf8; border-bottom-color: #38bdf8; }
-        html.ocean .hm-key:not(:disabled) { background: #0a2540 !important; color: #a0d8f0 !important; border: 1px solid #1d4e6e !important; }
+        html.ocean .hm-key:not(:disabled), html.ocean .hm-btn-secondary, html.ocean .hm-input, html.ocean .hm-select { background: #0a2540 !important; color: #a0d8f0 !important; border: 1px solid #1d4e6e !important; }
         html.ocean .hm-letter-box { color: #4d89ac; }
         html.ocean .hm-letter-box.revealed { color: #0ea5e9; }
-        html.ocean #hm-lives { color: #4d89ac; }
-        html.ocean .hm-btn-secondary { background: #0a2540; color: #a0d8f0; border: 1px solid #1d4e6e; }
-
-        /* ── PASTEL THEME ── */
         html.pastel body { background: linear-gradient(135deg, #fce7f3, #ede9fe) !important; color: #4a1d52; }
-        html.pastel #hm-header { background: #fce7f3 !important; border-color: #f0abdb !important; }
-        html.pastel #game-tabs { background: #fce7f3 !important; border-color: #f0abdb !important; }
+        html.pastel #hm-header, html.pastel #game-tabs, html.pastel .hm-panel, html.pastel .hm-badge, html.pastel .hm-stat-card, html.pastel .hm-player-chip, html.pastel .hm-info-item, html.pastel .hm-hidden-word { background: rgba(255,255,255,0.82) !important; border-color: #f0abdb !important; }
         html.pastel .tab-link { color: #c084db; }
         html.pastel .tab-link.active { color: #9333ea; border-bottom-color: #9333ea; }
-        html.pastel .hm-key:not(:disabled) { background: #fad1e8 !important; color: #6b21a8 !important; border: 1px solid #e879b0 !important; }
+        html.pastel .hm-key:not(:disabled), html.pastel .hm-btn-secondary, html.pastel .hm-input, html.pastel .hm-select { background: #fad1e8 !important; color: #6b21a8 !important; border: 1px solid #e879b0 !important; }
         html.pastel .hm-letter-box { color: #c084db; }
         html.pastel .hm-letter-box.revealed { color: #16a34a; }
-        html.pastel #hm-lives { color: #c084db; }
-        html.pastel .hm-btn-primary { background: #c026d3; }
-        html.pastel .hm-btn-secondary { background: #fad1e8; color: #6b21a8; border: 1px solid #e879b0; }
-        html.pastel h1 { background: linear-gradient(to right, #9333ea, #ec4899) !important; -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important; }
+        @media (max-width: 1120px) {
+            #hm-layout { grid-template-columns: 280px minmax(0, 1fr); }
+            #hm-right-sidebar {
+                grid-column: 1 / -1;
+                position: static;
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 14px;
+            }
+        }
+        @media (max-width: 960px) {
+            #hm-layout { grid-template-columns: 1fr; }
+            #hm-left-sidebar, #hm-right-sidebar {
+                position: static;
+                display: flex;
+            }
+            #hm-left-sidebar { order: -1; }
+        }
+        @media (max-width: 640px) {
+            #hm-game { padding-inline: 10px; }
+            .hm-panel { padding: 14px; border-radius: 20px; }
+            #hm-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .hm-grid-2 { grid-template-columns: 1fr; }
+            #hm-right-sidebar { grid-template-columns: 1fr; }
+            .hm-key { min-width: 0; flex: 1; }
+            .hm-kb-row { gap: 5px; }
+            .hm-btn { width: 100%; justify-content: center; }
+            .hm-inline-actions, #hm-end-buttons { flex-direction: column; }
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 999px; }
+        button:focus, input:focus, select:focus { outline: none; box-shadow: 0 0 0 2px rgba(99,102,241,0.35); }
     </style>
 </head>
 <body>
-
-    <!-- HEADER -->
     <div id="hm-header">
         <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400 flex items-center gap-1.5">
             <i data-lucide="paw-print" class="w-5 h-5 text-indigo-400"></i> Wolfle
@@ -303,7 +401,6 @@
         </div>
     </div>
 
-    <!-- GAME TABS -->
     <div id="game-tabs">
         <a href="index.html" class="tab-link">
             <i data-lucide="grid-2x2" class="w-4 h-4"></i> Wordle
@@ -313,57 +410,172 @@
         </a>
     </div>
 
-    <!-- GAME AREA -->
     <div id="hm-game">
+        <div id="hm-layout">
+            <section id="hm-board">
+                <div class="hm-panel hm-hero">
+                    <div class="hm-hero-copy">
+                        <div class="hm-eyebrow"><i data-lucide="sparkles" class="w-4 h-4"></i> Hangman Deluxe</div>
+                        <h2>Größere Buttons und Online-Multiplayer wie beim Wordle.</h2>
+                        <p>Du kannst weiterhin solo spielen oder einen Raum erstellen und gemeinsam online Hangman spielen – mit Raumcode, Host-Einstellungen und wechselnden Wortgeber:innen pro Runde.</p>
+                        <div class="hm-badges" id="hm-hero-badges"></div>
+                    </div>
+                    <div class="hm-hidden-word">
+                        <div>
+                            <strong id="hm-round-title">Solo-Runde</strong>
+                            <div class="hm-muted" id="hm-round-subtitle">Starte direkt oder konfiguriere unten ein lokales Multiplayer-Spiel.</div>
+                        </div>
+                        <code id="hm-turn-indicator">Bereit</code>
+                    </div>
+                </div>
 
-        <!-- Status -->
-        <div id="hm-status"></div>
+                <div class="hm-panel" id="hm-main-card">
+                    <div id="hm-status"></div>
+                    <div id="hm-stats"></div>
+                    <div id="hm-scaffold-wrap">
+                        <svg id="hangman-scaffold" viewBox="0 0 140 160">
+                            <line x1="10" y1="155" x2="130" y2="155" stroke="#94a3b8" stroke-width="4"/>
+                            <line x1="40" y1="155" x2="40" y2="10"  stroke="#94a3b8" stroke-width="4"/>
+                            <line x1="40" y1="10"  x2="95" y2="10"  stroke="#94a3b8" stroke-width="4"/>
+                            <line x1="95" y1="10"  x2="95" y2="30"  stroke="#94a3b8" stroke-width="3"/>
+                            <circle id="hm-head" cx="95" cy="45" r="14" stroke="#ef4444" stroke-width="3" fill="none" class="hm-body-part" style="display:none"/>
+                            <line id="hm-body" x1="95" y1="59" x2="95" y2="105" stroke="#ef4444" stroke-width="3" class="hm-body-part" style="display:none"/>
+                            <line id="hm-larm" x1="95" y1="70" x2="70" y2="95" stroke="#ef4444" stroke-width="3" class="hm-body-part" style="display:none"/>
+                            <line id="hm-rarm" x1="95" y1="70" x2="120" y2="95" stroke="#ef4444" stroke-width="3" class="hm-body-part" style="display:none"/>
+                            <line id="hm-lleg" x1="95" y1="105" x2="70" y2="135" stroke="#ef4444" stroke-width="3" class="hm-body-part" style="display:none"/>
+                            <line id="hm-rleg" x1="95" y1="105" x2="120" y2="135" stroke="#ef4444" stroke-width="3" class="hm-body-part" style="display:none"/>
+                        </svg>
+                    </div>
+                    <div id="hm-word-wrap"></div>
+                    <div id="hm-keyboard"></div>
+                    <div id="hm-end-buttons"></div>
+                </div>
+            </section>
 
-        <!-- Gallows -->
-        <div id="hm-scaffold-wrap">
-            <svg id="hangman-scaffold" viewBox="0 0 140 160">
-                <!-- Structure (always visible) -->
-                <line x1="10" y1="155" x2="130" y2="155" stroke="#94a3b8" stroke-width="4"/>
-                <line x1="40" y1="155" x2="40" y2="10"  stroke="#94a3b8" stroke-width="4"/>
-                <line x1="40" y1="10"  x2="95" y2="10"  stroke="#94a3b8" stroke-width="4"/>
-                <line x1="95" y1="10"  x2="95" y2="30"  stroke="#94a3b8" stroke-width="3"/>
-                <!-- Body parts (shown on wrong guesses) -->
-                <circle id="hm-head" cx="95" cy="45" r="14" stroke="#ef4444" stroke-width="3" fill="none" class="hm-body-part" style="display:none"/>
-                <line   id="hm-body" x1="95" y1="59" x2="95" y2="105"     stroke="#ef4444" stroke-width="3" class="hm-body-part" style="display:none"/>
-                <line   id="hm-larm" x1="95" y1="70" x2="70" y2="95"      stroke="#ef4444" stroke-width="3" class="hm-body-part" style="display:none"/>
-                <line   id="hm-rarm" x1="95" y1="70" x2="120" y2="95"     stroke="#ef4444" stroke-width="3" class="hm-body-part" style="display:none"/>
-                <line   id="hm-lleg" x1="95" y1="105" x2="70" y2="135"    stroke="#ef4444" stroke-width="3" class="hm-body-part" style="display:none"/>
-                <line   id="hm-rleg" x1="95" y1="105" x2="120" y2="135"   stroke="#ef4444" stroke-width="3" class="hm-body-part" style="display:none"/>
-            </svg>
+            <aside id="hm-left-sidebar">
+                <div class="hm-panel">
+                    <h3>Spielmodus</h3>
+                    <div class="hm-inline-actions">
+                        <button class="hm-btn hm-btn-primary" id="solo-mode-btn" onclick="switchMode('solo')">Solo</button>
+                        <button class="hm-btn hm-btn-secondary" id="multi-mode-btn" onclick="switchMode('multi')">Online Multiplayer</button>
+                    </div>
+                    <p class="mt-3">Im Multiplayer läuft Hangman jetzt wie beim Wordle über Räume: Host erstellt einen Code, andere treten online bei und die Runde synchronisiert sich für alle.</p>
+                </div>
+
+                <div class="hm-panel" id="hm-multiplayer-panel">
+                    <h3>Raum & Host-Einstellungen</h3>
+                    <label class="hm-label">Dein Name
+                        <input class="hm-input" id="hm-player-name" type="text" maxlength="20" placeholder="z. B. Wolfi">
+                    </label>
+                    <div class="hm-grid-2">
+                        <label class="hm-label">Versuche
+                            <input class="hm-input" id="hm-setting-lives" type="number" min="3" max="10" value="6">
+                        </label>
+                        <label class="hm-label">Runden
+                            <input class="hm-input" id="hm-setting-rounds" type="number" min="1" max="20" value="5">
+                        </label>
+                        <label class="hm-label">Max. Wortlänge
+                            <input class="hm-input" id="hm-setting-maxlength" type="number" min="4" max="18" value="10">
+                        </label>
+                        <label class="hm-label">Wortquelle
+                            <select class="hm-select" id="hm-word-source">
+                                <option value="manual">Wort selbst wählen</option>
+                                <option value="random">Zufallswort aus Liste</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="hm-grid-2">
+                        <label class="hm-label">Raumcode
+                            <input class="hm-input" id="hm-room-code-input" type="text" maxlength="5" placeholder="ABCDE">
+                        </label>
+                        <div class="hm-label">Aktionen
+                            <div class="hm-inline-actions" style="justify-content:flex-start; margin-top: 6px;">
+                                <button class="hm-btn hm-btn-primary" onclick="hmCreateRoom()">Raum erstellen</button>
+                                <button class="hm-btn hm-btn-secondary" onclick="hmJoinRoom()">Beitreten</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="hm-hidden-word" style="margin-top: 12px;">
+                        <div>
+                            <strong>Aktueller Raum</strong>
+                            <div class="hm-muted" id="hm-room-status">Noch mit keinem Raum verbunden.</div>
+                        </div>
+                        <code id="hm-room-code-display">-----</code>
+                    </div>
+                    <div class="hm-inline-actions" style="justify-content:flex-start; margin-top: 12px;">
+                        <button class="hm-btn hm-btn-ghost" onclick="hmLeaveRoom()">Raum verlassen</button>
+                        <button class="hm-btn hm-btn-secondary" onclick="hmShareRoom()">Link kopieren</button>
+                    </div>
+                </div>
+            </aside>
+
+            <aside id="hm-right-sidebar">
+                <div class="hm-panel">
+                    <h3>Rundenablauf</h3>
+                    <div class="hm-info-list">
+                        <div class="hm-info-item"><strong>1. Host legt Regeln fest</strong><span class="hm-muted">Versuche, Rundenzahl und maximale Wortlänge gelten für das ganze Match.</span></div>
+                        <div class="hm-info-item"><strong>2. Wort geheim eingeben</strong><span class="hm-muted">Die zuständige Person wählt das Wort für die neue Runde. Alle verbundenen Geräte sehen danach denselben Stand.</span></div>
+                        <div class="hm-info-item"><strong>3. Zufällige Zugreihenfolge</strong><span class="hm-muted">Für jede neue Runde werden die ratenden Personen neu gemischt.</span></div>
+                        <div class="hm-info-item"><strong>4. Nach dem gelösten Wort</strong><span class="hm-muted">Die nächste auswählende Person übernimmt sofort das neue Wort, bis die eingestellte Rundenzahl erreicht ist.</span></div>
+                    </div>
+                </div>
+
+                <div class="hm-panel">
+                    <h3>Aktive Reihenfolge</h3>
+                    <div id="hm-player-list" class="hm-player-list"></div>
+                </div>
+            </aside>
         </div>
-
-        <!-- Lives -->
-        <div id="hm-lives"></div>
-
-        <!-- Word display -->
-        <div id="hm-word-wrap"></div>
-
-        <!-- Keyboard -->
-        <div id="hm-keyboard"></div>
-
-        <!-- End buttons -->
-        <div id="hm-end-buttons">
-            <button class="hm-btn hm-btn-primary" onclick="initHangman()">
-                <i data-lucide="refresh-cw" class="inline w-4 h-4 mr-1"></i> Nochmal
-            </button>
-        </div>
-
     </div>
 
 <script>
-    // ── WORD LIST ──
     const FALLBACK = ["WOLFLE","HANGMAN","SPIELEN","RATEN","BUCHSTABE"];
-    const WORDS = (window.HANGMAN_WORDS && window.HANGMAN_WORDS.length > 0)
-        ? window.HANGMAN_WORDS
-        : FALLBACK;
-
-    // ── THEME ──
+    const WORDS = (window.HANGMAN_WORDS && window.HANGMAN_WORDS.length > 0) ? window.HANGMAN_WORDS : FALLBACK;
     const THEMES = ['dark','light','retro','ocean','pastel'];
+    const HM_PARTS = ['hm-head','hm-body','hm-larm','hm-rarm','hm-lleg','hm-rleg'];
+    const HM_ROWS = [
+        ['Q','W','E','R','T','Z','U','I','O','P'],
+        ['A','S','D','F','G','H','J','K','L'],
+        ['Y','X','C','V','B','N','M']
+    ];
+    const appId = 'wolfle-v1';
+    const firebaseConfig = {
+        apiKey: "AIzaSyDTPO-01gusabZGy-TthEWZWntwct6LrEQ",
+        authDomain: "wolfle.firebaseapp.com",
+        projectId: "wolfle",
+        storageBucket: "wolfle.firebasestorage.app",
+        messagingSenderId: "286289741614",
+        appId: "1:286289741614:web:14e5faad1616fe75755cbf"
+    };
+
+    let soundEnabled = localStorage.getItem('wolfle_sound') !== 'false';
+    let audioCtx = null;
+    let db = null;
+    let firebaseFns = null;
+    let roomUnsubscribe = null;
+
+    const gameState = {
+        mode: 'solo',
+        word: '',
+        guessed: new Set(),
+        wrong: 0,
+        active: false,
+        maxLives: 6,
+        roundsTarget: 5,
+        roundNumber: 0,
+        maxWordLength: 10,
+        matchFinished: false,
+        players: [],
+        scores: {},
+        currentPicker: null,
+        turnOrder: [],
+        currentTurnIndex: 0,
+        wordSource: 'manual',
+        roomCode: null,
+        isHost: false,
+        playerName: localStorage.getItem('wolfle_player_name') || '',
+        roomStatus: 'Kein Raum verbunden.'
+    };
 
     function applyTheme(theme) {
         THEMES.forEach(t => document.documentElement.classList.remove(t));
@@ -373,23 +585,16 @@
         if (btn) btn.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4"></i>`;
         lucide.createIcons();
     }
-
     function toggleTheme() {
         const current = localStorage.getItem('wolfle_theme') || 'dark';
         const next = THEMES[(THEMES.indexOf(current) + 1) % THEMES.length];
         localStorage.setItem('wolfle_theme', next);
         applyTheme(next);
     }
-
-    // ── SOUND ──
-    let soundEnabled = localStorage.getItem('wolfle_sound') !== 'false';
-    let audioCtx = null;
-
     function getAudioCtx() {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         return audioCtx;
     }
-
     function playTone(freq, type, duration, volume = 0.25) {
         if (!soundEnabled) return;
         try {
@@ -401,130 +606,493 @@
             gain.gain.setValueAtTime(volume, ctx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
             osc.start(ctx.currentTime); osc.stop(ctx.currentTime + duration);
-        } catch(e) {}
+        } catch (e) {}
     }
-
     function updateSoundBtn() {
         const icon = soundEnabled ? 'volume-2' : 'volume-x';
         const btn = document.getElementById('sound-btn');
         if (btn) btn.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4"></i>`;
         lucide.createIcons();
     }
-
     function toggleSound() {
         soundEnabled = !soundEnabled;
         localStorage.setItem('wolfle_sound', soundEnabled);
         updateSoundBtn();
         if (soundEnabled) playTone(523, 'sine', 0.15);
     }
-
     function playWinSound() {
-        [523,659,784,1047].forEach((freq,i) => {
-            setTimeout(() => playTone(freq,'sine',0.4), i * 110);
+        [523,659,784,1047].forEach((freq, i) => setTimeout(() => playTone(freq, 'sine', 0.4), i * 110));
+    }
+    function showToast(message) {
+        if (!message) return;
+        window.alert(message);
+    }
+    function shuffle(arr) {
+        const copy = [...arr];
+        for (let i = copy.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [copy[i], copy[j]] = [copy[j], copy[i]];
+        }
+        return copy;
+    }
+    function sanitizeWord(word) {
+        return (word || '')
+            .toUpperCase()
+            .replace(/Ä/g, 'AE')
+            .replace(/Ö/g, 'OE')
+            .replace(/Ü/g, 'UE')
+            .replace(/ß/g, 'SS')
+            .replace(/[^A-Z ]/g, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+    function generateRoomCode() {
+        return Math.random().toString(36).substring(2, 7).toUpperCase();
+    }
+    function serializePlayers(scores = gameState.scores) {
+        return Object.fromEntries(Object.entries(scores).map(([name, value]) => [name, { guessed: value.guessed || 0, picked: value.picked || 0 }]));
+    }
+    function hydrateScores(playersObj = {}) {
+        const names = Object.keys(playersObj);
+        const scores = {};
+        names.forEach(name => {
+            const value = playersObj[name] || {};
+            scores[name] = { guessed: value.guessed || 0, picked: value.picked || 0 };
+        });
+        return scores;
+    }
+    function resetRoundState() {
+        gameState.guessed = new Set();
+        gameState.wrong = 0;
+        gameState.active = false;
+        gameState.word = '';
+        gameState.turnOrder = [];
+        gameState.currentTurnIndex = 0;
+    }
+    function getSolved() {
+        return gameState.word.split('').filter(c => c !== ' ').every(c => gameState.guessed.has(c));
+    }
+    function getLost() {
+        return gameState.wrong >= gameState.maxLives;
+    }
+    function getRemainingLives() {
+        return Math.max(0, gameState.maxLives - gameState.wrong);
+    }
+    function getCurrentTurnPlayer() {
+        return gameState.turnOrder[gameState.currentTurnIndex] || null;
+    }
+    function getCurrentPicker() {
+        return gameState.currentPicker || gameState.players[0] || null;
+    }
+    function getPlayerName() {
+        const input = document.getElementById('hm-player-name');
+        const value = (input?.value || gameState.playerName || '').trim();
+        if (value) localStorage.setItem('wolfle_player_name', value);
+        gameState.playerName = value;
+        return value;
+    }
+    function getHostSettings() {
+        return {
+            maxLives: Math.min(10, Math.max(3, Number(document.getElementById('hm-setting-lives').value || 6))),
+            roundsTarget: Math.min(20, Math.max(1, Number(document.getElementById('hm-setting-rounds').value || 5))),
+            maxWordLength: Math.min(18, Math.max(4, Number(document.getElementById('hm-setting-maxlength').value || 10))),
+            wordSource: document.getElementById('hm-word-source').value || 'manual'
+        };
+    }
+    async function ensureDB() {
+        if (db) return db;
+        const appMod = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js');
+        const storeMod = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
+        firebaseFns = storeMod;
+        const app = appMod.initializeApp(firebaseConfig);
+        db = storeMod.getFirestore(app);
+        return db;
+    }
+    function roomDocRef(code) {
+        return firebaseFns.doc(db, 'artifacts', appId, 'public', 'data', 'hangman_rooms', code);
+    }
+    function pickRandomWord(maxLength) {
+        const possible = WORDS.map(sanitizeWord).filter(word => word.length >= 4 && word.length <= maxLength);
+        return possible[Math.floor(Math.random() * possible.length)] || 'WOLF';
+    }
+    function applyRoomData(data) {
+        gameState.mode = 'multi';
+        gameState.roomCode = data.code;
+        gameState.word = data.word || '';
+        gameState.guessed = new Set(data.guessed || []);
+        gameState.wrong = data.wrong || 0;
+        gameState.active = !!data.active;
+        gameState.maxLives = data.maxLives || 6;
+        gameState.roundsTarget = data.roundsTarget || 5;
+        gameState.roundNumber = data.roundNumber || 0;
+        gameState.maxWordLength = data.maxWordLength || 10;
+        gameState.matchFinished = !!data.matchFinished;
+        gameState.players = Object.keys(data.players || {});
+        gameState.scores = hydrateScores(data.players || {});
+        gameState.currentPicker = data.currentPicker || gameState.players[0] || null;
+        gameState.turnOrder = data.turnOrder || [];
+        gameState.currentTurnIndex = data.currentTurnIndex || 0;
+        gameState.wordSource = data.wordSource || 'manual';
+        gameState.roomStatus = data.roomStatus || (data.active ? 'Runde läuft' : 'Raum verbunden');
+        gameState.isHost = data.hostName === getPlayerName();
+        document.getElementById('hm-room-code-display').textContent = data.code || '-----';
+        document.getElementById('hm-room-status').textContent = gameState.roomStatus;
+        renderAll();
+    }
+    async function listenToRoom(code) {
+        const firestore = await ensureDB();
+        if (roomUnsubscribe) roomUnsubscribe();
+        roomUnsubscribe = firebaseFns.onSnapshot(roomDocRef(code), (snap) => {
+            if (!snap.exists()) return;
+            const data = snap.data();
+            applyRoomData({ ...data, code });
         });
     }
-
-    // ── HANGMAN GAME ──
-    const HM_PARTS = ['hm-head','hm-body','hm-larm','hm-rarm','hm-lleg','hm-rleg'];
-    const HM_ROWS = [
-        ['Q','W','E','R','T','Z','U','I','O','P'],
-        ['A','S','D','F','G','H','J','K','L'],
-        ['Y','X','C','V','B','N','M']
-    ];
-
-    let hmWord = '';
-    let hmGuessed = new Set();
-    let hmWrong = 0;
-    let hmActive = false;
-
-    function initHangman() {
-        hmWord = WORDS[Math.floor(Math.random() * WORDS.length)].toUpperCase();
-        hmGuessed = new Set();
-        hmWrong = 0;
-        hmActive = true;
-        document.getElementById('hm-end-buttons').classList.remove('show');
-        render();
+    async function hmCreateRoom() {
+        const name = getPlayerName();
+        if (!name) return showToast('Bitte zuerst einen Namen eingeben.');
+        await ensureDB();
+        const settings = getHostSettings();
+        const code = generateRoomCode();
+        const payload = {
+            hostName: name,
+            players: { [name]: { guessed: 0, picked: 0 } },
+            word: '',
+            guessed: [],
+            wrong: 0,
+            active: false,
+            maxLives: settings.maxLives,
+            roundsTarget: settings.roundsTarget,
+            roundNumber: 0,
+            maxWordLength: settings.maxWordLength,
+            matchFinished: false,
+            currentPicker: name,
+            turnOrder: [],
+            currentTurnIndex: 0,
+            wordSource: settings.wordSource,
+            roomStatus: 'Raum erstellt – warte auf Mitspieler oder starte direkt die erste Runde.'
+        };
+        await firebaseFns.setDoc(roomDocRef(code), payload);
+        document.getElementById('hm-room-code-input').value = code;
+        await listenToRoom(code);
     }
-
-    function render() {
-        // Gallows parts
+    async function hmJoinRoom() {
+        const name = getPlayerName();
+        if (!name) return showToast('Bitte zuerst einen Namen eingeben.');
+        await ensureDB();
+        const code = (document.getElementById('hm-room-code-input').value || '').toUpperCase().trim();
+        if (!code) return showToast('Bitte einen Raumcode eingeben.');
+        const snap = await firebaseFns.getDoc(roomDocRef(code));
+        if (!snap.exists()) return showToast('Raum nicht gefunden.');
+        const data = snap.data();
+        const players = { ...(data.players || {}) };
+        players[name] = players[name] || { guessed: 0, picked: 0 };
+        await firebaseFns.setDoc(roomDocRef(code), { players, roomStatus: data.active ? 'Runde läuft.' : 'Spieler beigetreten.' }, { merge: true });
+        await listenToRoom(code);
+    }
+    async function hmLeaveRoom() {
+        if (!gameState.roomCode) return;
+        await ensureDB();
+        const name = getPlayerName();
+        const snap = await firebaseFns.getDoc(roomDocRef(gameState.roomCode));
+        if (!snap.exists()) return;
+        const data = snap.data();
+        const players = { ...(data.players || {}) };
+        delete players[name];
+        await firebaseFns.setDoc(roomDocRef(gameState.roomCode), {
+            players,
+            roomStatus: 'Jemand hat den Raum verlassen.',
+            currentPicker: data.currentPicker === name ? Object.keys(players)[0] || null : data.currentPicker
+        }, { merge: true });
+        if (roomUnsubscribe) roomUnsubscribe();
+        roomUnsubscribe = null;
+        gameState.roomCode = null;
+        gameState.players = [];
+        gameState.scores = {};
+        gameState.roomStatus = 'Noch mit keinem Raum verbunden.';
+        document.getElementById('hm-room-code-display').textContent = '-----';
+        document.getElementById('hm-room-status').textContent = gameState.roomStatus;
+        resetRoundState();
+        renderAll();
+    }
+    async function hmShareRoom() {
+        if (!gameState.roomCode) return showToast('Erst einen Raum erstellen oder beitreten.');
+        const url = `${location.origin}${location.pathname}?room=${gameState.roomCode}`;
+        try {
+            await navigator.clipboard.writeText(url);
+            showToast(`Link kopiert: ${gameState.roomCode}`);
+        } catch (e) {
+            showToast(url);
+        }
+    }
+    function updateModeButtons() {
+        document.getElementById('solo-mode-btn').className = `hm-btn ${gameState.mode === 'solo' ? 'hm-btn-primary' : 'hm-btn-secondary'}`;
+        document.getElementById('multi-mode-btn').className = `hm-btn ${gameState.mode === 'multi' ? 'hm-btn-primary' : 'hm-btn-secondary'}`;
+        document.getElementById('hm-multiplayer-panel').style.display = gameState.mode === 'multi' ? 'block' : 'none';
+    }
+    function renderHeroBadges() {
+        const current = getCurrentTurnPlayer();
+        const badges = [
+            { title: gameState.mode === 'solo' ? 'Modus' : 'Runde', text: gameState.mode === 'solo' ? 'Solo' : `${Math.max(gameState.roundNumber, 0)} / ${gameState.roundsTarget}` },
+            { title: 'Versuche', text: `${getRemainingLives()} / ${gameState.maxLives}` },
+            { title: 'Wortlimit', text: `${gameState.maxWordLength} Zeichen` },
+            { title: gameState.mode === 'solo' ? 'Status' : 'Am Zug', text: gameState.mode === 'solo' ? (gameState.active ? 'Aktive Partie' : 'Bereit') : (current || getCurrentPicker() || 'Lobby') }
+        ];
+        document.getElementById('hm-hero-badges').innerHTML = badges.map(b => `<div class="hm-badge"><strong>${b.text}</strong><span>${b.title}</span></div>`).join('');
+        document.getElementById('hm-round-title').textContent = gameState.mode === 'solo' ? 'Solo-Runde' : `Online-Raum ${gameState.roomCode || ''}`.trim();
+        document.getElementById('hm-round-subtitle').textContent = gameState.mode === 'solo'
+            ? 'Tippe auf einen Buchstaben oder starte eine neue Solo-Partie.'
+            : (gameState.roomStatus || 'Erstelle oder betrete einen Raum wie beim Wordle.');
+        document.getElementById('hm-turn-indicator').textContent = gameState.mode === 'solo'
+            ? (gameState.active ? 'Solo aktiv' : 'Bereit')
+            : (gameState.active ? `Zug: ${current || '—'}` : `Picker: ${getCurrentPicker() || '—'}`);
+    }
+    function renderStats() {
+        const stats = [
+            { title: 'Falsche Tipps', value: `${gameState.wrong}` },
+            { title: 'Offene Felder', value: `${gameState.word ? gameState.word.split('').filter(c => c !== ' ' && !gameState.guessed.has(c)).length : 0}` },
+            { title: gameState.mode === 'solo' ? 'Benutzte Buchstaben' : 'Spieler', value: gameState.mode === 'solo' ? `${gameState.guessed.size}` : `${gameState.players.length}` },
+            { title: gameState.mode === 'solo' ? 'Rundenziel' : 'Picker', value: gameState.mode === 'solo' ? 'Endlos' : (getCurrentPicker() || '—') }
+        ];
+        document.getElementById('hm-stats').innerHTML = stats.map(item => `<div class="hm-stat-card"><strong>${item.value}</strong><span>${item.title}</span></div>`).join('');
+    }
+    function renderPlayers() {
+        const list = document.getElementById('hm-player-list');
+        if (gameState.mode !== 'multi' || gameState.players.length === 0) {
+            list.innerHTML = '<div class="hm-muted">Noch keine Online-Runde aktiv.</div>';
+            return;
+        }
+        const picker = getCurrentPicker();
+        const current = getCurrentTurnPlayer();
+        list.innerHTML = gameState.players.map(name => {
+            const score = gameState.scores[name] || { guessed: 0, picked: 0 };
+            const labels = [];
+            if (name === picker) labels.push('Wortgeber:in');
+            if (name === current && gameState.active) labels.push('am Zug');
+            if (name === gameState.playerName) labels.push('du');
+            return `<div class="hm-player-chip ${name === current && gameState.active ? 'active' : ''}"><strong>${name}</strong><small>${labels.join(' · ') || 'im Raum'}</small><small>${score.guessed} Wörter geraten · ${score.picked} gewählt</small></div>`;
+        }).join('');
+    }
+    function renderWord() {
+        const wordEl = document.getElementById('hm-word-wrap');
+        wordEl.innerHTML = (gameState.word || '').split('').map(ch => {
+            if (ch === ' ') return '<div class="hm-letter-box space"></div>';
+            const revealed = gameState.guessed.has(ch) || (!gameState.active && (getSolved() || getLost()));
+            return `<div class="hm-letter-box${revealed ? ' revealed' : ''}">${revealed ? ch : ''}</div>`;
+        }).join('');
+    }
+    function renderKeyboard() {
+        const kbEl = document.getElementById('hm-keyboard');
+        kbEl.innerHTML = HM_ROWS.map(row => `<div class="hm-kb-row">${row.map(ch => {
+            const guessed = gameState.guessed.has(ch);
+            const isCorrect = guessed && gameState.word.includes(ch);
+            const isWrong = guessed && !gameState.word.includes(ch);
+            const lockedByTurn = gameState.mode === 'multi' && getCurrentTurnPlayer() !== gameState.playerName;
+            return `<button class="hm-key${isCorrect ? ' correct' : ''}${isWrong ? ' wrong' : ''}" ${(guessed || !gameState.active || lockedByTurn) ? 'disabled' : ''} onclick="hmGuess('${ch}')">${ch}</button>`;
+        }).join('')}</div>`).join('');
+    }
+    function renderStatus() {
+        const solved = gameState.word && getSolved();
+        const lost = gameState.word && getLost();
+        const statusEl = document.getElementById('hm-status');
+        if (!gameState.word) {
+            statusEl.innerHTML = gameState.mode === 'solo'
+                ? '<span class="text-cyan-300">Bereit für eine neue Solo-Runde.</span>'
+                : '<span class="text-cyan-300">Wie beim Wordle: Raum erstellen, beitreten und dann Runde starten.</span>';
+            return;
+        }
+        if (solved) {
+            statusEl.innerHTML = `<span class="text-green-400">🎉 ${getCurrentTurnPlayer() || 'Jemand'} hat das Wort gelöst!</span>`;
+        } else if (lost) {
+            statusEl.innerHTML = `<span class="text-red-400">💀 Keine Versuche mehr. Das Wort war <strong>${gameState.word}</strong>.</span>`;
+        } else if (gameState.mode === 'multi') {
+            statusEl.innerHTML = `<span class="text-slate-200">${getCurrentTurnPlayer() === gameState.playerName ? 'Du bist am Zug.' : `${getCurrentTurnPlayer() || 'Jemand'} ist am Zug.`} Wortgeber:in: <strong>${getCurrentPicker() || '—'}</strong>.</span>`;
+        } else {
+            statusEl.innerHTML = '<span class="text-slate-200">Tippe einen Buchstaben oder verwende die Tastatur.</span>';
+        }
+    }
+    function renderEndButtons() {
+        const wrap = document.getElementById('hm-end-buttons');
+        const solved = gameState.word && getSolved();
+        const lost = gameState.word && getLost();
+        if (gameState.mode === 'solo') {
+            wrap.innerHTML = `<button class="hm-btn hm-btn-primary" onclick="startSoloGame()"><i data-lucide="refresh-cw" class="inline w-4 h-4 mr-1"></i>${solved || lost ? ' Nochmal' : ' Neues Wort'}</button>`;
+            lucide.createIcons();
+            return;
+        }
+        const canStartRound = gameState.roomCode && !gameState.active && !gameState.matchFinished && getCurrentPicker() === gameState.playerName;
+        if (gameState.matchFinished) {
+            wrap.innerHTML = '<button class="hm-btn hm-btn-primary" onclick="hmStartNextRound()">Neue Runde starten</button>';
+        } else if (canStartRound) {
+            wrap.innerHTML = '<button class="hm-btn hm-btn-primary" onclick="hmStartNextRound()">Wort für nächste Runde wählen</button>';
+        } else if (!gameState.active) {
+            wrap.innerHTML = '<button class="hm-btn hm-btn-secondary" disabled>Warte auf die nächste Wortwahl</button>';
+        } else {
+            wrap.innerHTML = `<button class="hm-btn hm-btn-secondary" disabled>${getCurrentTurnPlayer() === gameState.playerName ? 'Du bist am Zug' : `Am Zug: ${getCurrentTurnPlayer() || '—'}`}</button>`;
+        }
+    }
+    function renderScaffold() {
         HM_PARTS.forEach((id, i) => {
             const el = document.getElementById(id);
-            if (el) el.style.display = i < hmWrong ? '' : 'none';
+            if (el) el.style.display = i < gameState.wrong ? '' : 'none';
         });
-
-        // Lives
-        const livesEl = document.getElementById('hm-lives');
-        const remaining = HM_PARTS.length - hmWrong;
-        if (livesEl) {
-            livesEl.textContent = `❤️ ${remaining} Versuch${remaining !== 1 ? 'e' : ''} verbleibend`;
-        }
-
-        // Word display
-        const wordEl = document.getElementById('hm-word-wrap');
-        if (wordEl) {
-            wordEl.innerHTML = hmWord.split('').map(ch => {
-                if (ch === ' ') return `<div class="hm-letter-box space"></div>`;
-                const rev = hmGuessed.has(ch);
-                return `<div class="hm-letter-box${rev ? ' revealed' : ''}">${rev ? ch : ''}</div>`;
-            }).join('');
-        }
-
-        // Status
-        const solved = hmWord.split('').filter(c => c !== ' ').every(c => hmGuessed.has(c));
-        const lost = hmWrong >= HM_PARTS.length;
-        const statusEl = document.getElementById('hm-status');
-        if (statusEl) {
-            if (solved) statusEl.innerHTML = '<span class="text-green-400">🎉 Gewonnen!</span>';
-            else if (lost) statusEl.innerHTML = `<span class="text-red-400">💀 Verloren! Das Wort war: <strong>${hmWord}</strong></span>`;
-            else statusEl.textContent = '';
-        }
-
-        // Keyboard
-        const kbEl = document.getElementById('hm-keyboard');
-        if (kbEl) {
-            kbEl.innerHTML = HM_ROWS.map(row =>
-                `<div class="hm-kb-row">${row.map(ch => {
-                    const guessed = hmGuessed.has(ch);
-                    const isCorrect = guessed && hmWord.includes(ch);
-                    const isWrong = guessed && !hmWord.includes(ch);
-                    return `<button class="hm-key${isCorrect ? ' correct' : ''}${isWrong ? ' wrong' : ''}"
-                        ${(guessed || !hmActive) ? 'disabled' : ''}
-                        onclick="hmGuess('${ch}')">${ch}</button>`;
-                }).join('')}</div>`
-            ).join('');
-        }
-
-        // End state
-        if (solved || lost) {
-            hmActive = false;
-            document.getElementById('hm-end-buttons').classList.add('show');
-            if (solved) playWinSound();
-            else playTone(165, 'sawtooth', 0.5);
+    }
+    function startSoloGame() {
+        gameState.mode = 'solo';
+        gameState.roomCode = null;
+        gameState.isHost = false;
+        gameState.players = [];
+        gameState.scores = {};
+        gameState.currentPicker = null;
+        gameState.roomStatus = 'Solo-Modus aktiv.';
+        gameState.maxLives = HM_PARTS.length;
+        gameState.roundsTarget = Infinity;
+        gameState.roundNumber = 1;
+        gameState.maxWordLength = 10;
+        gameState.matchFinished = false;
+        resetRoundState();
+        gameState.word = WORDS[Math.floor(Math.random() * WORDS.length)].toUpperCase();
+        gameState.active = true;
+        renderAll();
+    }
+    function switchMode(mode) {
+        gameState.mode = mode;
+        if (mode === 'solo') {
+            startSoloGame();
+        } else {
+            resetRoundState();
+            gameState.maxLives = Number(document.getElementById('hm-setting-lives').value || 6);
+            gameState.roundsTarget = Number(document.getElementById('hm-setting-rounds').value || 5);
+            gameState.maxWordLength = Number(document.getElementById('hm-setting-maxlength').value || 10);
+            gameState.wordSource = document.getElementById('hm-word-source').value || 'manual';
+            gameState.roomStatus = gameState.roomCode ? gameState.roomStatus : 'Erstelle oder betrete einen Raum.';
+            renderAll();
         }
     }
-
+    async function hmStartNextRound() {
+        if (!gameState.roomCode) return showToast('Erst einen Raum erstellen oder beitreten.');
+        if (getCurrentPicker() !== gameState.playerName) return showToast('Nur die aktuelle Wortgeberin bzw. der aktuelle Wortgeber darf die Runde starten.');
+        await ensureDB();
+        const snap = await firebaseFns.getDoc(roomDocRef(gameState.roomCode));
+        if (!snap.exists()) return;
+        const data = snap.data();
+        const players = Object.keys(data.players || {});
+        const settings = getHostSettings();
+        let roundNumber = data.roundNumber || 0;
+        if (data.matchFinished) roundNumber = 0;
+        if (roundNumber >= settings.roundsTarget && !data.matchFinished) return showToast('Alle Runden sind bereits gespielt.');
+        const nextRound = roundNumber + 1;
+        const picker = data.currentPicker || players[0];
+        const source = settings.wordSource;
+        const nextWord = source === 'random' ? pickRandomWord(settings.maxWordLength) : sanitizeWord(window.prompt(`${picker} wählt jetzt ein Wort mit maximal ${settings.maxWordLength} Zeichen.`, ''));
+        if (!nextWord || nextWord.length > settings.maxWordLength || nextWord.length < 2) return showToast(`Bitte ein Wort mit 2 bis ${settings.maxWordLength} Zeichen eingeben.`);
+        const turnOrder = shuffle(players.filter(name => name !== picker));
+        const updatedPlayers = { ...(data.players || {}) };
+        updatedPlayers[picker] = updatedPlayers[picker] || { guessed: 0, picked: 0 };
+        updatedPlayers[picker].picked = (updatedPlayers[picker].picked || 0) + 1;
+        await firebaseFns.setDoc(roomDocRef(gameState.roomCode), {
+            players: updatedPlayers,
+            word: nextWord,
+            guessed: [],
+            wrong: 0,
+            active: true,
+            maxLives: settings.maxLives,
+            roundsTarget: settings.roundsTarget,
+            roundNumber: nextRound,
+            maxWordLength: settings.maxWordLength,
+            matchFinished: false,
+            currentPicker: picker,
+            turnOrder,
+            currentTurnIndex: 0,
+            wordSource: source,
+            roomStatus: `Runde ${nextRound} läuft.`
+        }, { merge: true });
+    }
+    function getNextPicker(players, currentPicker) {
+        if (!players.length) return null;
+        const currentIndex = players.indexOf(currentPicker);
+        return players[(currentIndex + 1 + players.length) % players.length];
+    }
+    async function submitMultiplayerGuess(ch) {
+        if (!gameState.roomCode) return;
+        if (getCurrentTurnPlayer() !== gameState.playerName) return;
+        await ensureDB();
+        const snap = await firebaseFns.getDoc(roomDocRef(gameState.roomCode));
+        if (!snap.exists()) return;
+        const data = snap.data();
+        const guessed = new Set(data.guessed || []);
+        if (guessed.has(ch) || !data.active) return;
+        guessed.add(ch);
+        const word = data.word || '';
+        let wrong = data.wrong || 0;
+        if (!word.includes(ch)) wrong += 1;
+        const solved = word.split('').filter(c => c !== ' ').every(c => guessed.has(c));
+        const lost = wrong >= (data.maxLives || 6);
+        const playersObj = { ...(data.players || {}) };
+        let payload = {
+            guessed: [...guessed],
+            wrong,
+            currentTurnIndex: ((data.currentTurnIndex || 0) + 1) % Math.max((data.turnOrder || []).length, 1),
+            roomStatus: 'Runde läuft.'
+        };
+        if (solved || lost) {
+            payload.active = false;
+            payload.currentTurnIndex = data.currentTurnIndex || 0;
+            payload.matchFinished = (data.roundNumber || 0) >= (data.roundsTarget || 5);
+            payload.currentPicker = getNextPicker(Object.keys(playersObj), data.currentPicker);
+            payload.roomStatus = solved ? `${gameState.playerName} hat das Wort gelöst.` : `Runde vorbei. Das Wort war ${word}.`;
+            if (solved) {
+                playersObj[gameState.playerName] = playersObj[gameState.playerName] || { guessed: 0, picked: 0 };
+                playersObj[gameState.playerName].guessed = (playersObj[gameState.playerName].guessed || 0) + 1;
+                payload.players = playersObj;
+            }
+        }
+        await firebaseFns.setDoc(roomDocRef(gameState.roomCode), payload, { merge: true });
+        if (solved) playWinSound();
+        else if (lost) playTone(165, 'sawtooth', 0.5);
+    }
     function hmGuess(ch) {
-        if (!hmActive || hmGuessed.has(ch)) return;
-        hmGuessed.add(ch);
-        if (!hmWord.includes(ch)) {
-            hmWrong++;
+        if (!gameState.active || gameState.guessed.has(ch) || !gameState.word) return;
+        if (gameState.mode === 'multi') {
+            submitMultiplayerGuess(ch);
+            return;
+        }
+        gameState.guessed.add(ch);
+        if (!gameState.word.includes(ch)) {
+            gameState.wrong += 1;
             playTone(220, 'square', 0.15, 0.15);
         } else {
             playTone(523, 'sine', 0.18);
         }
-        render();
+        const solved = getSolved();
+        const lost = getLost();
+        if (solved || lost) {
+            gameState.active = false;
+            solved ? playWinSound() : playTone(165, 'sawtooth', 0.5);
+        }
+        renderAll();
+    }
+    function renderAll() {
+        updateModeButtons();
+        renderHeroBadges();
+        renderStats();
+        renderScaffold();
+        renderWord();
+        renderKeyboard();
+        renderStatus();
+        renderEndButtons();
+        renderPlayers();
+        const nameInput = document.getElementById('hm-player-name');
+        if (nameInput && nameInput.value !== gameState.playerName) nameInput.value = gameState.playerName;
+        document.getElementById('hm-room-status').textContent = gameState.roomStatus || 'Noch mit keinem Raum verbunden.';
+        document.getElementById('hm-room-code-display').textContent = gameState.roomCode || '-----';
+        lucide.createIcons();
     }
 
-    // Keyboard input
     document.addEventListener('keydown', (e) => {
-        if (document.activeElement.tagName === 'INPUT') return;
-        if (hmActive && /^[a-zA-Z]$/.test(e.key)) {
-            hmGuess(e.key.toUpperCase());
-        }
+        if (document.activeElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
+        if (gameState.active && /^[a-zA-Z]$/.test(e.key)) hmGuess(e.key.toUpperCase());
     });
-
-    // Prevent zoom
     let lastTouchEnd = 0;
     document.addEventListener('touchstart', e => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
     document.addEventListener('touchmove', e => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
@@ -536,12 +1104,23 @@
     document.addEventListener('wheel', e => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
     document.addEventListener('gesturestart', e => e.preventDefault());
 
-    // ── INIT ──
+    window.toggleTheme = toggleTheme;
+    window.toggleSound = toggleSound;
+    window.switchMode = switchMode;
+    window.hmCreateRoom = hmCreateRoom;
+    window.hmJoinRoom = hmJoinRoom;
+    window.hmLeaveRoom = hmLeaveRoom;
+    window.hmShareRoom = hmShareRoom;
+    window.hmStartNextRound = hmStartNextRound;
+    window.hmGuess = hmGuess;
+    window.startSoloGame = startSoloGame;
+
     applyTheme(localStorage.getItem('wolfle_theme') || 'dark');
     updateSoundBtn();
-    lucide.createIcons();
-    initHangman();
+    const roomFromURL = new URLSearchParams(location.search).get('room');
+    if (roomFromURL) document.getElementById('hm-room-code-input').value = roomFromURL;
+    renderAll();
+    startSoloGame();
 </script>
-
 </body>
 </html>
