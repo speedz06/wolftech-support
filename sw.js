@@ -1,5 +1,5 @@
-const CACHE = 'wolfle-v2';
-const ASSETS = ['/', '/index.html', '/words.js', '/manifest.json'];
+const CACHE = 'wolfle-v3';
+const ASSETS = ['/', '/index.html', '/words.js', '/hangman.html', '/hangman-words.js', '/manifest.json'];
 
 self.addEventListener('install', event => {
     event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));

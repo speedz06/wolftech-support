@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Wolfle – Hangman</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#6366f1">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="hangman-words.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        html {
+            touch-action: manipulation;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        body {
+            background: radial-gradient(circle at top, #1e293b, #020617);
+            color: #f8fafc;
+            font-family: 'Inter', sans-serif;
+            height: 100dvh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            touch-action: manipulation;
+            overscroll-behavior: none;
+        }
+
+        /* ── GAME TABS ── */
+        #game-tabs {
+            display: flex;
+            background: #0f172a;
+            border-bottom: 1px solid #1e293b;
+            flex-shrink: 0;
+            padding: 0 12px;
+        }
+        .tab-link {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 18px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #64748b;
+            text-decoration: none;
+            border-bottom: 2px solid transparent;
+            transition: all 0.15s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .tab-link.active {
+            color: #f43f5e;
+            border-bottom-color: #f43f5e;
+        }
+        .tab-link:hover:not(.active) { color: #94a3b8; }
+
+        /* ── HEADER ── */
+        #hm-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: max(10px, env(safe-area-inset-top)) 16px 8px;
+            border-bottom: 1px solid #1e293b;
+            flex-shrink: 0;
+            background: rgba(15,23,42,0.8);
+        }
+
+        /* ── GAME AREA ── */
+        #hm-game {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            overflow: hidden;
+            padding: 10px 12px max(10px, env(safe-area-inset-bottom));
+            gap: 8px;
+            min-height: 0;
+        }
+
+        /* ── SCAFFOLD ── */
+        #hm-scaffold-wrap {
+            flex-shrink: 0;
+        }
+        #hangman-scaffold {
+            width: clamp(120px, 25vw, 180px);
+            height: clamp(130px, 28vw, 200px);
+        }
+        #hangman-scaffold line, #hangman-scaffold circle {
+            stroke-linecap: round;
+        }
+
+        /* ── STATUS ── */
+        #hm-status {
+            font-size: clamp(14px, 3.5vw, 18px);
+            font-weight: 700;
+            text-align: center;
+            min-height: 24px;
+            flex-shrink: 0;
+        }
+
+        /* ── LIVES ── */
+        #hm-lives {
+            font-size: clamp(11px, 2.5vw, 14px);
+            font-weight: 600;
+            color: #94a3b8;
+            letter-spacing: 0.04em;
+            flex-shrink: 0;
+        }
+
+        /* ── WORD DISPLAY ── */
+        #hm-word-wrap {
+            display: flex;
+            gap: clamp(4px, 1.5vw, 10px);
+            flex-wrap: wrap;
+            justify-content: center;
+            padding: 4px 8px;
+            max-width: 100%;
+            flex-shrink: 0;
+        }
+        .hm-letter-box {
+            width: clamp(22px, 5.5vw, 38px);
+            height: clamp(26px, 6.5vw, 44px);
+            border-bottom: 3px solid currentColor;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            font-size: clamp(13px, 3vw, 20px);
+            font-weight: bold;
+            text-transform: uppercase;
+            padding-bottom: 2px;
+            color: #94a3b8;
+            transition: color 0.2s;
+        }
+        .hm-letter-box.revealed { color: #22c55e; }
+        .hm-letter-box.space {
+            border-bottom: none;
+            width: clamp(10px, 2vw, 18px);
+        }
+
+        /* ── KEYBOARD ── */
+        #hm-keyboard {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex-shrink: 0;
+            width: 100%;
+            max-width: 480px;
+        }
+        .hm-kb-row {
+            display: flex;
+            gap: clamp(3px, 0.8vw, 5px);
+            justify-content: center;
+        }
+        .hm-key {
+            width: clamp(26px, 6vw, 40px);
+            height: clamp(28px, 5.5vw, 38px);
+            border-radius: 5px;
+            font-size: clamp(10px, 2vw, 13px);
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.12s;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        .hm-key:not(:disabled) {
+            background: #334155;
+            color: white;
+        }
+        .hm-key:not(:disabled):active {
+            filter: brightness(0.75);
+            transform: scale(0.93);
+        }
+        .hm-key:disabled {
+            cursor: not-allowed;
+        }
+        .hm-key:disabled.correct {
+            background: #22c55e;
+            color: white;
+            opacity: 1;
+        }
+        .hm-key:disabled.wrong {
+            background: #ef4444;
+            color: white;
+            opacity: 0.65;
+        }
+        .hm-key:disabled:not(.correct):not(.wrong) {
+            background: #1e293b;
+            color: #475569;
+        }
+
+        /* ── END BUTTONS ── */
+        #hm-end-buttons {
+            display: none;
+            gap: 8px;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        #hm-end-buttons.show { display: flex; }
+        .hm-btn {
+            padding: 10px 22px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 14px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.15s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .hm-btn-primary { background: #be123c; color: white; }
+        .hm-btn-primary:hover { background: #9f1239; }
+        .hm-btn-secondary { background: #334155; color: white; }
+        .hm-btn-secondary:hover { background: #475569; }
+
+        /* ── SCROLLBAR ── */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+        button:focus { outline: none; }
+
+        /* ── LIGHT MODE ── */
+        html.light body { background: linear-gradient(135deg, #dde3ed, #f0f4f8); color: #1e293b; }
+        html.light #hm-header { background: #f1f5f9; border-color: #cbd5e1; }
+        html.light #game-tabs { background: #f1f5f9; border-color: #cbd5e1; }
+        html.light .tab-link { color: #94a3b8; }
+        html.light .tab-link.active { color: #be123c; border-bottom-color: #be123c; }
+        html.light .hm-letter-box { color: #64748b; }
+        html.light .hm-letter-box.revealed { color: #16a34a; }
+        html.light .hm-key:not(:disabled) { background: #cbd5e1 !important; color: #1e293b !important; }
+        html.light .hm-key:disabled.correct { background: #16a34a !important; color: white !important; opacity: 1; }
+        html.light .hm-key:disabled.wrong { background: #dc2626 !important; color: white !important; opacity: 0.75; }
+        html.light .hm-key:disabled:not(.correct):not(.wrong) { background: #e2e8f0 !important; color: #94a3b8 !important; }
+        html.light #hm-lives { color: #64748b; }
+        html.light .hm-btn-secondary { background: #cbd5e1; color: #1e293b; }
+        html.light #hangman-scaffold line { stroke: #64748b; }
+        html.light #hangman-scaffold circle { stroke: #ef4444; }
+        html.light #hangman-scaffold .hm-body-part { stroke: #ef4444; }
+
+        /* ── RETRO THEME ── */
+        html.retro body { background: #000 !important; color: #00ff41; font-family: 'Courier New', monospace !important; }
+        html.retro * { font-family: 'Courier New', monospace !important; }
+        html.retro #hm-header { background: #000 !important; border-color: #00ff41 !important; }
+        html.retro #game-tabs { background: #000 !important; border-color: #00ff41 !important; }
+        html.retro .tab-link { color: #007a1f; }
+        html.retro .tab-link.active { color: #00ff41; border-bottom-color: #00ff41; }
+        html.retro .hm-key:not(:disabled) { background: #001a00 !important; color: #00ff41 !important; border: 1px solid #00ff41 !important; }
+        html.retro .hm-key:disabled.correct { background: #00ff41 !important; color: #000 !important; }
+        html.retro .hm-key:disabled.wrong { background: #ff0000 !important; color: #fff !important; }
+        html.retro .hm-letter-box { color: #007a1f; }
+        html.retro .hm-letter-box.revealed { color: #00ff41; }
+        html.retro #hm-lives { color: #007a1f; }
+        html.retro .hm-btn-primary { background: #003300; border: 1px solid #00ff41; color: #00ff41; }
+        html.retro .hm-btn-secondary { background: #001a00; border: 1px solid #00ff41; color: #00ff41; }
+        html.retro h1 { background: none !important; -webkit-background-clip: unset !important; -webkit-text-fill-color: #00ff41 !important; }
+
+        /* ── OCEAN THEME ── */
+        html.ocean body { background: radial-gradient(circle at top, #0c2340, #020d1a) !important; color: #e0f4ff; }
+        html.ocean #hm-header { background: #05101f !important; border-color: #1d4e6e !important; }
+        html.ocean #game-tabs { background: #05101f !important; border-color: #1d4e6e !important; }
+        html.ocean .tab-link { color: #4d89ac; }
+        html.ocean .tab-link.active { color: #38bdf8; border-bottom-color: #38bdf8; }
+        html.ocean .hm-key:not(:disabled) { background: #0a2540 !important; color: #a0d8f0 !important; border: 1px solid #1d4e6e !important; }
+        html.ocean .hm-letter-box { color: #4d89ac; }
+        html.ocean .hm-letter-box.revealed { color: #0ea5e9; }
+        html.ocean #hm-lives { color: #4d89ac; }
+        html.ocean .hm-btn-secondary { background: #0a2540; color: #a0d8f0; border: 1px solid #1d4e6e; }
+
+        /* ── PASTEL THEME ── */
+        html.pastel body { background: linear-gradient(135deg, #fce7f3, #ede9fe) !important; color: #4a1d52; }
+        html.pastel #hm-header { background: #fce7f3 !important; border-color: #f0abdb !important; }
+        html.pastel #game-tabs { background: #fce7f3 !important; border-color: #f0abdb !important; }
+        html.pastel .tab-link { color: #c084db; }
+        html.pastel .tab-link.active { color: #9333ea; border-bottom-color: #9333ea; }
+        html.pastel .hm-key:not(:disabled) { background: #fad1e8 !important; color: #6b21a8 !important; border: 1px solid #e879b0 !important; }
+        html.pastel .hm-letter-box { color: #c084db; }
+        html.pastel .hm-letter-box.revealed { color: #16a34a; }
+        html.pastel #hm-lives { color: #c084db; }
+        html.pastel .hm-btn-primary { background: #c026d3; }
+        html.pastel .hm-btn-secondary { background: #fad1e8; color: #6b21a8; border: 1px solid #e879b0; }
+        html.pastel h1 { background: linear-gradient(to right, #9333ea, #ec4899) !important; -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important; }
+    </style>
+</head>
+<body>
+
+    <!-- HEADER -->
+    <div id="hm-header">
+        <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400 flex items-center gap-1.5">
+            <i data-lucide="paw-print" class="w-5 h-5 text-indigo-400"></i> Wolfle
+        </h1>
+        <div class="flex items-center gap-2">
+            <button id="theme-btn" onclick="toggleTheme()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Design wechseln">
+                <i data-lucide="sun" class="w-4 h-4"></i>
+            </button>
+            <button id="sound-btn" onclick="toggleSound()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Ton">
+                <i data-lucide="volume-2" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- GAME TABS -->
+    <div id="game-tabs">
+        <a href="index.html" class="tab-link">
+            <i data-lucide="grid-2x2" class="w-4 h-4"></i> Wordle
+        </a>
+        <a href="hangman.html" class="tab-link active">
+            <i data-lucide="skull" class="w-4 h-4"></i> Hangman
+        </a>
+    </div>
+
+    <!-- GAME AREA -->
+    <div id="hm-game">
+
+        <!-- Status -->
+        <div id="hm-status"></div>
+
+        <!-- Gallows -->
+        <div id="hm-scaffold-wrap">
+            <svg id="hangman-scaffold" viewBox="0 0 140 160">
+                <!-- Structure (always visible) -->
+                <line x1="10" y1="155" x2="130" y2="155" stroke="#94a3b8" stroke-width="4"/>
+                <line x1="40" y1="155" x2="40" y2="10"  stroke="#94a3b8" stroke-width="4"/>
+                <line x1="40" y1="10"  x2="95" y2="10"  stroke="#94a3b8" stroke-width="4"/>
+                <line x1="95" y1="10"  x2="95" y2="30"  stroke="#94a3b8" stroke-width="3"/>
+                <!-- Body parts (shown on wrong guesses) -->
+                <circle id="hm-head" cx="95" cy="45" r="14" stroke="#ef4444" stroke-width="3" fill="none" class="hm-body-part" style="display:none"/>
+                <line   id="hm-body" x1="95" y1="59" x2="95" y2="105"     stroke="#ef4444" stroke-width="3" class="hm-body-part" style="display:none"/>
+                <line   id="hm-larm" x1="95" y1="70" x2="70" y2="95"      stroke="#ef4444" stroke-width="3" class="hm-body-part" style="display:none"/>
+                <line   id="hm-rarm" x1="95" y1="70" x2="120" y2="95"     stroke="#ef4444" stroke-width="3" class="hm-body-part" style="display:none"/>
+                <line   id="hm-lleg" x1="95" y1="105" x2="70" y2="135"    stroke="#ef4444" stroke-width="3" class="hm-body-part" style="display:none"/>
+                <line   id="hm-rleg" x1="95" y1="105" x2="120" y2="135"   stroke="#ef4444" stroke-width="3" class="hm-body-part" style="display:none"/>
+            </svg>
+        </div>
+
+        <!-- Lives -->
+        <div id="hm-lives"></div>
+
+        <!-- Word display -->
+        <div id="hm-word-wrap"></div>
+
+        <!-- Keyboard -->
+        <div id="hm-keyboard"></div>
+
+        <!-- End buttons -->
+        <div id="hm-end-buttons">
+            <button class="hm-btn hm-btn-primary" onclick="initHangman()">
+                <i data-lucide="refresh-cw" class="inline w-4 h-4 mr-1"></i> Nochmal
+            </button>
+        </div>
+
+    </div>
+
+<script>
+    // ── WORD LIST ──
+    const FALLBACK = ["WOLFLE","HANGMAN","SPIELEN","RATEN","BUCHSTABE"];
+    const WORDS = (window.HANGMAN_WORDS && window.HANGMAN_WORDS.length > 0)
+        ? window.HANGMAN_WORDS
+        : FALLBACK;
+
+    // ── THEME ──
+    const THEMES = ['dark','light','retro','ocean','pastel'];
+
+    function applyTheme(theme) {
+        THEMES.forEach(t => document.documentElement.classList.remove(t));
+        if (theme && theme !== 'dark') document.documentElement.classList.add(theme);
+        const icon = (theme === 'light' || theme === 'pastel') ? 'moon' : 'sun';
+        const btn = document.getElementById('theme-btn');
+        if (btn) btn.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4"></i>`;
+        lucide.createIcons();
+    }
+
+    function toggleTheme() {
+        const current = localStorage.getItem('wolfle_theme') || 'dark';
+        const next = THEMES[(THEMES.indexOf(current) + 1) % THEMES.length];
+        localStorage.setItem('wolfle_theme', next);
+        applyTheme(next);
+    }
+
+    // ── SOUND ──
+    let soundEnabled = localStorage.getItem('wolfle_sound') !== 'false';
+    let audioCtx = null;
+
+    function getAudioCtx() {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        return audioCtx;
+    }
+
+    function playTone(freq, type, duration, volume = 0.25) {
+        if (!soundEnabled) return;
+        try {
+            const ctx = getAudioCtx();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.type = type; osc.frequency.setValueAtTime(freq, ctx.currentTime);
+            gain.gain.setValueAtTime(volume, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+            osc.start(ctx.currentTime); osc.stop(ctx.currentTime + duration);
+        } catch(e) {}
+    }
+
+    function updateSoundBtn() {
+        const icon = soundEnabled ? 'volume-2' : 'volume-x';
+        const btn = document.getElementById('sound-btn');
+        if (btn) btn.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4"></i>`;
+        lucide.createIcons();
+    }
+
+    function toggleSound() {
+        soundEnabled = !soundEnabled;
+        localStorage.setItem('wolfle_sound', soundEnabled);
+        updateSoundBtn();
+        if (soundEnabled) playTone(523, 'sine', 0.15);
+    }
+
+    function playWinSound() {
+        [523,659,784,1047].forEach((freq,i) => {
+            setTimeout(() => playTone(freq,'sine',0.4), i * 110);
+        });
+    }
+
+    // ── HANGMAN GAME ──
+    const HM_PARTS = ['hm-head','hm-body','hm-larm','hm-rarm','hm-lleg','hm-rleg'];
+    const HM_ROWS = [
+        ['Q','W','E','R','T','Z','U','I','O','P'],
+        ['A','S','D','F','G','H','J','K','L'],
+        ['Y','X','C','V','B','N','M']
+    ];
+
+    let hmWord = '';
+    let hmGuessed = new Set();
+    let hmWrong = 0;
+    let hmActive = false;
+
+    function initHangman() {
+        hmWord = WORDS[Math.floor(Math.random() * WORDS.length)].toUpperCase();
+        hmGuessed = new Set();
+        hmWrong = 0;
+        hmActive = true;
+        document.getElementById('hm-end-buttons').classList.remove('show');
+        render();
+    }
+
+    function render() {
+        // Gallows parts
+        HM_PARTS.forEach((id, i) => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = i < hmWrong ? '' : 'none';
+        });
+
+        // Lives
+        const livesEl = document.getElementById('hm-lives');
+        const remaining = HM_PARTS.length - hmWrong;
+        if (livesEl) {
+            livesEl.textContent = `❤️ ${remaining} Versuch${remaining !== 1 ? 'e' : ''} verbleibend`;
+        }
+
+        // Word display
+        const wordEl = document.getElementById('hm-word-wrap');
+        if (wordEl) {
+            wordEl.innerHTML = hmWord.split('').map(ch => {
+                if (ch === ' ') return `<div class="hm-letter-box space"></div>`;
+                const rev = hmGuessed.has(ch);
+                return `<div class="hm-letter-box${rev ? ' revealed' : ''}">${rev ? ch : ''}</div>`;
+            }).join('');
+        }
+
+        // Status
+        const solved = hmWord.split('').filter(c => c !== ' ').every(c => hmGuessed.has(c));
+        const lost = hmWrong >= HM_PARTS.length;
+        const statusEl = document.getElementById('hm-status');
+        if (statusEl) {
+            if (solved) statusEl.innerHTML = '<span class="text-green-400">🎉 Gewonnen!</span>';
+            else if (lost) statusEl.innerHTML = `<span class="text-red-400">💀 Verloren! Das Wort war: <strong>${hmWord}</strong></span>`;
+            else statusEl.textContent = '';
+        }
+
+        // Keyboard
+        const kbEl = document.getElementById('hm-keyboard');
+        if (kbEl) {
+            kbEl.innerHTML = HM_ROWS.map(row =>
+                `<div class="hm-kb-row">${row.map(ch => {
+                    const guessed = hmGuessed.has(ch);
+                    const isCorrect = guessed && hmWord.includes(ch);
+                    const isWrong = guessed && !hmWord.includes(ch);
+                    return `<button class="hm-key${isCorrect ? ' correct' : ''}${isWrong ? ' wrong' : ''}"
+                        ${(guessed || !hmActive) ? 'disabled' : ''}
+                        onclick="hmGuess('${ch}')">${ch}</button>`;
+                }).join('')}</div>`
+            ).join('');
+        }
+
+        // End state
+        if (solved || lost) {
+            hmActive = false;
+            document.getElementById('hm-end-buttons').classList.add('show');
+            if (solved) playWinSound();
+            else playTone(165, 'sawtooth', 0.5);
+        }
+    }
+
+    function hmGuess(ch) {
+        if (!hmActive || hmGuessed.has(ch)) return;
+        hmGuessed.add(ch);
+        if (!hmWord.includes(ch)) {
+            hmWrong++;
+            playTone(220, 'square', 0.15, 0.15);
+        } else {
+            playTone(523, 'sine', 0.18);
+        }
+        render();
+    }
+
+    // Keyboard input
+    document.addEventListener('keydown', (e) => {
+        if (document.activeElement.tagName === 'INPUT') return;
+        if (hmActive && /^[a-zA-Z]$/.test(e.key)) {
+            hmGuess(e.key.toUpperCase());
+        }
+    });
+
+    // Prevent zoom
+    let lastTouchEnd = 0;
+    document.addEventListener('touchstart', e => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
+    document.addEventListener('touchmove', e => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
+    document.addEventListener('touchend', e => {
+        const now = Date.now();
+        if (now - lastTouchEnd <= 300) e.preventDefault();
+        lastTouchEnd = now;
+    }, { passive: false });
+    document.addEventListener('wheel', e => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
+    document.addEventListener('gesturestart', e => e.preventDefault());
+
+    // ── INIT ──
+    applyTheme(localStorage.getItem('wolfle_theme') || 'dark');
+    updateSoundBtn();
+    lucide.createIcons();
+    initHangman();
+</script>
+
+</body>
+</html>

@@ -305,6 +305,52 @@
         html.light .nav-btn { color: #94a3b8; }
         html.light .nav-btn.active { color: #6366f1; }
 
+        /* Light mode: colored cells must stay visible */
+        html.light .cell.bg-correct { background-color: #16a34a !important; border-color: #16a34a !important; color: white !important; }
+        html.light .cell.bg-present { background-color: #b45309 !important; border-color: #b45309 !important; color: white !important; }
+        html.light .cell.bg-absent  { background-color: #64748b !important; border-color: #64748b !important; color: white !important; }
+
+        /* Light mode: colored keyboard keys must stay visible */
+        html.light .kb-key.bg-correct { background-color: #16a34a !important; color: white !important; }
+        html.light .kb-key.bg-present { background-color: #b45309 !important; color: white !important; }
+        html.light .kb-key.bg-absent  { background-color: #64748b !important; color: white !important; }
+
+        /* ── GAME TABS ── */
+        #game-tabs {
+            display: flex;
+            background: #0f172a;
+            border-bottom: 1px solid #1e293b;
+            flex-shrink: 0;
+            padding: 0 12px;
+        }
+        .tab-link {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 18px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #64748b;
+            text-decoration: none;
+            border-bottom: 2px solid transparent;
+            transition: all 0.15s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .tab-link.active { color: #818cf8; border-bottom-color: #818cf8; }
+        .tab-link:hover:not(.active) { color: #94a3b8; }
+        html.light #game-tabs { background: #f1f5f9; border-color: #cbd5e1; }
+        html.light .tab-link { color: #94a3b8; }
+        html.light .tab-link.active { color: #6366f1; border-bottom-color: #6366f1; }
+        html.retro #game-tabs { background: #000 !important; border-color: #00ff41 !important; }
+        html.retro .tab-link { color: #007a1f; }
+        html.retro .tab-link.active { color: #00ff41; border-bottom-color: #00ff41; }
+        html.ocean #game-tabs { background: #05101f !important; border-color: #1d4e6e !important; }
+        html.ocean .tab-link { color: #4d89ac; }
+        html.ocean .tab-link.active { color: #38bdf8; border-bottom-color: #38bdf8; }
+        html.pastel #game-tabs { background: #fce7f3 !important; border-color: #f0abdb !important; }
+        html.pastel .tab-link { color: #c084db; }
+        html.pastel .tab-link.active { color: #9333ea; border-bottom-color: #9333ea; }
+
         /* ── RETRO THEME (terminal green) ── */
         html.retro body { background: #000 !important; color: #00ff41; font-family: 'Courier New', monospace !important; }
         html.retro * { font-family: 'Courier New', monospace !important; }
@@ -415,49 +461,6 @@
         .theme-swatch-pastel { background: linear-gradient(135deg, #fce7f3, #ede9fe); }
         .theme-swatch-pastel span { color: #9333ea; }
 
-        /* Hangman game */
-        #hangman-view { display: none; flex-direction: column; align-items: center; justify-content: center; flex: 1; padding: 12px; gap: 12px; min-height: 0; width: 100%; }
-        #hangman-view.active { display: flex; }
-        #hangman-scaffold { width: 140px; height: 160px; flex-shrink: 0; }
-        #hangman-scaffold line, #hangman-scaffold circle { stroke-linecap: round; }
-        #hm-word-display { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
-        .hm-letter-box {
-            width: clamp(28px, 6vw, 40px);
-            height: clamp(32px, 7vw, 46px);
-            border-bottom: 3px solid currentColor;
-            display: flex; align-items: flex-end; justify-content: center;
-            font-size: clamp(16px, 3vw, 22px);
-            font-weight: bold;
-            text-transform: uppercase;
-            padding-bottom: 2px;
-            color: inherit;
-        }
-        .hm-letter-box.revealed { color: #22c55e; }
-        #hm-keyboard { display: flex; flex-direction: column; gap: 4px; }
-        .hm-kb-row { display: flex; gap: 4px; justify-content: center; }
-        .hm-key {
-            width: clamp(26px, 5.5vw, 38px);
-            height: clamp(28px, 5vw, 36px);
-            border-radius: 5px;
-            font-size: clamp(10px, 1.8vw, 13px);
-            font-weight: bold;
-            border: none;
-            cursor: pointer;
-            text-transform: uppercase;
-            transition: all 0.15s;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .hm-key:not(:disabled) { background: #334155; color: white; }
-        .hm-key:disabled.correct { background: #22c55e; color: white; opacity: 1; }
-        .hm-key:disabled.wrong { background: #ef4444; color: white; opacity: 0.6; }
-        .hm-key:not(:disabled):active { filter: brightness(0.75); transform: scale(0.95); }
-        html.retro .hm-key:not(:disabled) { background: #001a00 !important; color: #00ff41 !important; border: 1px solid #00ff41 !important; }
-        html.retro .hm-key:disabled.correct { background: #00ff41 !important; color: #000 !important; }
-        html.retro .hm-key:disabled.wrong { background: #ff0000 !important; color: #fff !important; }
-        html.ocean .hm-key:not(:disabled) { background: #0a2540 !important; color: #a0d8f0 !important; border: 1px solid #1d4e6e !important; }
-        html.pastel .hm-key:not(:disabled) { background: #fad1e8 !important; color: #6b21a8 !important; border: 1px solid #e879b0 !important; }
-        #hm-lives { font-size: 13px; font-weight: 600; letter-spacing: 0.05em; }
-        #hm-status { font-size: 14px; font-weight: 700; text-align: center; min-height: 20px; }
 
         /* Chat */
         .chat-messages { scrollbar-width: thin; scrollbar-color: #334155 transparent; }
@@ -546,7 +549,7 @@
             margin-top: 8px;
         }
 
-        @media (max-width: 768px) {
+        @media (max-width: 900px) {
             #app { flex-direction: column; }
             #sidebar-left, #sidebar-right { display: none !important; }
             #mobile-header { display: flex; }
@@ -732,6 +735,16 @@
         <div id="drawer-content"></div>
     </div>
 
+    <!-- GAME TABS -->
+    <div id="game-tabs">
+        <a href="index.html" class="tab-link active">
+            <i data-lucide="grid-2x2" class="w-4 h-4"></i> Wordle
+        </a>
+        <a href="hangman.html" class="tab-link">
+            <i data-lucide="skull" class="w-4 h-4"></i> Hangman
+        </a>
+    </div>
+
     <!-- MAIN APP -->
     <div id="app">
 
@@ -781,11 +794,11 @@
                 <i data-lucide="calendar" class="w-4 h-4"></i> <span data-i18n="dailyWordle">Daily Wordle</span>
             </button>
 
-            <!-- Hangman Button -->
-            <button onclick="window.startHangman()"
-                class="w-full flex items-center justify-center gap-2 bg-rose-700 hover:bg-rose-600 text-white py-2.5 rounded-xl transition-colors">
+            <!-- Hangman Link -->
+            <a href="hangman.html"
+                class="w-full flex items-center justify-center gap-2 bg-rose-700 hover:bg-rose-600 text-white py-2.5 rounded-xl transition-colors" style="text-decoration:none;">
                 <i data-lucide="skull" class="w-4 h-4"></i> Hangman
-            </button>
+            </a>
 
             <div>
                 <div class="relative flex items-center py-1 mb-3">
@@ -834,30 +847,6 @@
             <div id="grid-wrapper"><div id="grid"></div></div>
             <div id="keyboard"></div>
 
-            <!-- HANGMAN VIEW -->
-            <div id="hangman-view">
-                <div id="hm-status" class="text-slate-300"></div>
-
-                <!-- Gallows SVG -->
-                <svg id="hangman-scaffold" viewBox="0 0 140 160">
-                    <!-- Base, pole, beam, rope always shown -->
-                    <line x1="10" y1="155" x2="130" y2="155" stroke="#94a3b8" stroke-width="4"/>
-                    <line x1="40" y1="155" x2="40" y2="10"  stroke="#94a3b8" stroke-width="4"/>
-                    <line x1="40" y1="10"  x2="95" y2="10"  stroke="#94a3b8" stroke-width="4"/>
-                    <line x1="95" y1="10"  x2="95" y2="30"  stroke="#94a3b8" stroke-width="3"/>
-                    <!-- Body parts (hidden by default) -->
-                    <circle id="hm-head" cx="95" cy="45" r="14" stroke="#ef4444" stroke-width="3" fill="none" style="display:none"/>
-                    <line   id="hm-body" x1="95" y1="59" x2="95" y2="105"     stroke="#ef4444" stroke-width="3" style="display:none"/>
-                    <line   id="hm-larm" x1="95" y1="70" x2="70" y2="95"      stroke="#ef4444" stroke-width="3" style="display:none"/>
-                    <line   id="hm-rarm" x1="95" y1="70" x2="120" y2="95"     stroke="#ef4444" stroke-width="3" style="display:none"/>
-                    <line   id="hm-lleg" x1="95" y1="105" x2="70" y2="135"    stroke="#ef4444" stroke-width="3" style="display:none"/>
-                    <line   id="hm-rleg" x1="95" y1="105" x2="120" y2="135"   stroke="#ef4444" stroke-width="3" style="display:none"/>
-                </svg>
-
-                <div id="hm-lives" class="text-slate-400"></div>
-                <div id="hm-word-display"></div>
-                <div id="hm-keyboard"></div>
-            </div>
         </div>
 
         <!-- RIGHT SIDEBAR (desktop) -->
@@ -1950,6 +1939,10 @@
                     class="w-full flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-500 text-white py-2.5 rounded-xl transition-colors">
                     <i data-lucide="calendar" class="w-4 h-4"></i> ${t('dailyWordle')}
                 </button>
+                <a href="hangman.html"
+                    class="w-full flex items-center justify-center gap-2 bg-rose-700 hover:bg-rose-600 text-white py-2.5 rounded-xl transition-colors" style="text-decoration:none;">
+                    <i data-lucide="skull" class="w-4 h-4"></i> Hangman
+                </a>
                 <div class="relative flex items-center py-1">
                     <div class="flex-grow border-t border-slate-700"></div>
                     <span class="mx-3 text-slate-500 text-xs uppercase">${t('multiplayer')}</span>
@@ -2164,114 +2157,7 @@
         window.setTheme(next);
     };
 
-    // ═══════════════════════════════════════════════════════════
-    // HANGMAN GAME
-    // ═══════════════════════════════════════════════════════════
-    const HM_PARTS = ['hm-head','hm-body','hm-larm','hm-rarm','hm-lleg','hm-rleg'];
-    const HM_ROWS = [
-        ['Q','W','E','R','T','Z','U','I','O','P'],
-        ['A','S','D','F','G','H','J','K','L'],
-        ['Y','X','C','V','B','N','M']
-    ];
-    let hmWord = '', hmGuessed = new Set(), hmWrong = 0, hmActive = false;
-
-    window.startHangman = () => {
-        // Hide wordle UI, show hangman
-        document.getElementById('grid-wrapper').style.display = 'none';
-        document.getElementById('keyboard').style.display = 'none';
-        document.getElementById('hangman-view').classList.add('active');
-        // Stop any running wordle timer
-        if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
-        updateModeBadges();
-        initHangman();
-        lucide.createIcons();
-    };
-
-    window.exitHangman = () => {
-        document.getElementById('grid-wrapper').style.display = '';
-        document.getElementById('keyboard').style.display = '';
-        document.getElementById('hangman-view').classList.remove('active');
-        hmActive = false;
-    };
-
-    function initHangman() {
-        hmWord = WORDS[Math.floor(Math.random() * WORDS.length)].toUpperCase();
-        hmGuessed = new Set();
-        hmWrong = 0;
-        hmActive = true;
-        renderHangman();
-    }
-
-    function renderHangman() {
-        // Gallows parts
-        HM_PARTS.forEach((id, i) => {
-            const el = document.getElementById(id);
-            if (el) el.style.display = i < hmWrong ? '' : 'none';
-        });
-
-        // Lives display
-        const livesEl = document.getElementById('hm-lives');
-        if (livesEl) livesEl.textContent = `Versuche: ${HM_PARTS.length - hmWrong} verbleibend`;
-
-        // Word display
-        const wordEl = document.getElementById('hm-word-display');
-        if (wordEl) {
-            wordEl.innerHTML = hmWord.split('').map(ch =>
-                `<div class="hm-letter-box${hmGuessed.has(ch) ? ' revealed' : ''}">${hmGuessed.has(ch) ? ch : ''}</div>`
-            ).join('');
-        }
-
-        // Status
-        const statusEl = document.getElementById('hm-status');
-        const solved = hmWord.split('').every(c => hmGuessed.has(c));
-        if (statusEl) {
-            if (solved) statusEl.textContent = '🎉 Gewonnen!';
-            else if (hmWrong >= HM_PARTS.length) statusEl.textContent = `💀 Verloren! Das Wort war: ${hmWord}`;
-            else statusEl.textContent = '';
-        }
-
-        // Keyboard
-        const kbEl = document.getElementById('hm-keyboard');
-        if (kbEl) {
-            kbEl.innerHTML = HM_ROWS.map(row =>
-                `<div class="hm-kb-row">${row.map(ch => {
-                    const guessed = hmGuessed.has(ch);
-                    const isCorrect = guessed && hmWord.includes(ch);
-                    const isWrong = guessed && !hmWord.includes(ch);
-                    return `<button class="hm-key${isCorrect ? ' correct' : ''}${isWrong ? ' wrong' : ''}"
-                        ${guessed || !hmActive ? 'disabled' : ''}
-                        onclick="window.hmGuess('${ch}')">${ch}</button>`;
-                }).join('')}</div>`
-            ).join('');
-        }
-
-        if (solved || hmWrong >= HM_PARTS.length) {
-            hmActive = false;
-            // Add play again button
-            const kbEl = document.getElementById('hm-keyboard');
-            if (kbEl) {
-                kbEl.innerHTML += `<div class="flex gap-2 mt-3 justify-center">
-                    <button onclick="window.initHangman()" class="bg-rose-700 hover:bg-rose-600 text-white px-5 py-2 rounded-xl font-bold text-sm transition-colors">Nochmal</button>
-                    <button onclick="window.exitHangman()" class="bg-slate-700 hover:bg-slate-600 text-white px-5 py-2 rounded-xl font-bold text-sm transition-colors">Zurück</button>
-                </div>`;
-            }
-            if (solved) playSound('win'); else playSound('lose');
-        }
-    }
-
-    window.hmGuess = (ch) => {
-        if (!hmActive || hmGuessed.has(ch)) return;
-        hmGuessed.add(ch);
-        if (!hmWord.includes(ch)) {
-            hmWrong++;
-            playSound('absent');
-        } else {
-            playSound('correct');
-        }
-        renderHangman();
-    };
-
-    window.initHangman = initHangman;
+    // Hangman is now a separate game – see hangman.html
 
     // ═══════════════════════════════════════════════════════════
     // KEYBOARD EVENTS
@@ -2288,7 +2174,6 @@
             return;
         }
         if (document.activeElement.tagName === "INPUT") return;
-        if (hmActive && /^[a-zA-Z]$/.test(e.key)) { window.hmGuess(e.key.toUpperCase()); return; }
         if (e.key === "Enter") { e.preventDefault(); submitGuess(); }
         else if (e.key === "Backspace") backspace();
         else if (/^[a-zA-Z]$/.test(e.key)) typeLetter(e.key.toUpperCase());
