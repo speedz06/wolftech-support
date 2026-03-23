@@ -877,7 +877,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot, getDocs, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot, getDocs, updateDoc, deleteDoc, deleteField, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     const FALLBACK = ["APFEL","STADT","STUHL","TISCH","VOGEL"];
     const WORDS = (window.WOLFLE_WORDS?.length > 0) ? window.WOLFLE_WORDS : FALLBACK;
@@ -1820,9 +1820,29 @@
             { players: { [name]: { name, guesses:g, finished:f, won:w, totalScore, roundsWon } } }, { merge:true });
     }
 
-    window.leaveRoom = () => {
+    window.leaveRoom = async () => {
+        const code = currentRoomCode;
         if (roomUnsubscribe) roomUnsubscribe();
-        currentRoomCode = null; roomUnsubscribe = null;
+        roomUnsubscribe = null;
+        if (code) {
+            const name = getPlayerName();
+            const firestore = await getDB();
+            if (firestore && name) {
+                const roomRef = doc(firestore,'artifacts',appId,'public','data','rooms',code);
+                const snap = await getDoc(roomRef);
+                if (snap.exists()) {
+                    const data = snap.data();
+                    const players = { ...(data.players || {}) };
+                    delete players[name];
+                    if (Object.keys(players).length === 0) {
+                        await deleteDoc(roomRef);
+                    } else {
+                        await updateDoc(roomRef, { [`players.${name}`]: deleteField() });
+                    }
+                }
+            }
+        }
+        currentRoomCode = null;
         currentRound = 1; maxRounds = 3; playerTotalScore = 0; playerRoundsWon = 0;
         hostMaxRounds = 3;
         maxAttempts = 6;
