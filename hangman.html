@@ -707,26 +707,45 @@
         if (clusters.some(cluster => cluster.length > 4)) return false;
         return true;
     }
+    const LANGUAGE_RULES = {
+        Deutsch: {
+            set: GERMAN_WORD_SET,
+            patterns: [/SCH/g, /CH/g, /EI/g, /IE/g, /AU/g, /EU/g, /ST/g, /SP/g, /PF/g],
+            endings: [/E$/g, /EN$/g, /ER$/g, /EL$/g, /IG$/g, /ISCH$/g, /UNG$/g, /HEIT$/g, /KEIT$/g, /CHEN$/g]
+        },
+        English: {
+            set: ENGLISH_WORD_SET,
+            patterns: [/TH/g, /SH/g, /CH/g, /PH/g, /CK/g, /OO/g, /EA/g, /OU/g, /WH/g, /GH/g],
+            endings: [/E$/g, /ER$/g, /ED$/g, /ING$/g, /TION$/g, /NESS$/g, /MENT$/g, /AL$/g, /Y$/g, /LY$/g]
+        }
+    };
     function scoreLanguage(word, language) {
         const compact = (word || '').replace(/\s+/g, '');
-        const patterns = language === 'Deutsch'
-            ? [/SCH/g, /CH/g, /EI/g, /IE/g, /AU/g, /EU/g, /ER$/g, /EN$/g, /UNG/g, /ST/g]
-            : [/TH/g, /SH/g, /ING/g, /ED$/g, /LY$/g, /OO/g, /EA/g, /OU/g, /TION/g, /ER$/g];
-        return patterns.reduce((score, pattern) => score + ((compact.match(pattern) || []).length), 0);
+        const { patterns, endings } = LANGUAGE_RULES[language];
+        const patternScore = patterns.reduce((score, pattern) => score + ((compact.match(pattern) || []).length), 0);
+        const endingScore = endings.reduce((score, pattern) => score + ((compact.match(pattern) || []).length * 2), 0);
+        return patternScore + endingScore;
+    }
+    function isWordAcceptedForLanguage(word, language) {
+        const parts = (word || '').split(' ').filter(Boolean);
+        if (!parts.length || !parts.every(isPlausibleWord)) return false;
+        const { set } = LANGUAGE_RULES[language];
+        const allExact = parts.every(part => set.has(part));
+        if (allExact) return true;
+        const score = parts.reduce((sum, part) => sum + scoreLanguage(part, language), 0);
+        return score >= Math.max(1, parts.length);
     }
     function detectWordLanguage(word) {
-        const parts = (word || '').split(' ').filter(Boolean);
-        if (!parts.length || !parts.every(isPlausibleWord)) return null;
-        const exactGerman = parts.every(part => GERMAN_WORD_SET.has(part));
-        const exactEnglish = parts.every(part => ENGLISH_WORD_SET.has(part));
-        if (exactGerman) return 'Deutsch';
-        if (exactEnglish) return 'English';
-        const germanScore = parts.reduce((sum, part) => sum + scoreLanguage(part, 'Deutsch'), 0);
-        const englishScore = parts.reduce((sum, part) => sum + scoreLanguage(part, 'English'), 0);
-        if (germanScore === 0 && englishScore === 0) {
-            return null;
+        const german = isWordAcceptedForLanguage(word, 'Deutsch');
+        const english = isWordAcceptedForLanguage(word, 'English');
+        if (german && !english) return 'Deutsch';
+        if (english && !german) return 'English';
+        if (german && english) {
+            const germanScore = (word || '').split(' ').filter(Boolean).reduce((sum, part) => sum + scoreLanguage(part, 'Deutsch'), 0);
+            const englishScore = (word || '').split(' ').filter(Boolean).reduce((sum, part) => sum + scoreLanguage(part, 'English'), 0);
+            return germanScore >= englishScore ? 'Deutsch' : 'English';
         }
-        return germanScore >= englishScore ? 'Deutsch' : 'English';
+        return null;
     }
     function getRoundDisplay(wordNumber = gameState.wordNumber, playersCount = gameState.players.length) {
         if (!playersCount) return gameState.mode === 'solo' ? 1 : 0;
@@ -1106,11 +1125,9 @@
             wordPayload = pickRandomWord(maxWordLength, allowedLanguage);
         } else {
             const rawWord = sanitizeWord(window.prompt(`${picker} wählt jetzt ein ${allowedLanguage.toLowerCase()}es Wort mit maximal ${maxWordLength} Zeichen.`, ''));
-            const language = detectWordLanguage(rawWord);
             if (!rawWord || rawWord.length > maxWordLength || rawWord.length < 2) return showToast(`Bitte ein Wort mit 2 bis ${maxWordLength} Zeichen eingeben.`);
-            if (!language) return showToast(`Ungültiges Wort. Bitte ein bekanntes ${allowedLanguage.toLowerCase()}es Wort eingeben.`);
-            if (language !== allowedLanguage) return showToast(`Bitte nur ${allowedLanguage.toLowerCase()}e Wörter für diese Partie verwenden.`);
-            wordPayload = { word: rawWord, language };
+            if (!isWordAcceptedForLanguage(rawWord, allowedLanguage)) return showToast(`Ungültiges Wort. Bitte ein sinnvolles ${allowedLanguage.toLowerCase()}es Wort eingeben.`);
+            wordPayload = { word: rawWord, language: allowedLanguage };
         }
         const turnOrder = shuffle(players.filter(name => name !== picker));
         const updatedPlayers = { ...(data.players || {}) };
