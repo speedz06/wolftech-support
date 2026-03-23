@@ -580,9 +580,9 @@
         ['Y','X','C','V','B','N','M']
     ];
     const ENGLISH_WORDS = ['APPLE','HOUSE','LIGHT','TRAIN','WATER','STONE','BREAD','MUSIC','RIVER','PLANT','SMILE','HEART','CHAIR','TABLE','CLOUD','WORLD','DREAM','NIGHT','POWER','BRIDGE','POCKET','ORANGE','BOTTLE','GARDEN','SILVER','STREAM','MARKET','PLANET','SCHOOL','FOREST','SPIRIT','SHADOW','BUTTON','FUTURE','FRIEND','CASTLE','ROCKET','HUNTER','SUMMER','WINTER','SPRING','AUTUMN','FLOWER','ANCHOR','CANDLE','PIRATE','DOCTOR','DRAGON','PUZZLE','JUNGLE','FAMILY','POETRY','MIRROR','THUNDER','LIBRARY','COUNTRY','LANGUAGE','CAPTAIN','MONSTER','FREEDOM','KITCHEN','ANIMAL','BANANA','CAMERA','DINNER','ENERGY','GUITAR','HAMMER','ISLAND','JACKET','LANTERN','MACHINE','NAPKIN','OCEAN','PENCIL','QUARTZ','RAINBOW','SAILOR','TUNNEL','UMBRELLA','VALLEY','WINDOW','YELLOW','ZEPHYR'];
-    const GERMAN_WORDS = Array.from(new Set([...(window.HANGMAN_WORDS || []), ...(window.WOLFLE_WORDS || [])].map(word => (word || '').toUpperCase())));
+    const GERMAN_WORDS = Array.from(new Set([...(window.HANGMAN_WORDS || []), ...(window.WOLFLE_WORDS || [])].map(word => sanitizeWord(word))));
     const GERMAN_WORD_SET = new Set(GERMAN_WORDS);
-    const ENGLISH_WORD_SET = new Set(ENGLISH_WORDS);
+    const ENGLISH_WORD_SET = new Set(ENGLISH_WORDS.map(word => sanitizeWord(word)));
     const appId = 'wolfle-v1';
     const firebaseConfig = {
         apiKey: "AIzaSyDTPO-01gusabZGy-TthEWZWntwct6LrEQ",
