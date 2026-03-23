@@ -518,6 +518,12 @@
                                 <option value="random">Zufallswort aus Liste</option>
                             </select>
                         </label>
+                        <label class="hm-label">Sprache
+                            <select class="hm-select" id="hm-setting-language">
+                                <option value="Deutsch">Deutsch</option>
+                                <option value="English">English</option>
+                            </select>
+                        </label>
                     </div>
                     <div class="hm-grid-2">
                         <label class="hm-label">Raumcode
@@ -610,6 +616,7 @@
         turnOrder: [],
         currentTurnIndex: 0,
         wordSource: 'manual',
+        allowedLanguage: 'Deutsch',
         wordLanguage: null,
         wordNumber: 0,
         roomCode: null,
@@ -773,7 +780,8 @@
             maxLives: Math.min(10, Math.max(3, Number(document.getElementById('hm-setting-lives').value || 6))),
             roundsTarget: Math.min(20, Math.max(1, Number(document.getElementById('hm-setting-rounds').value || 5))),
             maxWordLength: Math.min(18, Math.max(4, Number(document.getElementById('hm-setting-maxlength').value || 10))),
-            wordSource: document.getElementById('hm-word-source').value || 'manual'
+            wordSource: document.getElementById('hm-word-source').value || 'manual',
+            allowedLanguage: document.getElementById('hm-setting-language').value || 'Deutsch'
         };
     }
     async function ensureDB() {
@@ -788,11 +796,11 @@
     function roomDocRef(code) {
         return firebaseFns.doc(db, 'artifacts', appId, 'public', 'data', 'hangman_rooms', code);
     }
-    function pickRandomWord(maxLength) {
+    function pickRandomWord(maxLength, allowedLanguage = 'Deutsch') {
         const germanPool = GERMAN_WORDS.map(sanitizeWord).filter(word => word.length >= 4 && word.length <= maxLength).map(word => ({ word, language: 'Deutsch' }));
         const englishPool = ENGLISH_WORDS.map(sanitizeWord).filter(word => word.length >= 4 && word.length <= maxLength).map(word => ({ word, language: 'English' }));
-        const possible = [...germanPool, ...englishPool];
-        return possible[Math.floor(Math.random() * possible.length)] || { word: 'WOLF', language: 'Deutsch' };
+        const possible = allowedLanguage === 'English' ? englishPool : germanPool;
+        return possible[Math.floor(Math.random() * possible.length)] || { word: 'WOLF', language: allowedLanguage };
     }
     function applyRoomData(data) {
         gameState.mode = 'multi';
@@ -813,6 +821,7 @@
         gameState.turnOrder = data.turnOrder || [];
         gameState.currentTurnIndex = data.currentTurnIndex || 0;
         gameState.wordSource = data.wordSource || 'manual';
+        gameState.allowedLanguage = data.allowedLanguage || 'Deutsch';
         gameState.wordLanguage = data.wordLanguage || null;
         gameState.wordNumber = data.wordNumber || 0;
         gameState.roomStatus = data.roomStatus || (data.active ? 'Runde läuft' : 'Raum verbunden');
@@ -828,7 +837,10 @@
         const sourceEl = document.getElementById('hm-word-source');
         if (sourceEl) {
             sourceEl.value = gameState.wordSource;
-            sourceEl.disabled = !!gameState.roomCode && !gameState.isHost;
+        }
+        const languageEl = document.getElementById('hm-setting-language');
+        if (languageEl) {
+            languageEl.value = gameState.allowedLanguage;
         }
         document.getElementById('hm-room-code-display').textContent = data.code || '-----';
         document.getElementById('hm-room-status').textContent = gameState.roomStatus;
@@ -866,6 +878,7 @@
             turnOrder: [],
             currentTurnIndex: 0,
             wordSource: settings.wordSource,
+            allowedLanguage: settings.allowedLanguage,
             wordLanguage: null,
             roomStatus: 'Raum erstellt – warte auf Mitspieler oder starte direkt die erste Runde.'
         };
@@ -932,7 +945,7 @@
         const badges = [
             { title: gameState.mode === 'solo' ? 'Modus' : 'Runde', text: gameState.mode === 'solo' ? 'Solo' : `${getRoundDisplay()} / ${gameState.roundsTarget}` },
             { title: 'Versuche', text: `${getRemainingLives()} / ${gameState.maxLives}` },
-            { title: gameState.mode === 'multi' && gameState.wordLanguage ? 'Sprache' : 'Wortlimit', text: gameState.mode === 'multi' && gameState.wordLanguage ? gameState.wordLanguage : `${gameState.maxWordLength} Zeichen` },
+            { title: gameState.mode === 'multi' ? 'Sprache' : 'Wortlimit', text: gameState.mode === 'multi' ? (gameState.wordLanguage || gameState.allowedLanguage) : `${gameState.maxWordLength} Zeichen` },
             { title: gameState.mode === 'solo' ? 'Status' : 'Am Zug', text: gameState.mode === 'solo' ? (gameState.active ? 'Aktive Partie' : 'Bereit') : (current || getCurrentPicker() || 'Lobby') }
         ];
         document.getElementById('hm-hero-badges').innerHTML = badges.map(b => `<div class="hm-badge"><strong>${b.text}</strong><span>${b.title}</span></div>`).join('');
@@ -1064,6 +1077,7 @@
             gameState.roundsTarget = Number(document.getElementById('hm-setting-rounds').value || 5);
             gameState.maxWordLength = Number(document.getElementById('hm-setting-maxlength').value || 10);
             gameState.wordSource = document.getElementById('hm-word-source').value || 'manual';
+            gameState.allowedLanguage = document.getElementById('hm-setting-language').value || 'Deutsch';
             gameState.roomStatus = gameState.roomCode ? gameState.roomStatus : 'Erstelle oder betrete einen Raum.';
             renderAll();
         }
@@ -1086,14 +1100,16 @@
         const nextRound = Math.ceil(nextWordNumber / Math.max(players.length, 1));
         const picker = data.currentPicker || players[0];
         const source = data.wordSource || gameState.wordSource || 'manual';
+        const allowedLanguage = data.allowedLanguage || gameState.allowedLanguage || 'Deutsch';
         let wordPayload = null;
         if (source === 'random') {
-            wordPayload = pickRandomWord(maxWordLength);
+            wordPayload = pickRandomWord(maxWordLength, allowedLanguage);
         } else {
-            const rawWord = sanitizeWord(window.prompt(`${picker} wählt jetzt ein Wort mit maximal ${maxWordLength} Zeichen.`, ''));
+            const rawWord = sanitizeWord(window.prompt(`${picker} wählt jetzt ein ${allowedLanguage.toLowerCase()}es Wort mit maximal ${maxWordLength} Zeichen.`, ''));
             const language = detectWordLanguage(rawWord);
             if (!rawWord || rawWord.length > maxWordLength || rawWord.length < 2) return showToast(`Bitte ein Wort mit 2 bis ${maxWordLength} Zeichen eingeben.`);
-            if (!language) return showToast('Ungültiges Wort. Bitte ein bekanntes deutsches oder englisches Wort eingeben.');
+            if (!language) return showToast(`Ungültiges Wort. Bitte ein bekanntes ${allowedLanguage.toLowerCase()}es Wort eingeben.`);
+            if (language !== allowedLanguage) return showToast(`Bitte nur ${allowedLanguage.toLowerCase()}e Wörter für diese Partie verwenden.`);
             wordPayload = { word: rawWord, language };
         }
         const turnOrder = shuffle(players.filter(name => name !== picker));
@@ -1116,6 +1132,7 @@
             turnOrder,
             currentTurnIndex: 0,
             wordSource: source,
+            allowedLanguage,
             wordLanguage: wordPayload.language,
             roomStatus: `Runde ${nextRound} läuft · Sprache: ${wordPayload.language}.`
         }, { merge: true });
@@ -1197,8 +1214,8 @@
         renderPlayers();
         const nameInput = document.getElementById('hm-player-name');
         if (nameInput && nameInput.value !== gameState.playerName) nameInput.value = gameState.playerName;
-        const hostLocked = !!gameState.roomCode && !gameState.isHost;
-        ['hm-setting-lives','hm-setting-rounds','hm-setting-maxlength','hm-word-source'].forEach((id) => {
+        const hostLocked = !!gameState.roomCode && (!gameState.isHost || (gameState.wordNumber > 0 && !gameState.matchFinished));
+        ['hm-setting-lives','hm-setting-rounds','hm-setting-maxlength','hm-word-source','hm-setting-language'].forEach((id) => {
             const el = document.getElementById(id);
             if (el) el.disabled = hostLocked;
         });
