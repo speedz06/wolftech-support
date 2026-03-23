@@ -668,6 +668,15 @@
             </div>
 
 
+            <!-- Feedback Settings -->
+            <div class="settings-section">
+                <h4><i data-lucide="smartphone" class="inline w-4 h-4 mr-1"></i> Feedback</h4>
+                <div class="setting-row">
+                    <label>Vibration</label>
+                    <input type="checkbox" id="haptic-toggle" onchange="hapticEnabled = this.checked; localStorage.setItem('wolfle_haptic', hapticEnabled); updateHapticBtn(); if (hapticEnabled && navigator.vibrate) navigator.vibrate(20);">
+                </div>
+            </div>
+
             <button onclick="window.closeSettingsModal()" class="w-full mt-4 bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl font-semibold transition-colors">
                 <span data-i18n="close">Schließen</span>
             </button>
@@ -726,6 +735,9 @@
             </button>
             <button id="sound-btn-mobile" onclick="window.toggleSound()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Ton">
                 <i data-lucide="volume-2" class="w-4 h-4"></i>
+            </button>
+            <button id="haptic-btn-mobile" onclick="window.toggleHaptic()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Vibration">
+                <i data-lucide="smartphone" class="w-4 h-4"></i>
             </button>
             <button id="settings-btn-mobile" onclick="window.openSettingsModal()" class="header-mobile-only text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Einstellungen">
                 <i data-lucide="settings" class="w-4 h-4"></i>
@@ -1315,6 +1327,7 @@
         document.getElementById('attempts-input').value = maxAttempts;
         document.getElementById('round-time-input').value = hostRoundTime;
         document.getElementById('language-select').value = currentLanguage;
+        document.getElementById('haptic-toggle').checked = hapticEnabled;
         lucide.createIcons();
         applyTranslations();
     };
@@ -1456,18 +1469,20 @@
         });
     }
 
-    function typeLetter(l) { 
-        if (currentCol < 5 && !gameOver) { 
-            cells[currentRow][currentCol++].textContent = l; 
-            playSound('type'); 
-        } 
+    function typeLetter(l) {
+        if (currentCol < 5 && !gameOver) {
+            cells[currentRow][currentCol++].textContent = l;
+            playSound('type');
+            hapticFeedback('type');
+        }
     }
-    
-    function backspace() { 
-        if (currentCol > 0 && !gameOver) { 
-            cells[currentRow][--currentCol].textContent = ""; 
-            playSound('type'); 
-        } 
+
+    function backspace() {
+        if (currentCol > 0 && !gameOver) {
+            cells[currentRow][--currentCol].textContent = "";
+            playSound('type');
+            hapticFeedback('type');
+        }
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -1512,6 +1527,7 @@
                     cell.classList.add(`bg-${evaluation[i]}`);
                     updateKeyColor(guess[i], evaluation[i]);
                     playSound(evaluation[i]);
+                    hapticFeedback(evaluation[i]);
                 }, 300);
             }, i * 100);
         }
@@ -1589,7 +1605,7 @@
                 }
             }
         }
-        if (!win) playSound('lose');
+        if (!win) { playSound('lose'); hapticFeedback('lose'); }
         if (currentRoomCode) updateRoomProgress(currentRow, true, win, playerTotalScore, playerRoundsWon);
         setTimeout(() => showEndModal(win, points), 400);
     }
@@ -2063,23 +2079,38 @@
     let soundEnabled = localStorage.getItem('wolfle_sound') !== 'false';
     let audioCtx = null;
 
+    // Pre-initialize AudioContext on first user interaction to avoid delay
+    function initAudioCtx() {
+        if (audioCtx) return;
+        try {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        } catch(e) {}
+    }
+    ['pointerdown', 'keydown'].forEach(evt =>
+        document.addEventListener(evt, initAudioCtx, { once: true })
+    );
+
     function getAudioCtx() {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        initAudioCtx();
         return audioCtx;
     }
 
     function playTone(freq, type, duration, volume = 0.25) {
         if (!soundEnabled) return;
-        try {
-            const ctx = getAudioCtx();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain); gain.connect(ctx.destination);
-            osc.type = type; osc.frequency.setValueAtTime(freq, ctx.currentTime);
-            gain.gain.setValueAtTime(volume, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
-            osc.start(ctx.currentTime); osc.stop(ctx.currentTime + duration);
-        } catch(e) {}
+        requestAnimationFrame(() => {
+            try {
+                const ctx = getAudioCtx();
+                if (!ctx) return;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.type = type; osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                gain.gain.setValueAtTime(volume, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+                osc.start(ctx.currentTime); osc.stop(ctx.currentTime + duration);
+            } catch(e) {}
+        });
     }
 
     function playSound(type) {
@@ -2092,6 +2123,40 @@
         };
         const s = sounds[type]; if (!s) return;
         playTone(...s);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // HAPTIC FEEDBACK
+    // ═══════════════════════════════════════════════════════════
+    let hapticEnabled = localStorage.getItem('wolfle_haptic') === 'true';
+
+    function hapticFeedback(style) {
+        if (!hapticEnabled || !navigator.vibrate) return;
+        const patterns = {
+            type:    10,
+            correct: [20, 30, 20],
+            present: [15, 20, 15],
+            absent:  25,
+            lose:    [40, 50, 40, 50, 40],
+        };
+        navigator.vibrate(patterns[style] || 10);
+    }
+
+    window.toggleHaptic = () => {
+        hapticEnabled = !hapticEnabled;
+        localStorage.setItem('wolfle_haptic', hapticEnabled);
+        updateHapticBtn();
+        if (hapticEnabled && navigator.vibrate) navigator.vibrate(20);
+    };
+
+    function updateHapticBtn() {
+        const icon = hapticEnabled ? 'vibrate' : 'smartphone';
+        document.querySelectorAll('[id^="haptic-btn"]').forEach(btn => {
+            btn.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4"></i>`;
+        });
+        const toggle = document.getElementById('haptic-toggle');
+        if (toggle) toggle.checked = hapticEnabled;
+        lucide.createIcons();
     }
 
     function playWinSound() {
