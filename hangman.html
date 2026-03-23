@@ -613,6 +613,7 @@
         wordLanguage: null,
         wordNumber: 0,
         roomCode: null,
+        hostName: null,
         isHost: false,
         playerName: localStorage.getItem('wolfle_player_name') || '',
         roomStatus: 'Kein Raum verbunden.'
@@ -690,10 +691,35 @@
     function generateRoomCode() {
         return Math.random().toString(36).substring(2, 7).toUpperCase();
     }
+    function isPlausibleWord(word) {
+        const compact = (word || '').replace(/\s+/g, '');
+        if (compact.length < 2 || !/^[A-Z]+$/.test(compact)) return false;
+        if (!/[AEIOUY]/.test(compact)) return false;
+        if (/(.)\1\1/.test(compact)) return false;
+        const clusters = compact.match(/[^AEIOUY]+/g) || [];
+        if (clusters.some(cluster => cluster.length > 4)) return false;
+        return true;
+    }
+    function scoreLanguage(word, language) {
+        const compact = (word || '').replace(/\s+/g, '');
+        const patterns = language === 'Deutsch'
+            ? [/SCH/g, /CH/g, /EI/g, /IE/g, /AU/g, /EU/g, /ER$/g, /EN$/g, /UNG/g, /ST/g]
+            : [/TH/g, /SH/g, /ING/g, /ED$/g, /LY$/g, /OO/g, /EA/g, /OU/g, /TION/g, /ER$/g];
+        return patterns.reduce((score, pattern) => score + ((compact.match(pattern) || []).length), 0);
+    }
     function detectWordLanguage(word) {
-        if (GERMAN_WORD_SET.has(word)) return 'Deutsch';
-        if (ENGLISH_WORD_SET.has(word)) return 'English';
-        return null;
+        const parts = (word || '').split(' ').filter(Boolean);
+        if (!parts.length || !parts.every(isPlausibleWord)) return null;
+        const exactGerman = parts.every(part => GERMAN_WORD_SET.has(part));
+        const exactEnglish = parts.every(part => ENGLISH_WORD_SET.has(part));
+        if (exactGerman) return 'Deutsch';
+        if (exactEnglish) return 'English';
+        const germanScore = parts.reduce((sum, part) => sum + scoreLanguage(part, 'Deutsch'), 0);
+        const englishScore = parts.reduce((sum, part) => sum + scoreLanguage(part, 'English'), 0);
+        if (germanScore === 0 && englishScore === 0) {
+            return /E$|EN$|ER$/.test(parts[parts.length - 1]) ? 'Deutsch' : 'English';
+        }
+        return germanScore >= englishScore ? 'Deutsch' : 'English';
     }
     function getRoundDisplay(wordNumber = gameState.wordNumber, playersCount = gameState.players.length) {
         if (!playersCount) return gameState.mode === 'solo' ? 1 : 0;
@@ -771,6 +797,7 @@
     function applyRoomData(data) {
         gameState.mode = 'multi';
         gameState.roomCode = data.code;
+        gameState.hostName = data.hostName || null;
         gameState.word = data.word || '';
         gameState.guessed = new Set(data.guessed || []);
         gameState.wrong = data.wrong || 0;
@@ -790,15 +817,19 @@
         gameState.wordNumber = data.wordNumber || 0;
         gameState.roomStatus = data.roomStatus || (data.active ? 'Runde läuft' : 'Raum verbunden');
         gameState.isHost = data.hostName === getPlayerName();
-        ['hm-setting-lives','hm-setting-rounds','hm-setting-maxlength'].forEach((id, idx) => {
+        ['hm-setting-lives','hm-setting-rounds','hm-setting-maxlength'].forEach((id) => {
             const el = document.getElementById(id);
             if (!el) return;
             if (id === 'hm-setting-lives') el.value = gameState.maxLives;
             if (id === 'hm-setting-rounds') el.value = gameState.roundsTarget;
             if (id === 'hm-setting-maxlength') el.value = gameState.maxWordLength;
+            el.disabled = !!gameState.roomCode && !gameState.isHost;
         });
         const sourceEl = document.getElementById('hm-word-source');
-        if (sourceEl) sourceEl.value = gameState.wordSource;
+        if (sourceEl) {
+            sourceEl.value = gameState.wordSource;
+            sourceEl.disabled = !!gameState.roomCode && !gameState.isHost;
+        }
         document.getElementById('hm-room-code-display').textContent = data.code || '-----';
         document.getElementById('hm-room-status').textContent = gameState.roomStatus;
         renderAll();
@@ -908,7 +939,7 @@
         document.getElementById('hm-round-title').textContent = gameState.mode === 'solo' ? 'Solo-Runde' : `Online-Raum ${gameState.roomCode || ''}`.trim();
         document.getElementById('hm-round-subtitle').textContent = gameState.mode === 'solo'
             ? 'Tippe auf einen Buchstaben oder starte eine neue Solo-Partie.'
-            : `${gameState.roomStatus || 'Erstelle oder betrete einen Raum.'}${gameState.wordLanguage ? ` · Sprache: ${gameState.wordLanguage}` : ''}`;
+            : `${gameState.roomStatus || 'Erstelle oder betrete einen Raum.'}${gameState.hostName ? ` · Host: ${gameState.hostName}` : ''}${gameState.wordLanguage ? ` · Sprache: ${gameState.wordLanguage}` : ''}`;
         document.getElementById('hm-turn-indicator').textContent = gameState.mode === 'solo'
             ? (gameState.active ? 'Solo aktiv' : 'Bereit')
             : (gameState.active ? `Zug: ${current || '—'}` : `Picker: ${getCurrentPicker() || '—'}`);
@@ -933,6 +964,7 @@
         list.innerHTML = gameState.players.map(name => {
             const score = gameState.scores[name] || { guessed: 0, picked: 0 };
             const labels = [];
+            if (name === gameState.hostName) labels.push('Host');
             if (name === picker) labels.push('Wortgeber:in');
             if (name === current && gameState.active) labels.push('am Zug');
             if (name === gameState.playerName) labels.push('du');
@@ -1165,6 +1197,11 @@
         renderPlayers();
         const nameInput = document.getElementById('hm-player-name');
         if (nameInput && nameInput.value !== gameState.playerName) nameInput.value = gameState.playerName;
+        const hostLocked = !!gameState.roomCode && !gameState.isHost;
+        ['hm-setting-lives','hm-setting-rounds','hm-setting-maxlength','hm-word-source'].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) el.disabled = hostLocked;
+        });
         document.getElementById('hm-room-status').textContent = gameState.roomStatus || 'Noch mit keinem Raum verbunden.';
         document.getElementById('hm-room-code-display').textContent = gameState.roomCode || '-----';
         lucide.createIcons();
