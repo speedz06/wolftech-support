@@ -717,7 +717,7 @@
         const germanScore = parts.reduce((sum, part) => sum + scoreLanguage(part, 'Deutsch'), 0);
         const englishScore = parts.reduce((sum, part) => sum + scoreLanguage(part, 'English'), 0);
         if (germanScore === 0 && englishScore === 0) {
-            return /E$|EN$|ER$/.test(parts[parts.length - 1]) ? 'Deutsch' : 'English';
+            return null;
         }
         return germanScore >= englishScore ? 'Deutsch' : 'English';
     }
