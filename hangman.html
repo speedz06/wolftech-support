@@ -573,6 +573,10 @@
         ['A','S','D','F','G','H','J','K','L'],
         ['Y','X','C','V','B','N','M']
     ];
+    const ENGLISH_WORDS = ['APPLE','HOUSE','LIGHT','TRAIN','WATER','STONE','BREAD','MUSIC','RIVER','PLANT','SMILE','HEART','CHAIR','TABLE','CLOUD','WORLD','DREAM','NIGHT','POWER','BRIDGE','POCKET','ORANGE','BOTTLE','GARDEN','SILVER','STREAM','MARKET','PLANET','SCHOOL','FOREST','SPIRIT','SHADOW','BUTTON','FUTURE','FRIEND','CASTLE','ROCKET','HUNTER','SUMMER','WINTER','SPRING','AUTUMN','FLOWER','ANCHOR','CANDLE','PIRATE','DOCTOR','DRAGON','PUZZLE','JUNGLE','FAMILY','POETRY','MIRROR','THUNDER','LIBRARY','COUNTRY','LANGUAGE','CAPTAIN','MONSTER','FREEDOM','KITCHEN','ANIMAL','BANANA','CAMERA','DINNER','ENERGY','GUITAR','HAMMER','ISLAND','JACKET','LANTERN','MACHINE','NAPKIN','OCEAN','PENCIL','QUARTZ','RAINBOW','SAILOR','TUNNEL','UMBRELLA','VALLEY','WINDOW','YELLOW','ZEPHYR'];
+    const GERMAN_WORDS = Array.from(new Set([...(window.HANGMAN_WORDS || []), ...(window.WOLFLE_WORDS || [])].map(word => (word || '').toUpperCase())));
+    const GERMAN_WORD_SET = new Set(GERMAN_WORDS);
+    const ENGLISH_WORD_SET = new Set(ENGLISH_WORDS);
     const appId = 'wolfle-v1';
     const firebaseConfig = {
         apiKey: "AIzaSyDTPO-01gusabZGy-TthEWZWntwct6LrEQ",
@@ -606,6 +610,8 @@
         turnOrder: [],
         currentTurnIndex: 0,
         wordSource: 'manual',
+        wordLanguage: null,
+        wordNumber: 0,
         roomCode: null,
         isHost: false,
         playerName: localStorage.getItem('wolfle_player_name') || '',
@@ -684,6 +690,15 @@
     function generateRoomCode() {
         return Math.random().toString(36).substring(2, 7).toUpperCase();
     }
+    function detectWordLanguage(word) {
+        if (GERMAN_WORD_SET.has(word)) return 'Deutsch';
+        if (ENGLISH_WORD_SET.has(word)) return 'English';
+        return null;
+    }
+    function getRoundDisplay(wordNumber = gameState.wordNumber, playersCount = gameState.players.length) {
+        if (!playersCount) return gameState.mode === 'solo' ? 1 : 0;
+        return Math.max(1, Math.ceil(Math.max(wordNumber, 1) / playersCount));
+    }
     function serializePlayers(scores = gameState.scores) {
         return Object.fromEntries(Object.entries(scores).map(([name, value]) => [name, { guessed: value.guessed || 0, picked: value.picked || 0 }]));
     }
@@ -701,6 +716,7 @@
         gameState.wrong = 0;
         gameState.active = false;
         gameState.word = '';
+        gameState.wordLanguage = null;
         gameState.turnOrder = [];
         gameState.currentTurnIndex = 0;
     }
@@ -747,8 +763,10 @@
         return firebaseFns.doc(db, 'artifacts', appId, 'public', 'data', 'hangman_rooms', code);
     }
     function pickRandomWord(maxLength) {
-        const possible = WORDS.map(sanitizeWord).filter(word => word.length >= 4 && word.length <= maxLength);
-        return possible[Math.floor(Math.random() * possible.length)] || 'WOLF';
+        const germanPool = GERMAN_WORDS.map(sanitizeWord).filter(word => word.length >= 4 && word.length <= maxLength).map(word => ({ word, language: 'Deutsch' }));
+        const englishPool = ENGLISH_WORDS.map(sanitizeWord).filter(word => word.length >= 4 && word.length <= maxLength).map(word => ({ word, language: 'English' }));
+        const possible = [...germanPool, ...englishPool];
+        return possible[Math.floor(Math.random() * possible.length)] || { word: 'WOLF', language: 'Deutsch' };
     }
     function applyRoomData(data) {
         gameState.mode = 'multi';
@@ -768,8 +786,19 @@
         gameState.turnOrder = data.turnOrder || [];
         gameState.currentTurnIndex = data.currentTurnIndex || 0;
         gameState.wordSource = data.wordSource || 'manual';
+        gameState.wordLanguage = data.wordLanguage || null;
+        gameState.wordNumber = data.wordNumber || 0;
         gameState.roomStatus = data.roomStatus || (data.active ? 'Runde läuft' : 'Raum verbunden');
         gameState.isHost = data.hostName === getPlayerName();
+        ['hm-setting-lives','hm-setting-rounds','hm-setting-maxlength'].forEach((id, idx) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (id === 'hm-setting-lives') el.value = gameState.maxLives;
+            if (id === 'hm-setting-rounds') el.value = gameState.roundsTarget;
+            if (id === 'hm-setting-maxlength') el.value = gameState.maxWordLength;
+        });
+        const sourceEl = document.getElementById('hm-word-source');
+        if (sourceEl) sourceEl.value = gameState.wordSource;
         document.getElementById('hm-room-code-display').textContent = data.code || '-----';
         document.getElementById('hm-room-status').textContent = gameState.roomStatus;
         renderAll();
@@ -799,12 +828,14 @@
             maxLives: settings.maxLives,
             roundsTarget: settings.roundsTarget,
             roundNumber: 0,
+            wordNumber: 0,
             maxWordLength: settings.maxWordLength,
             matchFinished: false,
             currentPicker: name,
             turnOrder: [],
             currentTurnIndex: 0,
             wordSource: settings.wordSource,
+            wordLanguage: null,
             roomStatus: 'Raum erstellt – warte auf Mitspieler oder starte direkt die erste Runde.'
         };
         await firebaseFns.setDoc(roomDocRef(code), payload);
@@ -868,16 +899,16 @@
     function renderHeroBadges() {
         const current = getCurrentTurnPlayer();
         const badges = [
-            { title: gameState.mode === 'solo' ? 'Modus' : 'Runde', text: gameState.mode === 'solo' ? 'Solo' : `${Math.max(gameState.roundNumber, 0)} / ${gameState.roundsTarget}` },
+            { title: gameState.mode === 'solo' ? 'Modus' : 'Runde', text: gameState.mode === 'solo' ? 'Solo' : `${getRoundDisplay()} / ${gameState.roundsTarget}` },
             { title: 'Versuche', text: `${getRemainingLives()} / ${gameState.maxLives}` },
-            { title: 'Wortlimit', text: `${gameState.maxWordLength} Zeichen` },
+            { title: gameState.mode === 'multi' && gameState.wordLanguage ? 'Sprache' : 'Wortlimit', text: gameState.mode === 'multi' && gameState.wordLanguage ? gameState.wordLanguage : `${gameState.maxWordLength} Zeichen` },
             { title: gameState.mode === 'solo' ? 'Status' : 'Am Zug', text: gameState.mode === 'solo' ? (gameState.active ? 'Aktive Partie' : 'Bereit') : (current || getCurrentPicker() || 'Lobby') }
         ];
         document.getElementById('hm-hero-badges').innerHTML = badges.map(b => `<div class="hm-badge"><strong>${b.text}</strong><span>${b.title}</span></div>`).join('');
         document.getElementById('hm-round-title').textContent = gameState.mode === 'solo' ? 'Solo-Runde' : `Online-Raum ${gameState.roomCode || ''}`.trim();
         document.getElementById('hm-round-subtitle').textContent = gameState.mode === 'solo'
             ? 'Tippe auf einen Buchstaben oder starte eine neue Solo-Partie.'
-            : (gameState.roomStatus || 'Erstelle oder betrete einen Raum wie beim Wordle.');
+            : `${gameState.roomStatus || 'Erstelle oder betrete einen Raum.'}${gameState.wordLanguage ? ` · Sprache: ${gameState.wordLanguage}` : ''}`;
         document.getElementById('hm-turn-indicator').textContent = gameState.mode === 'solo'
             ? (gameState.active ? 'Solo aktiv' : 'Bereit')
             : (gameState.active ? `Zug: ${current || '—'}` : `Picker: ${getCurrentPicker() || '—'}`);
@@ -887,7 +918,7 @@
             { title: 'Falsche Tipps', value: `${gameState.wrong}` },
             { title: 'Offene Felder', value: `${gameState.word ? gameState.word.split('').filter(c => c !== ' ' && !gameState.guessed.has(c)).length : 0}` },
             { title: gameState.mode === 'solo' ? 'Benutzte Buchstaben' : 'Spieler', value: gameState.mode === 'solo' ? `${gameState.guessed.size}` : `${gameState.players.length}` },
-            { title: gameState.mode === 'solo' ? 'Rundenziel' : 'Picker', value: gameState.mode === 'solo' ? 'Endlos' : (getCurrentPicker() || '—') }
+            { title: gameState.mode === 'solo' ? 'Rundenziel' : 'Wörter gesamt', value: gameState.mode === 'solo' ? 'Endlos' : `${gameState.wordNumber} / ${gameState.players.length * gameState.roundsTarget || 0}` }
         ];
         document.getElementById('hm-stats').innerHTML = stats.map(item => `<div class="hm-stat-card"><strong>${item.value}</strong><span>${item.title}</span></div>`).join('');
     }
@@ -933,13 +964,13 @@
         if (!gameState.word) {
             statusEl.innerHTML = gameState.mode === 'solo'
                 ? '<span class="text-cyan-300">Bereit für eine neue Solo-Runde.</span>'
-                : '<span class="text-cyan-300">Raum erstellen oder beitreten und dann Runde starten.</span>';
+                : '<span class="text-cyan-300">Raum erstellen oder beitreten und dann das erste gültige Wort starten.</span>';
             return;
         }
         if (solved) {
-            statusEl.innerHTML = `<span class="text-green-400">🎉 ${getCurrentTurnPlayer() || 'Jemand'} hat das Wort gelöst!</span>`;
+            statusEl.innerHTML = `<span class="text-green-400">🎉 ${getCurrentTurnPlayer() || 'Jemand'} hat das ${gameState.wordLanguage ? `${gameState.wordLanguage.toLowerCase()}e ` : ''}Wort gelöst!</span>`;
         } else if (lost) {
-            statusEl.innerHTML = `<span class="text-red-400">💀 Keine Versuche mehr. Das Wort war <strong>${gameState.word}</strong>.</span>`;
+            statusEl.innerHTML = `<span class="text-red-400">💀 Keine Versuche mehr. Das Wort war <strong>${gameState.word}</strong>${gameState.wordLanguage ? ` (${gameState.wordLanguage})` : ''}.</span>`;
         } else if (gameState.mode === 'multi') {
             statusEl.innerHTML = `<span class="text-slate-200">${getCurrentTurnPlayer() === gameState.playerName ? 'Du bist am Zug.' : `${getCurrentTurnPlayer() || 'Jemand'} ist am Zug.`} Wortgeber:in: <strong>${getCurrentPicker() || '—'}</strong>.</span>`;
         } else {
@@ -967,9 +998,10 @@
         }
     }
     function renderScaffold() {
+        const visibleParts = gameState.wrong <= 0 ? 0 : Math.min(HM_PARTS.length, Math.ceil((gameState.wrong / Math.max(gameState.maxLives, 1)) * HM_PARTS.length));
         HM_PARTS.forEach((id, i) => {
             const el = document.getElementById(id);
-            if (el) el.style.display = i < gameState.wrong ? '' : 'none';
+            if (el) el.style.display = i < visibleParts ? '' : 'none';
         });
     }
     function startSoloGame() {
@@ -1012,35 +1044,48 @@
         if (!snap.exists()) return;
         const data = snap.data();
         const players = Object.keys(data.players || {});
-        const settings = getHostSettings();
-        let roundNumber = data.roundNumber || 0;
-        if (data.matchFinished) roundNumber = 0;
-        if (roundNumber >= settings.roundsTarget && !data.matchFinished) return showToast('Alle Runden sind bereits gespielt.');
-        const nextRound = roundNumber + 1;
+        const maxLives = data.maxLives || gameState.maxLives || 6;
+        const roundsTarget = data.roundsTarget || gameState.roundsTarget || 5;
+        const maxWordLength = data.maxWordLength || gameState.maxWordLength || 10;
+        const totalWordsTarget = roundsTarget * Math.max(players.length, 1);
+        let wordNumber = data.matchFinished ? 0 : (data.wordNumber || 0);
+        if (wordNumber >= totalWordsTarget && !data.matchFinished) return showToast('Alle vollständigen Runden sind bereits gespielt.');
+        const nextWordNumber = wordNumber + 1;
+        const nextRound = Math.ceil(nextWordNumber / Math.max(players.length, 1));
         const picker = data.currentPicker || players[0];
-        const source = settings.wordSource;
-        const nextWord = source === 'random' ? pickRandomWord(settings.maxWordLength) : sanitizeWord(window.prompt(`${picker} wählt jetzt ein Wort mit maximal ${settings.maxWordLength} Zeichen.`, ''));
-        if (!nextWord || nextWord.length > settings.maxWordLength || nextWord.length < 2) return showToast(`Bitte ein Wort mit 2 bis ${settings.maxWordLength} Zeichen eingeben.`);
+        const source = data.wordSource || gameState.wordSource || 'manual';
+        let wordPayload = null;
+        if (source === 'random') {
+            wordPayload = pickRandomWord(maxWordLength);
+        } else {
+            const rawWord = sanitizeWord(window.prompt(`${picker} wählt jetzt ein Wort mit maximal ${maxWordLength} Zeichen.`, ''));
+            const language = detectWordLanguage(rawWord);
+            if (!rawWord || rawWord.length > maxWordLength || rawWord.length < 2) return showToast(`Bitte ein Wort mit 2 bis ${maxWordLength} Zeichen eingeben.`);
+            if (!language) return showToast('Ungültiges Wort. Bitte ein bekanntes deutsches oder englisches Wort eingeben.');
+            wordPayload = { word: rawWord, language };
+        }
         const turnOrder = shuffle(players.filter(name => name !== picker));
         const updatedPlayers = { ...(data.players || {}) };
         updatedPlayers[picker] = updatedPlayers[picker] || { guessed: 0, picked: 0 };
         updatedPlayers[picker].picked = (updatedPlayers[picker].picked || 0) + 1;
         await firebaseFns.setDoc(roomDocRef(gameState.roomCode), {
             players: updatedPlayers,
-            word: nextWord,
+            word: wordPayload.word,
             guessed: [],
             wrong: 0,
             active: true,
-            maxLives: settings.maxLives,
-            roundsTarget: settings.roundsTarget,
+            maxLives,
+            roundsTarget,
             roundNumber: nextRound,
-            maxWordLength: settings.maxWordLength,
+            wordNumber: nextWordNumber,
+            maxWordLength,
             matchFinished: false,
             currentPicker: picker,
             turnOrder,
             currentTurnIndex: 0,
             wordSource: source,
-            roomStatus: `Runde ${nextRound} läuft.`
+            wordLanguage: wordPayload.language,
+            roomStatus: `Runde ${nextRound} läuft · Sprache: ${wordPayload.language}.`
         }, { merge: true });
     }
     function getNextPicker(players, currentPicker) {
@@ -1068,14 +1113,15 @@
             guessed: [...guessed],
             wrong,
             currentTurnIndex: ((data.currentTurnIndex || 0) + 1) % Math.max((data.turnOrder || []).length, 1),
-            roomStatus: 'Runde läuft.'
+            roomStatus: `Runde läuft · Sprache: ${data.wordLanguage || 'Unbekannt'}.`
         };
         if (solved || lost) {
             payload.active = false;
             payload.currentTurnIndex = data.currentTurnIndex || 0;
-            payload.matchFinished = (data.roundNumber || 0) >= (data.roundsTarget || 5);
+            payload.matchFinished = (data.wordNumber || 0) >= ((data.roundsTarget || 5) * Math.max(Object.keys(playersObj).length, 1));
             payload.currentPicker = getNextPicker(Object.keys(playersObj), data.currentPicker);
-            payload.roomStatus = solved ? `${gameState.playerName} hat das Wort gelöst.` : `Runde vorbei. Das Wort war ${word}.`;
+            payload.roomStatus = solved ? `${gameState.playerName} hat das ${data.wordLanguage ? `${data.wordLanguage.toLowerCase()}e ` : ''}Wort gelöst.` : `Runde vorbei. Das Wort war ${word}${data.wordLanguage ? ` (${data.wordLanguage})` : ''}.`;
+            payload.wordLanguage = data.wordLanguage || null;
             if (solved) {
                 playersObj[gameState.playerName] = playersObj[gameState.playerName] || { guessed: 0, picked: 0 };
                 playersObj[gameState.playerName].guessed = (playersObj[gameState.playerName].guessed || 0) + 1;
