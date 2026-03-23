@@ -615,7 +615,7 @@
         roomCode: null,
         hostName: null,
         isHost: false,
-        playerName: localStorage.getItem('wolfle_player_name') || '',
+        playerName: localStorage.getItem('wolfle_user_name') || '',
         roomStatus: 'Kein Raum verbunden.'
     };
 
@@ -783,7 +783,7 @@
     function getPlayerName() {
         const input = document.getElementById('hm-player-name');
         const value = (input?.value || gameState.playerName || '').trim();
-        if (value) localStorage.setItem('wolfle_player_name', value);
+        if (value) localStorage.setItem('wolfle_user_name', value);
         gameState.playerName = value;
         return value;
     }
@@ -914,11 +914,15 @@
         const data = snap.data();
         const players = { ...(data.players || {}) };
         delete players[name];
-        await firebaseFns.setDoc(roomDocRef(gameState.roomCode), {
-            players,
-            roomStatus: 'Jemand hat den Raum verlassen.',
-            currentPicker: data.currentPicker === name ? Object.keys(players)[0] || null : data.currentPicker
-        }, { merge: true });
+        if (Object.keys(players).length === 0) {
+            await firebaseFns.deleteDoc(roomDocRef(gameState.roomCode));
+        } else {
+            await firebaseFns.setDoc(roomDocRef(gameState.roomCode), {
+                players,
+                roomStatus: 'Jemand hat den Raum verlassen.',
+                currentPicker: data.currentPicker === name ? Object.keys(players)[0] || null : data.currentPicker
+            }, { merge: true });
+        }
         if (roomUnsubscribe) roomUnsubscribe();
         roomUnsubscribe = null;
         gameState.roomCode = null;
