@@ -106,14 +106,14 @@
         .hm-hero {
             display: flex;
             flex-direction: column;
-            gap: 14px;
+            gap: 10px;
             align-items: stretch;
-            padding: 18px;
-            border-radius: 24px;
-            background: linear-gradient(135deg, rgba(99,102,241,0.18), rgba(6,182,212,0.12));
-            border: 1px solid rgba(99,102,241,0.22);
+            padding: 14px 16px;
+            border-radius: 22px;
+            background: linear-gradient(135deg, rgba(99,102,241,0.14), rgba(6,182,212,0.08));
+            border: 1px solid rgba(99,102,241,0.18);
         }
-        .hm-hero-copy { display: flex; flex-direction: column; gap: 10px; max-width: 100%; }
+        .hm-hero-copy { display: flex; flex-direction: column; gap: 8px; max-width: 100%; }
         .hm-eyebrow {
             display: inline-flex;
             align-items: center;
@@ -130,9 +130,9 @@
         }
         .hm-hero h2 {
             margin: 0;
-            font-size: clamp(1.35rem, 3vw, 2rem);
+            font-size: clamp(1rem, 2.1vw, 1.35rem);
             font-weight: 800;
-            line-height: 1.1;
+            line-height: 1.15;
         }
         .hm-hero p {
             margin: 0;
@@ -395,8 +395,8 @@
         @media (max-width: 640px) {
             #hm-game { padding-inline: 10px; }
             .hm-panel { padding: 14px; border-radius: 20px; }
-            .hm-hero { padding: 14px; }
-            .hm-hero h2 { font-size: clamp(1.15rem, 7vw, 1.55rem); }
+            .hm-hero { padding: 12px; }
+            .hm-hero h2 { font-size: clamp(1rem, 6vw, 1.2rem); }
             .hm-badge { flex: 1 1 calc(50% - 10px); min-width: 0; }
             #hm-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
             .hm-grid-2 { grid-template-columns: 1fr; }
@@ -449,21 +449,6 @@
     <div id="hm-game">
         <div id="hm-layout">
             <section id="hm-board">
-                <div class="hm-panel hm-hero">
-                    <div class="hm-hero-copy">
-                        <div class="hm-eyebrow"><i data-lucide="sparkles" class="w-4 h-4"></i> Hangman</div>
-                        <h2>Bereit für die nächste Runde?</h2>
-                        <div class="hm-badges" id="hm-hero-badges"></div>
-                    </div>
-                    <div class="hm-hidden-word">
-                        <div>
-                            <strong id="hm-round-title">Solo-Runde</strong>
-                            <div class="hm-muted" id="hm-round-subtitle">Starte direkt oder konfiguriere unten ein lokales Multiplayer-Spiel.</div>
-                        </div>
-                        <code id="hm-turn-indicator">Bereit</code>
-                    </div>
-                </div>
-
                 <div class="hm-panel" id="hm-main-card">
                     <div id="hm-status"></div>
                     <div id="hm-stats"></div>
@@ -484,6 +469,21 @@
                     <div id="hm-word-wrap"></div>
                     <div id="hm-keyboard"></div>
                     <div id="hm-end-buttons"></div>
+                </div>
+
+                <div class="hm-panel hm-hero">
+                    <div class="hm-hero-copy">
+                        <div class="hm-eyebrow"><i data-lucide="sparkles" class="w-4 h-4"></i> Hangman</div>
+                        <h2>Rundeninfo</h2>
+                        <div class="hm-badges" id="hm-hero-badges"></div>
+                    </div>
+                    <div class="hm-hidden-word">
+                        <div>
+                            <strong id="hm-round-title">Solo-Runde</strong>
+                            <div class="hm-muted" id="hm-round-subtitle">Starte direkt oder konfiguriere unten ein lokales Multiplayer-Spiel.</div>
+                        </div>
+                        <code id="hm-turn-indicator">Bereit</code>
+                    </div>
                 </div>
             </section>
 
