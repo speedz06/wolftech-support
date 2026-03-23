@@ -158,21 +158,23 @@
             border-radius: 50%;
         }
         
-        /* Tooltip for keyboard */
-        .kb-key[data-tooltip]:hover::before {
-            content: attr(data-tooltip);
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #1e293b;
-            color: white;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 10px;
-            white-space: nowrap;
-            z-index: 100;
-            border: 1px solid #334155;
+        /* Tooltip for keyboard - only on desktop (hover-capable devices) */
+        @media (hover: hover) and (pointer: fine) {
+            .kb-key[data-tooltip]:hover::before {
+                content: attr(data-tooltip);
+                position: absolute;
+                bottom: 100%;
+                left: 50%;
+                transform: translateX(-50%);
+                background: #1e293b;
+                color: white;
+                padding: 4px 8px;
+                border-radius: 4px;
+                font-size: 10px;
+                white-space: nowrap;
+                z-index: 100;
+                border: 1px solid #334155;
+            }
         }
 
         /* Desktop layout */
