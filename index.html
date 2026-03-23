@@ -2129,24 +2129,25 @@
     // HAPTIC FEEDBACK
     // ═══════════════════════════════════════════════════════════
     let hapticEnabled = localStorage.getItem('wolfle_haptic') === 'true';
+    const canVibrate = typeof navigator.vibrate === 'function';
 
     function hapticFeedback(style) {
-        if (!hapticEnabled || !navigator.vibrate) return;
+        if (!hapticEnabled || !canVibrate) return;
         const patterns = {
-            type:    10,
-            correct: [20, 30, 20],
-            present: [15, 20, 15],
-            absent:  25,
-            lose:    [40, 50, 40, 50, 40],
+            type:    15,
+            correct: [25, 40, 25],
+            present: [20, 30, 20],
+            absent:  30,
+            lose:    [50, 60, 50, 60, 50],
         };
-        navigator.vibrate(patterns[style] || 10);
+        try { navigator.vibrate(patterns[style] || 15); } catch(e) {}
     }
 
     window.toggleHaptic = () => {
         hapticEnabled = !hapticEnabled;
         localStorage.setItem('wolfle_haptic', hapticEnabled);
         updateHapticBtn();
-        if (hapticEnabled && navigator.vibrate) navigator.vibrate(20);
+        if (hapticEnabled && canVibrate) try { navigator.vibrate(25); } catch(e) {}
     };
 
     function updateHapticBtn() {

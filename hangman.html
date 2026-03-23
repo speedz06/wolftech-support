@@ -434,6 +434,9 @@
             <button id="sound-btn" onclick="toggleSound()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Ton">
                 <i data-lucide="volume-2" class="w-4 h-4"></i>
             </button>
+            <button id="haptic-btn" onclick="toggleHaptic()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Vibration">
+                <i data-lucide="smartphone" class="w-4 h-4"></i>
+            </button>
         </div>
     </div>
 
@@ -634,21 +637,62 @@
         applyTheme(next);
     }
     function getAudioCtx() {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        initAudioCtx();
         return audioCtx;
     }
+    function initAudioCtx() {
+        if (audioCtx) return;
+        try {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        } catch(e) {}
+    }
+    ['pointerdown', 'keydown'].forEach(evt =>
+        document.addEventListener(evt, initAudioCtx, { once: true })
+    );
     function playTone(freq, type, duration, volume = 0.25) {
         if (!soundEnabled) return;
-        try {
-            const ctx = getAudioCtx();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain); gain.connect(ctx.destination);
-            osc.type = type; osc.frequency.setValueAtTime(freq, ctx.currentTime);
-            gain.gain.setValueAtTime(volume, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
-            osc.start(ctx.currentTime); osc.stop(ctx.currentTime + duration);
-        } catch (e) {}
+        requestAnimationFrame(() => {
+            try {
+                const ctx = getAudioCtx();
+                if (!ctx) return;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.type = type; osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                gain.gain.setValueAtTime(volume, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+                osc.start(ctx.currentTime); osc.stop(ctx.currentTime + duration);
+            } catch (e) {}
+        });
+    }
+
+    // ─── HAPTIC FEEDBACK ───
+    let hapticEnabled = localStorage.getItem('wolfle_haptic') === 'true';
+
+    function triggerHaptic(style) {
+        if (!hapticEnabled) return;
+        const patterns = {
+            type:    10,
+            correct: [20, 30, 20],
+            wrong:   25,
+            lose:    [40, 50, 40, 50, 40],
+        };
+        const p = patterns[style] || 10;
+        try { navigator.vibrate(p); } catch(e) {}
+    }
+
+    function updateHapticBtn() {
+        const icon = hapticEnabled ? 'vibrate' : 'smartphone';
+        const btn = document.getElementById('haptic-btn');
+        if (btn) btn.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4"></i>`;
+        lucide.createIcons();
+    }
+    function toggleHaptic() {
+        hapticEnabled = !hapticEnabled;
+        localStorage.setItem('wolfle_haptic', hapticEnabled);
+        updateHapticBtn();
+        if (hapticEnabled) try { navigator.vibrate(20); } catch(e) {}
     }
     function updateSoundBtn() {
         const icon = soundEnabled ? 'volume-2' : 'volume-x';
@@ -1184,7 +1228,7 @@
         }
         await firebaseFns.setDoc(roomDocRef(gameState.roomCode), payload, { merge: true });
         if (solved) playWinSound();
-        else if (lost) playTone(165, 'sawtooth', 0.5);
+        else if (lost) { playTone(165, 'sawtooth', 0.5); triggerHaptic('lose'); }
     }
     function hmGuess(ch) {
         if (!gameState.active || gameState.guessed.has(ch) || !gameState.word) return;
@@ -1196,14 +1240,17 @@
         if (!gameState.word.includes(ch)) {
             gameState.wrong += 1;
             playTone(220, 'square', 0.15, 0.15);
+            triggerHaptic('wrong');
         } else {
             playTone(523, 'sine', 0.18);
+            triggerHaptic('correct');
         }
         const solved = getSolved();
         const lost = getLost();
         if (solved || lost) {
             gameState.active = false;
-            solved ? playWinSound() : playTone(165, 'sawtooth', 0.5);
+            if (solved) { playWinSound(); }
+            else { playTone(165, 'sawtooth', 0.5); triggerHaptic('lose'); }
         }
         renderAll();
     }
@@ -1266,6 +1313,7 @@
 
     window.toggleTheme = toggleTheme;
     window.toggleSound = toggleSound;
+    window.toggleHaptic = toggleHaptic;
     window.switchMode = switchMode;
     window.hmCreateRoom = hmCreateRoom;
     window.hmJoinRoom = hmJoinRoom;
