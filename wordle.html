@@ -915,7 +915,7 @@
                 <input id="login-pin-input" type="password" maxlength="8" placeholder="PIN (optional)..."
                     class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white mb-4 transition-colors">
                 <div id="login-error" class="hidden text-red-400 text-xs mb-3 text-center"></div>
-                <button onclick="window.doLogin()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors mb-2">Anmelden / Registrieren</button>
+                <button id="login-submit-btn" onclick="window.doLogin()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors mb-2">Anmelden / Registrieren</button>
                 <button onclick="window.closeLoginModal()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 py-2 rounded-xl text-sm transition-colors">Als Gast spielen</button>
             </div>
             <div id="login-loggedin-section" class="hidden text-center">
@@ -2862,8 +2862,10 @@
     };
 
     function updateAvatarUI() {
-        document.getElementById('profile-avatar-btn').textContent = selectedAvatar;
-        document.getElementById('sidebar-avatar').textContent = selectedAvatar;
+        const btn = document.getElementById('profile-avatar-btn');
+        if (btn) btn.textContent = selectedAvatar;
+        const sidebar = document.getElementById('sidebar-avatar');
+        if (sidebar) sidebar.textContent = selectedAvatar;
         const preview = document.getElementById('profile-preview-avatar');
         if (preview) preview.textContent = selectedAvatar;
     }
@@ -3020,11 +3022,15 @@
         const nameInput = document.getElementById('login-name-input');
         const pinInput = document.getElementById('login-pin-input');
         const errorEl = document.getElementById('login-error');
+        const submitBtn = document.getElementById('login-submit-btn');
         const name = nameInput.value.trim();
         if (!name) { errorEl.textContent = 'Bitte einen Namen eingeben.'; errorEl.classList.remove('hidden'); return; }
         const pin = pinInput.value;
         errorEl.classList.add('hidden');
+        const resetBtn = () => { if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Anmelden / Registrieren'; } };
+        if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Laden...'; }
         // Firebase-backed login
+        let loginOk = false;
         try {
             const firestore = await getDB();
             if (firestore) {
@@ -3032,26 +3038,26 @@
                 if (snap.exists()) {
                     const ud = snap.data();
                     if (ud.pinHash) {
-                        if (!pin) { errorEl.textContent = 'Bitte PIN eingeben.'; errorEl.classList.remove('hidden'); return; }
-                        if (hashPin(pin) !== ud.pinHash) { errorEl.textContent = 'Falscher PIN.'; errorEl.classList.remove('hidden'); return; }
+                        if (!pin) { errorEl.textContent = 'Bitte PIN eingeben.'; errorEl.classList.remove('hidden'); resetBtn(); return; }
+                        if (hashPin(pin) !== ud.pinHash) { errorEl.textContent = 'Falscher PIN.'; errorEl.classList.remove('hidden'); resetBtn(); return; }
                     }
-                    // Sync profile from Firebase
                     if (ud.avatar) { selectedAvatar = ud.avatar; localStorage.setItem('wolfle_avatar', ud.avatar); }
                     if (ud.pinHash) localStorage.setItem('wolfle_account_pin_' + name, ud.pinHash);
                 } else {
-                    // New user – register in Firebase
                     const pinHash = pin ? hashPin(pin) : null;
                     await setDoc(doc(firestore,'artifacts',appId,'public','data','users',name),
                         { name, avatar: selectedAvatar || '🐺', pinHash: pinHash || null, createdAt: Date.now() });
                     if (pin) localStorage.setItem('wolfle_account_pin_' + name, hashPin(pin));
                 }
+                loginOk = true;
             } else { throw new Error('no db'); }
         } catch(e) {
-            // Offline fallback – local PIN check
             const existingPin = localStorage.getItem('wolfle_account_pin_' + name);
-            if (existingPin && pin && hashPin(pin) !== existingPin) { errorEl.textContent = 'Falscher PIN.'; errorEl.classList.remove('hidden'); return; }
+            if (existingPin && pin && hashPin(pin) !== existingPin) { errorEl.textContent = 'Falscher PIN.'; errorEl.classList.remove('hidden'); resetBtn(); return; }
             if (!existingPin && pin) localStorage.setItem('wolfle_account_pin_' + name, hashPin(pin));
+            loginOk = true;
         }
+        if (!loginOk) { resetBtn(); return; }
         localStorage.setItem('wolfle_user_name', name);
         localStorage.setItem('wolfle_logged_in', '1');
         localStorage.setItem('wolfle_onboarded', '1');
