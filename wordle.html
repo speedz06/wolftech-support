@@ -965,6 +965,18 @@
         </div>
     </div>
 
+    <!-- PLAYER PROFILE MODAL -->
+    <div id="player-profile-modal" class="hidden fixed inset-0 bg-slate-900/80 z-[96] flex items-center justify-center p-4" onclick="if(event.target===this)window.closePlayerProfile()">
+        <div class="w-full max-w-xs bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl text-center">
+            <div class="flex justify-end mb-2">
+                <button onclick="window.closePlayerProfile()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <div id="pp-avatar" class="text-5xl mb-2">🐺</div>
+            <div id="pp-name" class="text-lg font-bold text-white mb-4"></div>
+            <div id="pp-stats" class="flex gap-3 justify-center"></div>
+        </div>
+    </div>
+
     <!-- STATS MODAL -->
     <div id="login-modal-placeholder" class="hidden"></div>
     <div id="stats-modal" class="hidden fixed inset-0 bg-slate-900/80 z-[95] flex items-center justify-center p-4" onclick="if(event.target===this)window.closeStatsModal()">
@@ -2084,7 +2096,7 @@
                     const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}.`;
                     const isMe = s.name.toLowerCase() === me;
                     const pts = leaderboardTab === 'week' ? (s.weekScore||0) : s.score;
-                    return `<li class="flex justify-between ${isMe?'bg-indigo-900/40 border border-indigo-500/30':'bg-slate-800/40'} p-2 rounded text-sm">
+                    return `<li class="flex justify-between items-center ${isMe?'bg-indigo-900/40 border border-indigo-500/30':'bg-slate-800/40 hover:bg-slate-700/60'} p-2 rounded text-sm cursor-pointer transition-colors" onclick="window.openPlayerProfile('${s.name.replace(/'/g,"\\'")}')">
                         <span>${medal} ${s.name}</span><span class="text-indigo-400 font-bold">${pts}</span></li>`;
                 }).join('');
             document.querySelectorAll('.leaderboard-list').forEach(l => l.innerHTML = html);
@@ -2094,6 +2106,35 @@
     window.setLeaderboardTab = (tab) => {
         leaderboardTab = tab;
         loadLeaderboard();
+    };
+
+    window.openPlayerProfile = async (name) => {
+        try {
+            const firestore = await getDB();
+            if (!firestore) return;
+            const userSnap = await getDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'users', name));
+            if (!userSnap.exists()) { showToast('Kein Profil gefunden', 'info'); return; }
+            const ud = userSnap.data();
+            const scoreSnap = await getDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'scores', name.toLowerCase()));
+            const sd = scoreSnap.exists() ? scoreSnap.data() : {};
+            const weekKey = getWeekKey();
+            const weekScore = sd.weekKey === weekKey ? (sd.weekScore || 0) : 0;
+            document.getElementById('pp-avatar').textContent = ud.avatar || '🐺';
+            document.getElementById('pp-name').textContent = ud.name || name;
+            document.getElementById('pp-stats').innerHTML = [
+                [sd.score || 0, 'Punkte Gesamt'],
+                [weekScore, 'Diese Woche'],
+            ].map(([val, lbl]) => `<div class="stat-box flex-1 bg-slate-700/50 rounded-xl py-3"><div class="stat-num">${val}</div><div class="stat-lbl">${lbl}</div></div>`).join('');
+            const modal = document.getElementById('player-profile-modal');
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
+            lucide.createIcons();
+        } catch(e) {}
+    };
+    window.closePlayerProfile = () => {
+        const modal = document.getElementById('player-profile-modal');
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
     };
 
     // ═══════════════════════════════════════════════════════════
