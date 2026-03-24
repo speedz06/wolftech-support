@@ -985,7 +985,7 @@
             </div>
             <div id="pp-avatar" class="text-5xl mb-2">🐺</div>
             <div id="pp-name" class="text-lg font-bold text-white mb-3"></div>
-            <div id="pp-stats" class="flex gap-3 justify-center mb-4"></div>
+            <div id="pp-stats" class="grid grid-cols-4 gap-2 mb-4"></div>
             <div id="pp-friend-btn"></div>
         </div>
     </div>
@@ -2187,18 +2187,23 @@
             const userSnap = await getDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'users', name));
             if (!userSnap.exists()) { showToast('Kein Profil gefunden', 'info'); return; }
             const ud = userSnap.data();
-            const [scoreSnap, myDoc] = await Promise.all([
+            const [scoreSnap, hmScoreSnap, myDoc] = await Promise.all([
                 getDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'scores', name.toLowerCase())),
+                getDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'hm_scores', name.toLowerCase())),
                 getPlayerName() ? getDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'users', getPlayerName())) : Promise.resolve(null),
             ]);
             const sd = scoreSnap.exists() ? scoreSnap.data() : {};
+            const hsd = hmScoreSnap.exists() ? hmScoreSnap.data() : {};
             const weekKey = getWeekKey();
             const weekScore = sd.weekKey === weekKey ? (sd.weekScore || 0) : 0;
+            const friendsCount = ud.friends ? ud.friends.length : 0;
             document.getElementById('pp-avatar').textContent = ud.avatar || '🐺';
             document.getElementById('pp-name').textContent = ud.name || name;
             document.getElementById('pp-stats').innerHTML = [
-                [sd.score || 0, 'Punkte Gesamt'],
+                [sd.score || 0, 'Wordle Pts'],
                 [weekScore, 'Diese Woche'],
+                [hsd.score || 0, 'Hangman Pts'],
+                [friendsCount, 'Freunde'],
             ].map(([val, lbl]) => `<div class="stat-box flex-1 bg-slate-700/50 rounded-xl py-3"><div class="stat-num">${val}</div><div class="stat-lbl">${lbl}</div></div>`).join('');
             // Friend button
             const myName = getPlayerName();
@@ -2790,7 +2795,14 @@
                 const roomRef = doc(firestore,'artifacts',appId,'public','data','rooms',code);
                 const snap = await getDoc(roomRef);
                 if (snap.exists()) {
-                    await updateDoc(roomRef, { [`players.${name}`]: deleteField() });
+                    const data = snap.data();
+                    const players = { ...(data.players || {}) };
+                    delete players[name];
+                    if (Object.keys(players).length === 0) {
+                        await deleteDoc(roomRef);
+                    } else {
+                        await updateDoc(roomRef, { [`players.${name}`]: deleteField() });
+                    }
                 }
             }
         }
@@ -4097,32 +4109,36 @@
     }
 
     loadProfile();
+    const roomFromURL = new URLSearchParams(location.search).get('room');
     if (localStorage.getItem('wolfle_user_name')) {
         getDB().then(() => {
             loadLeaderboard();
             subscribeInvites(getPlayerName());
+            const playerName = getPlayerName();
+            if (roomFromURL) {
+                const inp = document.getElementById('roomInput');
+                if (inp) inp.value = roomFromURL;
+                if (playerName) window.joinRoom();
+                else showToast(t('enterNameFirst'), "warning");
+            } else {
+                const savedRoom = localStorage.getItem('wolfle_active_room');
+                if (savedRoom && playerName && localStorage.getItem('wolfle_logged_in') === '1') {
+                    const inp = document.getElementById('roomInput');
+                    if (inp) inp.value = savedRoom;
+                    window.joinRoom();
+                }
+            }
         });
+    } else if (roomFromURL) {
+        const inp = document.getElementById('roomInput');
+        if (inp) inp.value = roomFromURL;
+        showToast(t('enterNameFirst'), "warning");
     }
 
     // If not logged in, ensure guest flag is set to prevent ghost state
     if (localStorage.getItem('wolfle_logged_in') !== '1') {
         localStorage.setItem('wolfle_is_guest', '1');
         window.openOnboarding();
-    }
-
-    const roomFromURL = new URLSearchParams(location.search).get('room');
-    if (roomFromURL) {
-        const inp = document.getElementById('roomInput');
-        if (inp) inp.value = roomFromURL;
-        if (savedName) window.joinRoom();
-        else showToast(t('enterNameFirst'), "warning");
-    } else {
-        const savedRoom = localStorage.getItem('wolfle_active_room');
-        if (savedRoom && savedName && localStorage.getItem('wolfle_logged_in') === '1') {
-            const inp = document.getElementById('roomInput');
-            if (inp) inp.value = savedRoom;
-            window.joinRoom();
-        }
     }
 </script>
 
