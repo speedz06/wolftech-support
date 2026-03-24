@@ -462,6 +462,8 @@
         </a>
     </div>
 
+    <div id="hm-toast-container" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;z-index:9999;pointer-events:none;"></div>
+
     <div id="hm-game">
         <div id="hm-layout">
             <section id="hm-board">
@@ -562,6 +564,17 @@
 
             <aside id="hm-right-sidebar">
                 <div class="hm-panel">
+                    <h3>Bestenliste</h3>
+                    <div class="flex gap-1 mb-3">
+                        <button onclick="window.setHmLeaderboardTab('total')" class="hm-lb-tab-total flex-1 text-xs py-1.5 rounded-lg bg-indigo-600 text-white font-semibold transition-colors">Gesamt</button>
+                        <button onclick="window.setHmLeaderboardTab('week')" class="hm-lb-tab-week flex-1 text-xs py-1.5 rounded-lg bg-slate-700 text-slate-400 transition-colors">Woche</button>
+                    </div>
+                    <ol id="hm-leaderboard-list" class="space-y-1">
+                        <li class="text-slate-500 italic text-sm">Lädt...</li>
+                    </ol>
+                </div>
+
+                <div class="hm-panel">
                     <h3>Rundenablauf</h3>
                     <div class="hm-info-list">
                         <div class="hm-info-item"><strong>1. Host legt Regeln fest</strong><span class="hm-muted">Versuche, Rundenzahl und maximale Wortlänge gelten für das ganze Match.</span></div>
@@ -624,6 +637,7 @@
                     class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white mb-4 transition-colors">
                 <div id="login-error" class="hidden text-red-400 text-xs mb-3 text-center"></div>
                 <button id="login-submit-btn" onclick="window.doLogin()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors mb-2">Anmelden / Registrieren</button>
+                <button onclick="window.openGuestFlow()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 py-2 rounded-xl text-sm transition-colors">👤 Als Gast spielen</button>
             </div>
             <div id="login-loggedin-section" class="hidden text-center">
                 <div id="login-welcome-avatar" class="text-5xl mb-1 cursor-pointer" onclick="window.toggleLoginAvatarGrid()" title="Avatar ändern">🐺</div>
@@ -691,7 +705,8 @@
         hostName: null,
         isHost: false,
         playerName: localStorage.getItem('wolfle_user_name') || '',
-        roomStatus: 'Kein Raum verbunden.'
+        roomStatus: 'Kein Raum verbunden.',
+        lastPoints: 0
     };
 
     function applyTheme(theme) {
@@ -781,9 +796,16 @@
     function playWinSound() {
         [523,659,784,1047].forEach((freq, i) => setTimeout(() => playTone(freq, 'sine', 0.4), i * 110));
     }
-    function showToast(message) {
+    function showToast(message, type) {
         if (!message) return;
-        window.alert(message);
+        const c = document.getElementById('hm-toast-container');
+        if (!c) return;
+        const colors = { success: 'border-green-500/50', error: 'border-red-500/50', warning: 'border-yellow-500/50', info: 'border-blue-500/50' };
+        const t = document.createElement('div');
+        t.className = `px-4 py-2 rounded-full border shadow-lg text-sm bg-slate-800 text-white ${colors[type] || 'border-slate-600'}`;
+        t.textContent = message;
+        c.appendChild(t);
+        setTimeout(() => t.remove(), 3000);
     }
     function shuffle(arr) {
         const copy = [...arr];
@@ -923,6 +945,76 @@
     function roomDocRef(code) {
         return firebaseFns.doc(db, 'artifacts', appId, 'public', 'data', 'hangman_rooms', code);
     }
+    function getWeekKey() {
+        const d = new Date();
+        const start = new Date(d.getFullYear(), 0, 1);
+        const week = Math.ceil(((d - start) / 86400000 + start.getDay() + 1) / 7);
+        return `${d.getFullYear()}-W${String(week).padStart(2, '0')}`;
+    }
+    let hmLeaderboardTab = 'total';
+    async function saveSoloScore(points) {
+        if (!points) return;
+        const name = getPlayerName();
+        if (!name || localStorage.getItem('wolfle_logged_in') !== '1') return;
+        try {
+            const firestore = await ensureDB();
+            if (!firestore) return;
+            const ref = firebaseFns.doc(firestore, 'artifacts', appId, 'public', 'data', 'hm_scores', name.toLowerCase());
+            const snap = await firebaseFns.getDoc(ref);
+            const existing = snap.exists() ? snap.data() : {};
+            const weekKey = getWeekKey();
+            const total = (existing.score || 0) + points;
+            const weekScore = (existing.weekKey === weekKey ? (existing.weekScore || 0) : 0) + points;
+            await firebaseFns.setDoc(ref, { name, score: total, weekScore, weekKey }, { merge: true });
+            loadHmLeaderboard();
+        } catch(e) {}
+    }
+    async function loadHmLeaderboard() {
+        const listEl = document.getElementById('hm-leaderboard-list');
+        if (!listEl) return;
+        document.querySelectorAll('.hm-lb-tab-total').forEach(b => {
+            b.classList.toggle('bg-indigo-600', hmLeaderboardTab === 'total');
+            b.classList.toggle('text-white', hmLeaderboardTab === 'total');
+            b.classList.toggle('font-semibold', hmLeaderboardTab === 'total');
+            b.classList.toggle('bg-slate-700', hmLeaderboardTab !== 'total');
+            b.classList.toggle('text-slate-400', hmLeaderboardTab !== 'total');
+        });
+        document.querySelectorAll('.hm-lb-tab-week').forEach(b => {
+            b.classList.toggle('bg-indigo-600', hmLeaderboardTab === 'week');
+            b.classList.toggle('text-white', hmLeaderboardTab === 'week');
+            b.classList.toggle('font-semibold', hmLeaderboardTab === 'week');
+            b.classList.toggle('bg-slate-700', hmLeaderboardTab !== 'week');
+            b.classList.toggle('text-slate-400', hmLeaderboardTab !== 'week');
+        });
+        listEl.innerHTML = '<li class="text-slate-500 italic text-sm">Lädt...</li>';
+        try {
+            const firestore = await ensureDB();
+            if (!firestore) { listEl.innerHTML = '<li class="text-slate-500 italic text-sm">Offline</li>'; return; }
+            const snap = await firebaseFns.getDocs(firebaseFns.collection(firestore, 'artifacts', appId, 'public', 'data', 'hm_scores'));
+            let d = [];
+            snap.forEach(doc => { if (doc.data().score) d.push(doc.data()); });
+            const weekKey = getWeekKey();
+            if (hmLeaderboardTab === 'week') {
+                d = d.filter(s => s.weekKey === weekKey && (s.weekScore || 0) > 0);
+                d.sort((a, b) => (b.weekScore || 0) - (a.weekScore || 0));
+            } else {
+                d.sort((a, b) => b.score - a.score);
+            }
+            const me = getPlayerName().toLowerCase();
+            listEl.innerHTML = d.length === 0
+                ? '<li class="text-slate-500 italic text-sm">Noch keine Einträge</li>'
+                : d.slice(0, 10).map((s, i) => {
+                    const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
+                    const isMe = s.name.toLowerCase() === me;
+                    const pts = hmLeaderboardTab === 'week' ? (s.weekScore || 0) : s.score;
+                    return `<li class="flex justify-between ${isMe ? 'bg-indigo-900/40 border border-indigo-500/30' : 'bg-slate-800/40'} p-2 rounded text-sm">
+                        <span>${medal} ${s.name}</span><span class="text-indigo-400 font-bold">${pts}</span></li>`;
+                }).join('');
+        } catch(e) {
+            listEl.innerHTML = '<li class="text-slate-500 italic text-sm">Fehler beim Laden</li>';
+        }
+    }
+    window.setHmLeaderboardTab = (tab) => { hmLeaderboardTab = tab; loadHmLeaderboard(); };
     function pickRandomWord(maxLength) {
         const germanPool = GERMAN_WORDS.filter(word => word.length >= 4 && word.length <= maxLength).map(word => ({ word, language: 'Deutsch' }));
         const englishPool = ENGLISH_WORDS.map(sanitizeWord).filter(word => word.length >= 4 && word.length <= maxLength).map(word => ({ word, language: 'English' }));
@@ -1321,8 +1413,19 @@
         const lost = getLost();
         if (solved || lost) {
             gameState.active = false;
-            if (solved) { playWinSound(); }
-            else { playTone(165, 'sawtooth', 0.5); triggerHaptic('lose'); }
+            if (solved) {
+                playWinSound();
+                if (gameState.mode === 'solo') {
+                    const points = (gameState.maxLives - gameState.wrong) * 10;
+                    gameState.lastPoints = points;
+                    saveSoloScore(points);
+                    showToast(`+${points} Punkte! 🎉`, 'success');
+                }
+            } else {
+                gameState.lastPoints = 0;
+                playTone(165, 'sawtooth', 0.5);
+                triggerHaptic('lose');
+            }
         }
         renderAll();
     }
@@ -1445,6 +1548,11 @@
         lucide.createIcons();
     };
     window.closeLoginModal = () => document.getElementById('login-modal').classList.add('hidden');
+    window.openGuestFlow = () => {
+        window.closeLoginModal();
+        document.getElementById('onboarding-modal').classList.remove('hidden');
+        window.onboardChooseGuest();
+    };
 
     window.doLogin = async () => {
         const nameInput = document.getElementById('login-name-input');
@@ -1609,6 +1717,7 @@
     renderAll();
     startSoloGame();
     updateLoginHeader();
+    loadHmLeaderboard();
     if (localStorage.getItem('wolfle_logged_in') !== '1') {
         window.openOnboarding();
     }
