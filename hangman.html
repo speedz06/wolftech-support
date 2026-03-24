@@ -1686,7 +1686,8 @@
         localStorage.removeItem('wolfle_logged_in');
         localStorage.removeItem('wolfle_user_name');
         localStorage.removeItem('wolfle_avatar');
-        localStorage.removeItem('wolfle_is_guest');
+        localStorage.setItem('wolfle_is_guest', '1');
+        localStorage.removeItem('wolfle_stats');
         selectedAvatar = '🐺';
         gameState.playerName = '';
         const nameEl = document.getElementById('hm-player-name');
@@ -1787,6 +1788,7 @@
         localStorage.setItem('wolfle_onboarded', '1');
         localStorage.setItem('wolfle_logged_in', '1');
         localStorage.setItem('wolfle_is_guest', '1');
+        localStorage.removeItem('wolfle_stats');
         gameState.playerName = name;
         const nameEl = document.getElementById('hm-player-name');
         if (nameEl) nameEl.value = name;
@@ -1804,6 +1806,7 @@
     updateLoginHeader();
     loadHmLeaderboard();
     if (localStorage.getItem('wolfle_logged_in') !== '1') {
+        localStorage.setItem('wolfle_is_guest', '1');
         window.openOnboarding();
     }
 </script>
