@@ -3204,7 +3204,7 @@
         getDB().then(() => loadLeaderboard());
     }
 
-    if (!localStorage.getItem('wolfle_onboarded')) {
+    if (localStorage.getItem('wolfle_logged_in') !== '1') {
         window.openOnboarding();
     }
 
