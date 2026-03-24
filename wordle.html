@@ -564,15 +564,19 @@
             #app { flex-direction: column; }
             #sidebar-left, #sidebar-right { display: none !important; }
             #bottom-nav { display: flex; }
-            #game-center { overflow: hidden; }
-            #grid-wrapper { padding: 4px 8px; }
+            #game-center { overflow: hidden; height: 100%; }
+            #grid-wrapper { width: 100%; padding: 4px 8px; overflow: hidden; }
+            #grid {
+                height: auto;
+                max-height: none;
+                max-width: none;
+                width: min(calc(100vw - 24px), calc((100dvh - 280px) * 5 / 6));
+            }
             #keyboard { padding: 2px 4px max(6px, env(safe-area-inset-bottom)); gap: 4px; }
             .kb-key { height: clamp(34px, 5vh, 46px); font-size: clamp(10px, 2vw, 13px); border-radius: 4px; }
         }
         @media (max-width: 480px) {
             #mobile-header { padding: max(8px, env(safe-area-inset-top)) 12px 6px; }
-            #game-tabs { padding: 0 6px; }
-            .tab-link { padding: 7px 12px; font-size: 12px; }
             .kb-key { height: clamp(30px, 4.5vh, 40px); }
             #keyboard { gap: 3px; }
         }
@@ -823,10 +827,13 @@
             <button id="theme-btn-mobile" onclick="window.toggleTheme()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Design wechseln">
                 <i data-lucide="sun" class="w-4 h-4"></i>
             </button>
-            <button id="sound-btn-mobile" onclick="window.toggleSound()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors hidden-xs" title="Ton">
+            <button id="sound-btn-mobile" onclick="window.toggleSound()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Ton">
                 <i data-lucide="volume-2" class="w-4 h-4"></i>
             </button>
-            <button id="settings-btn-mobile" onclick="window.openSettingsModal()" class="header-mobile-only text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors hidden-xs" title="Einstellungen">
+            <button id="haptic-btn-mobile" onclick="window.toggleHaptic()" class="header-mobile-only text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Vibration">
+                <i data-lucide="smartphone" class="w-4 h-4"></i>
+            </button>
+            <button id="settings-btn-mobile" onclick="window.openSettingsModal()" class="header-mobile-only text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Einstellungen">
                 <i data-lucide="settings" class="w-4 h-4"></i>
             </button>
             <button id="login-header-btn" onclick="window.openLoginModal()" title="Anmelden" class="flex items-center gap-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white px-2 py-1.5 rounded-lg border border-slate-600 transition-all">

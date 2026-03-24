@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Wolfle – Spieleauswahl</title>
@@ -23,30 +24,67 @@
             color: #f8fafc;
             font-family: 'Inter', sans-serif;
             min-height: 100dvh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            touch-action: manipulation;
+            overscroll-behavior: none;
+        }
+        #page-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: max(10px, env(safe-area-inset-top)) 16px 8px;
+            border-bottom: 1px solid #1e293b;
+            flex-shrink: 0;
+            background: rgba(15,23,42,0.85);
+            backdrop-filter: blur(12px);
+        }
+        #game-tabs {
+            display: flex;
+            background: #0f172a;
+            border-bottom: 1px solid #1e293b;
+            flex-shrink: 0;
+            padding: 0 12px;
+        }
+        .tab-link {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 18px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #64748b;
+            text-decoration: none;
+            border-bottom: 2px solid transparent;
+            transition: all 0.15s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .tab-link.active { color: #818cf8; border-bottom-color: #818cf8; }
+        .tab-link:hover:not(.active) { color: #94a3b8; }
+        #page-content {
+            flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 24px;
-            touch-action: manipulation;
-            overscroll-behavior: none;
+            padding: 32px 20px max(24px, env(safe-area-inset-bottom));
         }
-
         .hero {
             text-align: center;
-            margin-bottom: 48px;
+            margin-bottom: 36px;
         }
         .hero-logo {
-            width: 80px;
+            width: 72px;
             height: auto;
-            border-radius: 22px;
-            margin: 0 auto 16px;
+            border-radius: 20px;
+            margin: 0 auto 14px;
             display: block;
             box-shadow: 0 8px 32px rgba(99,102,241,0.4);
             object-fit: contain;
         }
         .hero h1 {
-            font-size: clamp(2rem, 8vw, 3rem);
+            font-size: clamp(1.8rem, 8vw, 2.8rem);
             font-weight: 900;
             background: linear-gradient(135deg, #818cf8, #38bdf8);
             -webkit-background-clip: text;
@@ -57,121 +95,357 @@
         }
         .hero p {
             color: #94a3b8;
-            font-size: 1rem;
+            font-size: 0.95rem;
             margin-top: 8px;
         }
-
         .game-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 20px;
+            gap: 16px;
             width: 100%;
-            max-width: 640px;
+            max-width: 580px;
         }
-
         .game-card {
-            background: rgba(30, 41, 59, 0.8);
+            background: rgba(30,41,59,0.8);
             border: 1px solid #334155;
             border-radius: 20px;
-            padding: 28px 24px;
+            padding: 24px 20px;
             text-decoration: none;
             color: inherit;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
             transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
             backdrop-filter: blur(12px);
+            -webkit-tap-highlight-color: transparent;
         }
-        .game-card:hover {
-            transform: translateY(-4px);
-            border-color: #6366f1;
-            box-shadow: 0 12px 40px rgba(99,102,241,0.25);
-        }
+        .game-card:hover { transform: translateY(-4px); border-color: #6366f1; box-shadow: 0 12px 40px rgba(99,102,241,0.25); }
         .game-card:active { transform: translateY(-1px); }
-
         .game-card .icon-wrap {
-            width: 56px;
-            height: 56px;
+            width: 52px; height: 52px;
             border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.6rem;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem;
         }
         .game-card.wordle .icon-wrap { background: rgba(99,102,241,0.2); color: #818cf8; }
         .game-card.hangman .icon-wrap { background: rgba(244,63,94,0.15); color: #fb7185; }
-
-        .game-card h2 {
-            font-size: 1.3rem;
-            font-weight: 800;
-            color: #e2e8f0;
-        }
-        .game-card p {
-            font-size: 0.875rem;
-            color: #94a3b8;
-            line-height: 1.5;
-        }
-        .game-card .play-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.85rem;
-            font-weight: 700;
-            padding: 8px 16px;
-            border-radius: 10px;
-            align-self: flex-start;
-            margin-top: 4px;
+        .game-card h2 { font-size: 1.2rem; font-weight: 800; color: #e2e8f0; }
+        .game-card p { font-size: 0.85rem; color: #94a3b8; line-height: 1.5; }
+        .play-btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 0.82rem; font-weight: 700;
+            padding: 7px 14px; border-radius: 10px;
+            align-self: flex-start; margin-top: 2px;
             transition: opacity 0.12s;
         }
         .game-card.wordle .play-btn { background: #4f46e5; color: white; }
         .game-card.hangman .play-btn { background: #e11d48; color: white; }
         .game-card:hover .play-btn { opacity: 0.88; }
+        .page-footer { color: #475569; font-size: 0.72rem; text-align: center; margin-top: 28px; }
 
-        .footer {
-            margin-top: 40px;
-            color: #475569;
-            font-size: 0.75rem;
-            text-align: center;
-        }
+        /* Light mode */
+        html.light body { background: linear-gradient(135deg, #dde3ed, #f0f4f8); color: #1e293b; }
+        html.light #page-header, html.light #game-tabs { background: #f1f5f9; border-color: #cbd5e1; }
+        html.light .tab-link { color: #94a3b8; }
+        html.light .tab-link.active { color: #4f46e5; border-bottom-color: #4f46e5; }
+        html.light .game-card { background: rgba(255,255,255,0.85); border-color: #cbd5e1; color: #1e293b; }
+        html.light .game-card h2 { color: #0f172a; }
+        html.light .game-card p { color: #64748b; }
+        html.retro body { background: #000 !important; color: #00ff41; font-family: 'Courier New', monospace !important; }
+        html.retro * { font-family: 'Courier New', monospace !important; }
+        html.retro #page-header, html.retro #game-tabs { background: #000 !important; border-color: #00ff41 !important; }
+        html.retro .tab-link { color: #007a1f; }
+        html.retro .tab-link.active { color: #00ff41; border-bottom-color: #00ff41; }
+        html.retro .game-card { background: #001a00 !important; border: 1px solid #00ff41 !important; }
+        html.ocean body { background: radial-gradient(circle at top, #0c2340, #020d1a) !important; color: #e0f4ff; }
+        html.ocean #page-header, html.ocean #game-tabs { background: rgba(5,16,31,0.85) !important; border-color: #1d4e6e !important; }
+        html.ocean .tab-link { color: #4d89ac; }
+        html.ocean .tab-link.active { color: #38bdf8; border-bottom-color: #38bdf8; }
+        html.ocean .game-card { background: rgba(5,16,31,0.8) !important; border-color: #1d4e6e !important; }
+        html.pastel body { background: linear-gradient(135deg, #fce7f3, #ede9fe) !important; color: #4a1d52; }
+        html.pastel #page-header, html.pastel #game-tabs { background: rgba(255,240,250,0.97) !important; border-color: #f0abdb !important; }
+        html.pastel .tab-link { color: #c084db; }
+        html.pastel .tab-link.active { color: #9333ea; border-bottom-color: #9333ea; }
+        html.pastel .game-card { background: rgba(255,255,255,0.82) !important; border-color: #f0abdb !important; color: #4a1d52; }
+        html.pastel .game-card h2 { color: #3b0764; }
+        html.pastel .game-card p { color: #7e22ce; }
+
+        /* Avatar grid */
+        .avatar-grid { display: grid; grid-template-columns: repeat(6,1fr); gap: 6px; }
+        .avatar-btn { width: 100%; aspect-ratio: 1; font-size: 1.4rem; border: 2px solid #334155; border-radius: 10px; background: #1e293b; cursor: pointer; transition: all 0.1s; }
+        .avatar-btn:hover { border-color: #6366f1; transform: scale(1.1); }
+        .avatar-btn.selected { border-color: #6366f1; background: rgba(99,102,241,0.2); }
+
+        @media (min-width: 901px) { .mobile-only { display: none !important; } }
+        button:focus, input:focus { outline: none; box-shadow: 0 0 0 2px rgba(99,102,241,0.35); }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 999px; }
     </style>
 </head>
 <body>
-    <div class="hero">
-        <img src="logo.png" alt="Wolfle Logo" class="hero-logo" onerror="this.style.display='none'">
-        <h1>Wolfle</h1>
-        <p>Wähle dein Spiel</p>
+    <!-- HEADER -->
+    <div id="page-header">
+        <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400 flex items-center gap-1.5">
+            <i data-lucide="paw-print" class="w-5 h-5 text-indigo-400"></i> Wolfle
+        </h1>
+        <div class="flex items-center gap-1.5">
+            <button id="theme-btn" onclick="toggleTheme()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Design wechseln">
+                <i data-lucide="sun" class="w-4 h-4"></i>
+            </button>
+            <button id="sound-btn" onclick="toggleSound()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Ton">
+                <i data-lucide="volume-2" class="w-4 h-4"></i>
+            </button>
+            <button id="haptic-btn" onclick="toggleHaptic()" class="mobile-only text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Vibration">
+                <i data-lucide="smartphone" class="w-4 h-4"></i>
+            </button>
+            <button id="login-header-btn" onclick="openLoginModal()" title="Anmelden" class="flex items-center gap-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white px-2 py-1.5 rounded-lg border border-slate-600 transition-all">
+                <span id="login-header-avatar">🐺</span>
+                <span id="login-header-label">Anmelden</span>
+            </button>
+        </div>
     </div>
 
-    <div class="game-grid">
-        <a href="wordle.html" class="game-card wordle">
-            <div class="icon-wrap">
-                <i data-lucide="grid-2x2" class="w-7 h-7"></i>
-            </div>
-            <h2>Wordle</h2>
-            <p>Errate das geheime 5-Buchstaben-Wort in 6 Versuchen. Spiele täglich oder zufällig.</p>
-            <span class="play-btn">
-                <i data-lucide="play" class="w-4 h-4"></i> Spielen
-            </span>
+    <!-- TABS -->
+    <div id="game-tabs">
+        <a href="index.html" class="tab-link active">
+            <i data-lucide="home" class="w-4 h-4"></i> Home
         </a>
-
-        <a href="hangman.html" class="game-card hangman">
-            <div class="icon-wrap">
-                <i data-lucide="skull" class="w-7 h-7"></i>
-            </div>
-            <h2>Hangman</h2>
-            <p>Das klassische Galgenspiel – errate das Wort, bevor die Zeit abläuft!</p>
-            <span class="play-btn">
-                <i data-lucide="play" class="w-4 h-4"></i> Spielen
-            </span>
+        <a href="wordle.html" class="tab-link">
+            <i data-lucide="grid-2x2" class="w-4 h-4"></i> Wordle
+        </a>
+        <a href="hangman.html" class="tab-link">
+            <i data-lucide="skull" class="w-4 h-4"></i> Hangman
         </a>
     </div>
 
-    <div class="footer">
-        &copy; Wolfle – Alle Spiele
+    <!-- CONTENT -->
+    <div id="page-content">
+        <div class="hero">
+            <img src="logo.png" alt="Wolfle Logo" class="hero-logo" onerror="this.style.display='none'">
+            <h1>Wolfle</h1>
+            <p>Wähle dein Spiel</p>
+        </div>
+
+        <div class="game-grid">
+            <a href="wordle.html" class="game-card wordle">
+                <div class="icon-wrap"><i data-lucide="grid-2x2" class="w-7 h-7"></i></div>
+                <h2>Wordle</h2>
+                <p>Errate das geheime 5-Buchstaben-Wort in 6 Versuchen. Spiele täglich oder zufällig.</p>
+                <span class="play-btn"><i data-lucide="play" class="w-4 h-4"></i> Spielen</span>
+            </a>
+            <a href="hangman.html" class="game-card hangman">
+                <div class="icon-wrap"><i data-lucide="skull" class="w-7 h-7"></i></div>
+                <h2>Hangman</h2>
+                <p>Das klassische Galgenspiel – errate das Wort, bevor du aufgehängt wirst!</p>
+                <span class="play-btn"><i data-lucide="play" class="w-4 h-4"></i> Spielen</span>
+            </a>
+        </div>
+
+        <div class="page-footer">&copy; Wolfle – Alle Spiele</div>
     </div>
 
-    <script>
+    <!-- ONBOARDING MODAL -->
+    <div id="onboarding-modal" class="hidden fixed inset-0 bg-slate-900/95 z-[110] flex items-center justify-center p-4">
+        <div class="w-full max-w-sm bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl">
+            <div id="onboard-choice">
+                <div class="text-center mb-6">
+                    <div class="text-5xl mb-3">🐺</div>
+                    <h2 class="text-2xl font-bold text-white mb-1">Willkommen bei Wolfle!</h2>
+                    <p class="text-sm text-slate-400">Wie möchtest du spielen?</p>
+                </div>
+                <button onclick="onboardChooseLogin()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl text-sm font-semibold transition-colors mb-3">🔑 Anmelden / Registrieren</button>
+                <button onclick="onboardChooseGuest()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white py-3 rounded-xl text-sm font-semibold transition-colors">👤 Als Gast spielen</button>
+            </div>
+            <div id="onboard-guest" class="hidden">
+                <div class="flex items-center gap-2 mb-5">
+                    <button onclick="onboardBack()" class="text-slate-400 hover:text-white"><i data-lucide="arrow-left" class="w-4 h-4"></i></button>
+                    <h2 class="text-lg font-bold text-white">Als Gast spielen</h2>
+                </div>
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Dein Name</label>
+                <input id="onboard-name-input" type="text" maxlength="15" placeholder="Name eingeben..."
+                    class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white mb-4 transition-colors">
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Dein Avatar</label>
+                <div class="text-center mb-3"><div id="onboard-preview-avatar" class="text-5xl">🐺</div></div>
+                <div id="onboard-avatar-grid" class="avatar-grid mb-4"></div>
+                <div id="onboard-error" class="hidden text-red-400 text-xs mb-3 text-center"></div>
+                <button onclick="onboardConfirmGuest()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors">Weiter spielen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOGIN MODAL -->
+    <div id="login-modal" class="hidden fixed inset-0 bg-slate-900/80 z-[100] flex items-center justify-center p-4" onclick="if(event.target===this)closeLoginModal()">
+        <div class="w-full max-w-sm bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-5">
+                <h2 class="text-xl font-bold text-white">🔑 Anmelden</h2>
+                <button onclick="closeLoginModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div id="login-form-section">
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Nutzername</label>
+                <input id="login-name-input" type="text" maxlength="15" placeholder="Name eingeben..."
+                    class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white mb-3 transition-colors">
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">PIN (optional)</label>
+                <input id="login-pin-input" type="password" maxlength="8" placeholder="PIN (optional)..."
+                    class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white mb-4 transition-colors">
+                <div id="login-error" class="hidden text-red-400 text-xs mb-3 text-center"></div>
+                <button onclick="doLogin()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors mb-2">Anmelden / Registrieren</button>
+            </div>
+            <div id="login-loggedin-section" class="hidden text-center">
+                <div id="login-welcome-avatar" class="text-5xl mb-2">🐺</div>
+                <div class="text-lg font-bold text-white mb-1" id="login-welcome-name"></div>
+                <div class="text-xs text-slate-400 mb-4">Erfolgreich angemeldet</div>
+                <button onclick="doLogout()" class="w-full bg-red-900/40 hover:bg-red-900/60 border border-red-800/40 text-red-400 py-2 rounded-xl text-sm transition-colors">Abmelden</button>
+                <button onclick="closeLoginModal()" class="w-full mt-2 bg-slate-700 hover:bg-slate-600 text-slate-300 py-2 rounded-xl text-sm transition-colors">Schließen</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    const THEMES = ['dark','light','retro','ocean','pastel'];
+    const AVATARS = ['🐺','🦊','🐻','🦁','🐯','🐸','🐧','🦅','🦋','🐙','🦄','🐬','🌟','🔥','💎','🌈','🍀','⚡'];
+    let onboardAvatar = localStorage.getItem('wolfle_avatar') || '🐺';
+    let soundEnabled = localStorage.getItem('wolfle_sound') !== 'false';
+    let hapticEnabled = localStorage.getItem('wolfle_haptic') === 'true';
+
+    function updateSoundBtn() {
+        const icon = soundEnabled ? 'volume-2' : 'volume-x';
+        const btn = document.getElementById('sound-btn');
+        if (btn) { btn.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4"></i>`; lucide.createIcons(); }
+    }
+    function toggleSound() {
+        soundEnabled = !soundEnabled;
+        localStorage.setItem('wolfle_sound', soundEnabled);
+        updateSoundBtn();
+    }
+    function updateHapticBtn() {
+        const icon = hapticEnabled ? 'vibrate' : 'smartphone';
+        const btn = document.getElementById('haptic-btn');
+        if (btn) { btn.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4"></i>`; lucide.createIcons(); }
+    }
+    function toggleHaptic() {
+        hapticEnabled = !hapticEnabled;
+        localStorage.setItem('wolfle_haptic', hapticEnabled);
+        updateHapticBtn();
+        if (hapticEnabled && navigator.vibrate) navigator.vibrate(20);
+    }
+
+    function applyTheme(theme) {
+        THEMES.forEach(t => document.documentElement.classList.remove(t));
+        if (theme && theme !== 'dark') document.documentElement.classList.add(theme);
+        const icon = (theme === 'light' || theme === 'pastel') ? 'moon' : 'sun';
+        document.getElementById('theme-btn').innerHTML = `<i data-lucide="${icon}" class="w-4 h-4"></i>`;
         lucide.createIcons();
-    </script>
+    }
+    function toggleTheme() {
+        const cur = localStorage.getItem('wolfle_theme') || 'dark';
+        const next = THEMES[(THEMES.indexOf(cur) + 1) % THEMES.length];
+        localStorage.setItem('wolfle_theme', next);
+        applyTheme(next);
+    }
+
+    function updateLoginHeader() {
+        const name = localStorage.getItem('wolfle_user_name') || '';
+        const avatar = localStorage.getItem('wolfle_avatar') || '🐺';
+        document.getElementById('login-header-label').textContent = name || 'Anmelden';
+        document.getElementById('login-header-avatar').textContent = avatar;
+    }
+
+    function hashPin(pin) {
+        let h = 0;
+        for (let i = 0; i < pin.length; i++) h = (Math.imul(31, h) + pin.charCodeAt(i)) | 0;
+        return h.toString(36);
+    }
+
+    function openLoginModal() {
+        const loggedIn = localStorage.getItem('wolfle_logged_in') === '1';
+        document.getElementById('login-form-section').classList.toggle('hidden', loggedIn);
+        document.getElementById('login-loggedin-section').classList.toggle('hidden', !loggedIn);
+        if (loggedIn) {
+            const name = localStorage.getItem('wolfle_user_name') || '';
+            const avatar = localStorage.getItem('wolfle_avatar') || '🐺';
+            document.getElementById('login-welcome-name').textContent = name;
+            document.getElementById('login-welcome-avatar').textContent = avatar;
+        }
+        document.getElementById('login-modal').classList.remove('hidden');
+        lucide.createIcons();
+    }
+    function closeLoginModal() { document.getElementById('login-modal').classList.add('hidden'); }
+
+    function doLogin() {
+        const name = document.getElementById('login-name-input').value.trim();
+        const pin = document.getElementById('login-pin-input').value;
+        const errEl = document.getElementById('login-error');
+        if (!name) { errEl.textContent = 'Bitte einen Namen eingeben.'; errEl.classList.remove('hidden'); return; }
+        const existingPin = localStorage.getItem('wolfle_account_pin_' + name);
+        if (existingPin && pin && hashPin(pin) !== existingPin) {
+            errEl.textContent = 'Falscher PIN.'; errEl.classList.remove('hidden'); return;
+        }
+        if (!existingPin && pin) localStorage.setItem('wolfle_account_pin_' + name, hashPin(pin));
+        localStorage.setItem('wolfle_user_name', name);
+        localStorage.setItem('wolfle_logged_in', '1');
+        localStorage.setItem('wolfle_onboarded', '1');
+        updateLoginHeader();
+        closeLoginModal();
+    }
+    function doLogout() {
+        localStorage.removeItem('wolfle_logged_in');
+        updateLoginHeader();
+        closeLoginModal();
+    }
+
+    // Onboarding
+    function buildOnboardAvatarGrid() {
+        const grid = document.getElementById('onboard-avatar-grid');
+        grid.innerHTML = AVATARS.map(a =>
+            `<button class="avatar-btn${a===onboardAvatar?' selected':''}" onclick="selectOnboardAvatar('${a}')">${a}</button>`
+        ).join('');
+    }
+    function selectOnboardAvatar(a) {
+        onboardAvatar = a;
+        document.getElementById('onboard-preview-avatar').textContent = a;
+        document.querySelectorAll('#onboard-avatar-grid .avatar-btn').forEach(b => b.classList.toggle('selected', b.textContent === a));
+    }
+    function openOnboarding() {
+        document.getElementById('onboarding-modal').classList.remove('hidden');
+        document.getElementById('onboard-choice').classList.remove('hidden');
+        document.getElementById('onboard-guest').classList.add('hidden');
+        lucide.createIcons();
+    }
+    function onboardBack() {
+        document.getElementById('onboard-choice').classList.remove('hidden');
+        document.getElementById('onboard-guest').classList.add('hidden');
+    }
+    function onboardChooseGuest() {
+        document.getElementById('onboard-choice').classList.add('hidden');
+        document.getElementById('onboard-guest').classList.remove('hidden');
+        buildOnboardAvatarGrid();
+        document.getElementById('onboard-name-input').focus();
+    }
+    function onboardChooseLogin() {
+        document.getElementById('onboarding-modal').classList.add('hidden');
+        openLoginModal();
+    }
+    function onboardConfirmGuest() {
+        const name = document.getElementById('onboard-name-input').value.trim();
+        const errEl = document.getElementById('onboard-error');
+        if (!name) { errEl.textContent = 'Bitte einen Namen eingeben.'; errEl.classList.remove('hidden'); return; }
+        errEl.classList.add('hidden');
+        localStorage.setItem('wolfle_user_name', name);
+        localStorage.setItem('wolfle_avatar', onboardAvatar);
+        localStorage.setItem('wolfle_onboarded', '1');
+        updateLoginHeader();
+        document.getElementById('onboarding-modal').classList.add('hidden');
+    }
+
+    // Init
+    applyTheme(localStorage.getItem('wolfle_theme') || 'dark');
+    updateLoginHeader();
+    updateSoundBtn();
+    updateHapticBtn();
+    if (localStorage.getItem('wolfle_logged_in') !== '1') {
+        openOnboarding();
+    }
+</script>
 </body>
 </html>
