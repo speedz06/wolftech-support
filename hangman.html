@@ -1573,6 +1573,7 @@
         localStorage.setItem('wolfle_user_name', name);
         localStorage.setItem('wolfle_avatar', onboardAvatar);
         localStorage.setItem('wolfle_onboarded', '1');
+        localStorage.setItem('wolfle_logged_in', '1');
         gameState.playerName = name;
         const nameEl = document.getElementById('hm-player-name');
         if (nameEl) nameEl.value = name;
