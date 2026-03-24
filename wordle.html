@@ -850,6 +850,9 @@
             <button id="settings-btn-mobile" onclick="window.openSettingsModal()" class="header-mobile-only text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Einstellungen">
                 <i data-lucide="settings" class="w-4 h-4"></i>
             </button>
+            <button onclick="window.openFriendsModal()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Freunde">
+                <i data-lucide="users" class="w-4 h-4"></i>
+            </button>
             <button id="login-header-btn" onclick="window.openLoginModal()" title="Anmelden" class="flex items-center gap-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white px-2 py-1.5 rounded-lg border border-slate-600 transition-all">
                 <span id="login-header-avatar">🐺</span>
                 <span id="login-header-label" class="hidden-xs">Anmelden</span>
@@ -972,8 +975,32 @@
                 <button onclick="window.closePlayerProfile()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
             </div>
             <div id="pp-avatar" class="text-5xl mb-2">🐺</div>
-            <div id="pp-name" class="text-lg font-bold text-white mb-4"></div>
-            <div id="pp-stats" class="flex gap-3 justify-center"></div>
+            <div id="pp-name" class="text-lg font-bold text-white mb-3"></div>
+            <div id="pp-stats" class="flex gap-3 justify-center mb-4"></div>
+            <div id="pp-friend-btn"></div>
+        </div>
+    </div>
+
+    <!-- FRIENDS MODAL -->
+    <div id="friends-modal" class="hidden fixed inset-0 bg-slate-900/80 z-[97] flex items-center justify-center p-4" onclick="if(event.target===this)window.closeFriendsModal()">
+        <div class="w-full max-w-sm bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl" style="max-height:85dvh;overflow-y:auto;">
+            <div class="flex justify-between items-center mb-5">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i data-lucide="users" class="w-5 h-5"></i> Freunde
+                </h2>
+                <button onclick="window.closeFriendsModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="flex gap-2 mb-2">
+                <input id="friend-search-input" type="text" placeholder="Spieler suchen..." maxlength="20"
+                    class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white transition-colors"
+                    onkeydown="if(event.key==='Enter')window.searchFriends()">
+                <button onclick="window.searchFriends()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-lg transition-colors">
+                    <i data-lucide="search" class="w-4 h-4"></i>
+                </button>
+            </div>
+            <div id="friend-search-results" class="mb-4"></div>
+            <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Meine Freunde</div>
+            <div id="friends-list"><div class="text-slate-500 italic text-sm">Lädt...</div></div>
         </div>
     </div>
 
@@ -1216,7 +1243,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot, getDocs, updateDoc, deleteDoc, deleteField, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot, getDocs, updateDoc, deleteDoc, deleteField, arrayUnion, arrayRemove, query, where, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     const FALLBACK = ["APFEL","STADT","STUHL","TISCH","VOGEL"];
     const WORDS = (window.WOLFLE_WORDS?.length > 0) ? window.WOLFLE_WORDS : FALLBACK;
@@ -2115,7 +2142,10 @@
             const userSnap = await getDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'users', name));
             if (!userSnap.exists()) { showToast('Kein Profil gefunden', 'info'); return; }
             const ud = userSnap.data();
-            const scoreSnap = await getDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'scores', name.toLowerCase()));
+            const [scoreSnap, myDoc] = await Promise.all([
+                getDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'scores', name.toLowerCase())),
+                getPlayerName() ? getDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'users', getPlayerName())) : Promise.resolve(null),
+            ]);
             const sd = scoreSnap.exists() ? scoreSnap.data() : {};
             const weekKey = getWeekKey();
             const weekScore = sd.weekKey === weekKey ? (sd.weekScore || 0) : 0;
@@ -2125,6 +2155,18 @@
                 [sd.score || 0, 'Punkte Gesamt'],
                 [weekScore, 'Diese Woche'],
             ].map(([val, lbl]) => `<div class="stat-box flex-1 bg-slate-700/50 rounded-xl py-3"><div class="stat-num">${val}</div><div class="stat-lbl">${lbl}</div></div>`).join('');
+            // Friend button
+            const myName = getPlayerName();
+            const friendBtnEl = document.getElementById('pp-friend-btn');
+            if (!myName || localStorage.getItem('wolfle_is_guest') === '1' || name.toLowerCase() === myName.toLowerCase()) {
+                friendBtnEl.innerHTML = '';
+            } else {
+                const myFriends = myDoc && myDoc.exists() ? (myDoc.data().friends || []) : [];
+                const isFriend = myFriends.some(f => f.toLowerCase() === name.toLowerCase());
+                friendBtnEl.innerHTML = isFriend
+                    ? `<button onclick="window.removeFriend('${name.replace(/'/g,"\\'")}', true)" class="w-full flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-slate-300 py-2 rounded-xl text-sm transition-colors"><i data-lucide="user-minus" class="w-4 h-4"></i> Freund entfernen</button>`
+                    : `<button onclick="window.addFriend('${name.replace(/'/g,"\\'")}', null, true)" class="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-xl text-sm font-semibold transition-colors"><i data-lucide="user-plus" class="w-4 h-4"></i> Freund hinzufügen</button>`;
+            }
             const modal = document.getElementById('player-profile-modal');
             modal.classList.remove('hidden');
             modal.style.display = 'flex';
@@ -2135,6 +2177,105 @@
         const modal = document.getElementById('player-profile-modal');
         modal.classList.add('hidden');
         modal.style.display = 'none';
+    };
+
+    // ── FRIENDS ──────────────────────────────────────────────
+    window.openFriendsModal = async () => {
+        const modal = document.getElementById('friends-modal');
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        document.getElementById('friend-search-input').value = '';
+        document.getElementById('friend-search-results').innerHTML = '';
+        lucide.createIcons();
+        await loadFriendsList();
+    };
+    window.closeFriendsModal = () => {
+        document.getElementById('friends-modal').classList.add('hidden');
+        document.getElementById('friends-modal').style.display = 'none';
+    };
+    async function loadFriendsList() {
+        const listEl = document.getElementById('friends-list');
+        if (!listEl) return;
+        if (localStorage.getItem('wolfle_is_guest') === '1') {
+            listEl.innerHTML = '<div class="text-slate-500 text-sm text-center py-2">Nur für registrierte Accounts.<br><button onclick="window.closeFriendsModal();window.openLoginModal();" class="mt-2 bg-indigo-600 text-white px-3 py-1 rounded-lg text-xs font-semibold">Konto erstellen</button></div>';
+            return;
+        }
+        const myName = getPlayerName();
+        if (!myName) return;
+        listEl.innerHTML = '<div class="text-slate-500 italic text-sm">Lädt...</div>';
+        try {
+            const firestore = await getDB();
+            const myDoc = await getDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'users', myName));
+            const friends = myDoc.exists() ? (myDoc.data().friends || []) : [];
+            if (friends.length === 0) {
+                listEl.innerHTML = '<div class="text-slate-500 italic text-sm">Noch keine Freunde. Suche nach Spielern!</div>';
+                return;
+            }
+            const friendData = await Promise.all(friends.map(async (fname) => {
+                const [uSnap, sSnap] = await Promise.all([
+                    getDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'users', fname)),
+                    getDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'scores', fname.toLowerCase())),
+                ]);
+                return { name: fname, avatar: uSnap.exists() ? (uSnap.data().avatar || '🐺') : '🐺', score: sSnap.exists() ? (sSnap.data().score || 0) : 0 };
+            }));
+            listEl.innerHTML = friendData.map(f => `
+                <div class="flex items-center justify-between bg-slate-700/50 p-2 rounded-lg mb-1">
+                    <button class="flex items-center gap-2 text-left flex-1" onclick="window.closeFriendsModal();window.openPlayerProfile('${f.name.replace(/'/g,"\\'")}')">
+                        <span class="text-xl">${f.avatar}</span>
+                        <div><div class="text-sm text-white font-medium">${f.name}</div><div class="text-xs text-indigo-400">${f.score} Pts</div></div>
+                    </button>
+                    <button onclick="window.removeFriend('${f.name.replace(/'/g,"\\'")}', false)" class="text-slate-400 hover:text-red-400 transition-colors p-1.5 rounded-lg" title="Entfernen"><i data-lucide="user-minus" class="w-4 h-4"></i></button>
+                </div>`).join('');
+            lucide.createIcons();
+        } catch(e) { listEl.innerHTML = '<div class="text-slate-500 italic text-sm">Fehler beim Laden</div>'; }
+    }
+    window.searchFriends = async () => {
+        const queryText = document.getElementById('friend-search-input').value.trim();
+        const resultsEl = document.getElementById('friend-search-results');
+        if (!queryText) { resultsEl.innerHTML = ''; return; }
+        resultsEl.innerHTML = '<div class="text-slate-500 text-sm">Suche...</div>';
+        try {
+            const firestore = await getDB();
+            const snap = await getDocs(query(collection(firestore, 'artifacts', appId, 'public', 'data', 'users'), where('name', '>=', queryText), where('name', '<=', queryText + '\uf8ff'), limit(8)));
+            const myName = getPlayerName();
+            const myDoc = await getDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'users', myName));
+            const myFriends = myDoc.exists() ? (myDoc.data().friends || []) : [];
+            if (snap.empty) { resultsEl.innerHTML = '<div class="text-slate-500 text-sm py-1">Keine Spieler gefunden</div>'; return; }
+            const rows = snap.docs
+                .filter(d => d.data().name?.toLowerCase() !== myName.toLowerCase())
+                .map(d => {
+                    const ud = d.data();
+                    const isFriend = myFriends.some(f => f.toLowerCase() === ud.name.toLowerCase());
+                    return `<div class="flex items-center justify-between bg-slate-700/40 p-2 rounded-lg mb-1">
+                        <div class="flex items-center gap-2"><span class="text-xl">${ud.avatar || '🐺'}</span><span class="text-sm text-white">${ud.name}</span></div>
+                        ${isFriend ? '<span class="text-xs text-green-400 flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> Freund</span>'
+                            : `<button onclick="window.addFriend('${ud.name.replace(/'/g,"\\'")}', this, false)" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-2 py-1 rounded-lg transition-colors flex items-center gap-1"><i data-lucide="user-plus" class="w-3 h-3"></i> Hinzufügen</button>`}
+                    </div>`;
+                });
+            resultsEl.innerHTML = rows.length ? rows.join('') : '<div class="text-slate-500 text-sm py-1">Keine anderen Spieler gefunden</div>';
+            lucide.createIcons();
+        } catch(e) { resultsEl.innerHTML = '<div class="text-slate-500 text-sm">Fehler bei der Suche</div>'; }
+    };
+    window.addFriend = async (theirName, btn, fromProfile) => {
+        const myName = getPlayerName();
+        if (!myName || localStorage.getItem('wolfle_is_guest') === '1') return;
+        if (btn) { btn.disabled = true; btn.textContent = '...'; }
+        try {
+            const firestore = await getDB();
+            await updateDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'users', myName), { friends: arrayUnion(theirName) });
+            showToast(`${theirName} als Freund hinzugefügt!`, 'success');
+            if (fromProfile) window.openPlayerProfile(theirName); else { loadFriendsList(); window.searchFriends(); }
+        } catch(e) { if (btn) { btn.disabled = false; lucide.createIcons(); } }
+    };
+    window.removeFriend = async (theirName, fromProfile) => {
+        const myName = getPlayerName();
+        if (!myName) return;
+        try {
+            const firestore = await getDB();
+            await updateDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'users', myName), { friends: arrayRemove(theirName) });
+            showToast(`${theirName} entfernt`, 'info');
+            if (fromProfile) window.openPlayerProfile(theirName); else loadFriendsList();
+        } catch(e) {}
     };
 
     // ═══════════════════════════════════════════════════════════
