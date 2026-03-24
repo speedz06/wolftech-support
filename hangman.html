@@ -1282,7 +1282,10 @@
                         <span style="font-size:1.3rem;">${f.avatar}</span>
                         <div><div style="font-size:0.85rem;font-weight:600;">${f.name}</div><div style="font-size:0.75rem;color:#818cf8;">${f.score} Pts</div></div>
                     </button>
-                    <button onclick="window.hmRemoveFriend('${f.name.replace(/'/g,"\\'")}', false)" style="background:none;border:none;color:#64748b;cursor:pointer;padding:6px;border-radius:6px;" title="Entfernen"><i data-lucide="user-minus" class="w-4 h-4"></i></button>
+                    <div style="display:flex;gap:4px;">
+                        <button onclick="window.hmSendInviteFromFriendsList('${f.name.replace(/'/g,"\\'")}', this)" style="background:none;border:none;color:#818cf8;cursor:pointer;padding:6px;border-radius:6px;" title="Einladen"><i data-lucide="send" class="w-4 h-4"></i></button>
+                        <button onclick="window.hmRemoveFriend('${f.name.replace(/'/g,"\\'")}', false)" style="background:none;border:none;color:#64748b;cursor:pointer;padding:6px;border-radius:6px;" title="Entfernen"><i data-lucide="user-minus" class="w-4 h-4"></i></button>
+                    </div>
                 </div>`).join('');
             lucide.createIcons();
         } catch(e) { listEl.innerHTML = '<div class="text-slate-500 italic text-sm">Fehler beim Laden</div>'; }
@@ -1388,6 +1391,11 @@
     window.hmCloseInviteFriendsModal = () => {
         document.getElementById('hm-invite-friends-modal').classList.add('hidden');
         document.getElementById('hm-invite-friends-modal').style.display = 'none';
+    };
+
+    window.hmSendInviteFromFriendsList = (toName, btn) => {
+        if (!gameState.roomCode) { showToast('Erstell zuerst einen Raum', 'warning'); return; }
+        window.hmSendInvite(toName, btn);
     };
 
     window.hmSendInvite = async (toName, btn) => {
@@ -1581,6 +1589,7 @@
         renderAll();
     }
     async function listenToRoom(code) {
+        localStorage.setItem('wolfle_active_hm_room', code);
         const firestore = await ensureDB();
         if (roomUnsubscribe) roomUnsubscribe();
         roomUnsubscribe = firebaseFns.onSnapshot(roomDocRef(code), (snap) => {
@@ -1636,6 +1645,7 @@
     }
     async function hmLeaveRoom() {
         if (!gameState.roomCode) return;
+        localStorage.removeItem('wolfle_active_hm_room');
         await ensureDB();
         const name = getPlayerName();
         const snap = await firebaseFns.getDoc(roomDocRef(gameState.roomCode));
@@ -1643,15 +1653,11 @@
         const data = snap.data();
         const players = { ...(data.players || {}) };
         delete players[name];
-        if (Object.keys(players).length === 0) {
-            await firebaseFns.deleteDoc(roomDocRef(gameState.roomCode));
-        } else {
-            await firebaseFns.setDoc(roomDocRef(gameState.roomCode), {
-                players,
-                roomStatus: 'Jemand hat den Raum verlassen.',
-                currentPicker: data.currentPicker === name ? Object.keys(players)[0] || null : data.currentPicker
-            }, { merge: true });
-        }
+        await firebaseFns.setDoc(roomDocRef(gameState.roomCode), {
+            players,
+            roomStatus: Object.keys(players).length === 0 ? 'Raum leer.' : 'Jemand hat den Raum verlassen.',
+            currentPicker: data.currentPicker === name ? Object.keys(players)[0] || null : data.currentPicker
+        }, { merge: true });
         if (roomUnsubscribe) roomUnsubscribe();
         roomUnsubscribe = null;
         gameState.roomCode = null;
@@ -2240,7 +2246,14 @@
     applyTheme(localStorage.getItem('wolfle_theme') || 'dark');
     updateSoundBtn();
     const roomFromURL = new URLSearchParams(location.search).get('room');
-    if (roomFromURL) document.getElementById('hm-room-code-input').value = roomFromURL;
+    if (roomFromURL) {
+        document.getElementById('hm-room-code-input').value = roomFromURL;
+    } else {
+        const savedHmRoom = localStorage.getItem('wolfle_active_hm_room');
+        if (savedHmRoom && localStorage.getItem('wolfle_logged_in') === '1') {
+            document.getElementById('hm-room-code-input').value = savedHmRoom;
+        }
+    }
     renderAll();
     startSoloGame();
     updateLoginHeader();
@@ -2250,7 +2263,13 @@
         window.openOnboarding();
     }
     if (localStorage.getItem('wolfle_user_name')) {
-        ensureDB().then(() => hmSubscribeInvites(localStorage.getItem('wolfle_user_name')));
+        ensureDB().then(() => {
+            hmSubscribeInvites(localStorage.getItem('wolfle_user_name'));
+            const savedHmRoom = localStorage.getItem('wolfle_active_hm_room');
+            if (savedHmRoom && !roomFromURL && localStorage.getItem('wolfle_logged_in') === '1') {
+                hmJoinRoom();
+            }
+        });
     }
 </script>
 </body>
