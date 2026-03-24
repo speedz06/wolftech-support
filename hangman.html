@@ -425,6 +425,7 @@
         .avatar-btn { width: 100%; aspect-ratio: 1; font-size: 1.4rem; border: 2px solid #334155; border-radius: 10px; background: #1e293b; cursor: pointer; transition: all 0.1s; }
         .avatar-btn:hover { border-color: #6366f1; transform: scale(1.1); }
         .avatar-btn.selected { border-color: #6366f1; background: rgba(99,102,241,0.2); }
+        @media (min-width: 901px) { .mobile-only { display: none !important; } }
     </style>
 </head>
 <body>
@@ -435,6 +436,12 @@
         <div class="flex items-center gap-1.5">
             <button id="theme-btn" onclick="toggleTheme()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Design wechseln">
                 <i data-lucide="sun" class="w-4 h-4"></i>
+            </button>
+            <button id="sound-btn" onclick="toggleSound()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Ton">
+                <i data-lucide="volume-2" class="w-4 h-4"></i>
+            </button>
+            <button id="haptic-btn" onclick="toggleHaptic()" class="mobile-only text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Vibration">
+                <i data-lucide="smartphone" class="w-4 h-4"></i>
             </button>
             <button id="login-header-btn" onclick="window.openLoginModal()" title="Anmelden" class="flex items-center gap-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white px-2 py-1.5 rounded-lg border border-slate-600 transition-all">
                 <span id="login-header-avatar">🐺</span>
