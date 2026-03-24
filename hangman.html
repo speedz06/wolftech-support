@@ -477,8 +477,9 @@
             <button id="haptic-btn" onclick="toggleHaptic()" class="mobile-only text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Vibration">
                 <i data-lucide="smartphone" class="w-4 h-4"></i>
             </button>
-            <button onclick="window.hmOpenFriendsModal()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Freunde">
+            <button onclick="window.hmOpenFriendsModal()" class="relative text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Freunde">
                 <i data-lucide="users" class="w-4 h-4"></i>
+                <span id="hm-invite-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:#ef4444;color:white;font-size:10px;font-weight:700;border-radius:9999px;width:16px;height:16px;align-items:center;justify-content:center;line-height:1;"></span>
             </button>
             <button id="login-header-btn" onclick="window.openLoginModal()" title="Anmelden" class="flex items-center gap-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white px-2 py-1.5 rounded-lg border border-slate-600 transition-all">
                 <span id="login-header-avatar">🐺</span>
@@ -552,7 +553,14 @@
                         </select>
                     </label>
                 </div>
-                <div class="hm-grid-2" style="margin-top:8px;">
+                <div style="margin-top:8px;">
+                    <div style="font-size:0.75rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Sichtbarkeit</div>
+                    <div class="flex gap-2" style="margin-bottom:8px;">
+                        <button id="hm-vis-open-btn" onclick="window.hmSetRoomPrivacy(false)" style="flex:1;padding:6px 0;border-radius:10px;font-size:0.8rem;font-weight:600;border:1px solid #6366f1;background:#6366f1;color:white;cursor:pointer;">🌐 Öffentlich</button>
+                        <button id="hm-vis-closed-btn" onclick="window.hmSetRoomPrivacy(true)" style="flex:1;padding:6px 0;border-radius:10px;font-size:0.8rem;border:1px solid #334155;background:#1e293b;color:#94a3b8;cursor:pointer;">🔒 Privat</button>
+                    </div>
+                </div>
+                <div class="hm-grid-2" style="margin-top:0;">
                     <label class="hm-label">Raumcode
                         <input class="hm-input" id="hm-room-code-input" type="text" maxlength="5" placeholder="ABCDE">
                     </label>
@@ -571,6 +579,7 @@
                 <div class="flex gap-2" style="margin-top:8px;">
                     <button class="hm-btn hm-btn-ghost flex-1" onclick="hmLeaveRoom()">Verlassen</button>
                     <button class="hm-btn hm-btn-secondary flex-1" onclick="hmShareRoom()">Link kopieren</button>
+                    <button class="hm-btn hm-btn-primary" style="padding:0 12px;" onclick="window.hmOpenInviteFriendsModal()" title="Freunde einladen"><i data-lucide="user-plus" class="w-4 h-4"></i></button>
                 </div>
             </div>
 
@@ -661,11 +670,24 @@
     <!-- FRIENDS MODAL -->
     <div id="hm-friends-modal" class="hidden fixed inset-0 bg-slate-900/80 z-[97] flex items-center justify-center p-4" onclick="if(event.target===this)window.hmCloseFriendsModal()">
         <div class="w-full max-w-sm bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl" style="max-height:85dvh;overflow-y:auto;">
-            <div class="flex justify-between items-center mb-5">
+            <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-bold text-white flex items-center gap-2">
                     <i data-lucide="users" class="w-5 h-5"></i> Freunde
                 </h2>
                 <button onclick="window.hmCloseFriendsModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <!-- Einladungen -->
+            <div id="hm-friends-invites-section" style="display:none;" class="mb-4">
+                <div class="text-xs font-semibold text-yellow-400 uppercase tracking-wider mb-2 flex items-center gap-1"><i data-lucide="bell" class="w-3 h-3"></i> Einladungen</div>
+                <div id="hm-friends-invites-list"></div>
+            </div>
+            <!-- Offene Räume -->
+            <button onclick="window.hmTogglePublicRooms()" class="w-full flex items-center justify-between bg-slate-700/50 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl text-sm mb-3 transition-colors">
+                <span class="flex items-center gap-2"><i data-lucide="globe" class="w-4 h-4 text-cyan-400"></i> Offene Räume</span>
+                <i data-lucide="chevron-down" id="hm-pub-rooms-chevron" class="w-4 h-4"></i>
+            </button>
+            <div id="hm-public-rooms-section" style="display:none;" class="mb-4">
+                <div id="hm-public-rooms-list"><div class="text-slate-500 italic text-sm">Lädt...</div></div>
             </div>
             <div class="flex gap-2 mb-2">
                 <input id="hm-friend-search-input" type="text" placeholder="Spieler suchen..." maxlength="20"
@@ -678,6 +700,22 @@
             <div id="hm-friend-search-results" class="mb-4"></div>
             <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Meine Freunde</div>
             <div id="hm-friends-list"><div class="text-slate-500 italic text-sm">Lädt...</div></div>
+        </div>
+    </div>
+
+    <!-- INVITE FRIENDS TO ROOM MODAL (Hangman) -->
+    <div id="hm-invite-friends-modal" class="hidden fixed inset-0 bg-slate-900/80 z-[98] flex items-center justify-center p-4" onclick="if(event.target===this)window.hmCloseInviteFriendsModal()">
+        <div class="w-full max-w-sm bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl" style="max-height:80dvh;overflow-y:auto;">
+            <div class="flex justify-between items-center mb-5">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i data-lucide="user-plus" class="w-5 h-5"></i> Freunde einladen
+                </h2>
+                <button onclick="window.hmCloseInviteFriendsModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div style="background:rgba(51,65,85,0.4);border-radius:8px;padding:8px 12px;font-size:0.75rem;color:#94a3b8;margin-bottom:16px;">
+                Raum: <span id="hm-invite-modal-code" style="color:white;font-weight:700;font-family:monospace;"></span>
+            </div>
+            <div id="hm-invite-friends-list"><div class="text-slate-500 italic text-sm">Lädt...</div></div>
         </div>
     </div>
 
@@ -1187,7 +1225,13 @@
         modal.style.display = 'flex';
         document.getElementById('hm-friend-search-input').value = '';
         document.getElementById('hm-friend-search-results').innerHTML = '';
+        _hmPubRoomsOpen = false;
+        const pubSec = document.getElementById('hm-public-rooms-section');
+        if (pubSec) pubSec.style.display = 'none';
+        const chevron = document.getElementById('hm-pub-rooms-chevron');
+        if (chevron) chevron.style.transform = '';
         lucide.createIcons();
+        hmRenderInvitesSection();
         await hmLoadFriendsList();
     };
     window.hmCloseFriendsModal = () => {
@@ -1278,6 +1322,203 @@
             if (fromProfile) window.hmOpenPlayerProfile(theirName); else hmLoadFriendsList();
         } catch(e) {}
     };
+
+    // ── ROOM PRIVACY (Hangman) ────────────────────────────────
+    window._hmRoomIsPrivate = false;
+    window.hmSetRoomPrivacy = (isPrivate) => {
+        window._hmRoomIsPrivate = isPrivate;
+        const openBtn = document.getElementById('hm-vis-open-btn');
+        const closedBtn = document.getElementById('hm-vis-closed-btn');
+        if (!openBtn || !closedBtn) return;
+        openBtn.style.background = isPrivate ? '#1e293b' : '#6366f1';
+        openBtn.style.color = isPrivate ? '#94a3b8' : 'white';
+        openBtn.style.borderColor = isPrivate ? '#334155' : '#6366f1';
+        openBtn.style.fontWeight = isPrivate ? 'normal' : '600';
+        closedBtn.style.background = isPrivate ? '#6366f1' : '#1e293b';
+        closedBtn.style.color = isPrivate ? 'white' : '#94a3b8';
+        closedBtn.style.borderColor = isPrivate ? '#6366f1' : '#334155';
+        closedBtn.style.fontWeight = isPrivate ? '600' : 'normal';
+    };
+
+    // ── INVITE FRIENDS (Hangman) ──────────────────────────────
+    window.hmOpenInviteFriendsModal = async () => {
+        const code = gameState.roomCode;
+        if (!code) { showToast('Du bist in keinem Raum'); return; }
+        document.getElementById('hm-invite-modal-code').textContent = code;
+        const modal = document.getElementById('hm-invite-friends-modal');
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        lucide.createIcons();
+        const listEl = document.getElementById('hm-invite-friends-list');
+        const myName = getPlayerName();
+        if (!myName) return;
+        listEl.innerHTML = '<div class="text-slate-500 italic text-sm">Lädt...</div>';
+        try {
+            const firestore = await ensureDB();
+            const myDoc = await firebaseFns.getDoc(firebaseFns.doc(firestore, 'artifacts', appId, 'public', 'data', 'users', myName));
+            const friends = myDoc.exists() ? (myDoc.data().friends || []) : [];
+            if (friends.length === 0) {
+                listEl.innerHTML = '<div style="color:#64748b;font-size:0.85rem;font-style:italic;">Keine Freunde zum Einladen.</div>';
+                return;
+            }
+            listEl.innerHTML = friends.map(fname => `
+                <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(51,65,85,0.5);padding:8px;border-radius:8px;margin-bottom:4px;">
+                    <span style="font-size:0.85rem;color:white;">${fname}</span>
+                    <button id="hm-inv-btn-${fname.replace(/[^a-zA-Z0-9]/g,'_')}" onclick="window.hmSendInvite('${fname.replace(/'/g,"\\'")}', this)" style="font-size:0.75rem;background:#6366f1;color:white;border:none;padding:5px 10px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:4px;"><i data-lucide="send" class="w-3 h-3"></i> Einladen</button>
+                </div>`).join('');
+            lucide.createIcons();
+        } catch(e) { listEl.innerHTML = '<div style="color:#64748b;font-size:0.85rem;">Fehler beim Laden</div>'; }
+    };
+    window.hmCloseInviteFriendsModal = () => {
+        document.getElementById('hm-invite-friends-modal').classList.add('hidden');
+        document.getElementById('hm-invite-friends-modal').style.display = 'none';
+    };
+
+    window.hmSendInvite = async (toName, btn) => {
+        const myName = getPlayerName();
+        const code = gameState.roomCode;
+        if (!myName || !code) return;
+        if (btn) { btn.disabled = true; btn.textContent = '✓ Eingeladen'; btn.style.background = '#16a34a'; }
+        try {
+            const firestore = await ensureDB();
+            const inviteKey = `${Date.now()}_${Math.random().toString(36).substr(2,4)}`;
+            await firebaseFns.updateDoc(firebaseFns.doc(firestore, 'artifacts', appId, 'public', 'data', 'users', toName), {
+                [`invites.${inviteKey}`]: { code, game: 'hangman', from: myName, createdAt: Date.now() }
+            });
+            showToast(`Einladung an ${toName} gesendet!`, 'success');
+        } catch(e) {
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="send" class="w-3 h-3"></i> Einladen'; lucide.createIcons(); }
+        }
+    };
+
+    window.hmAcceptInvite = async (inviteKey, code, game) => {
+        const myName = getPlayerName();
+        if (!myName) return;
+        try {
+            const firestore = await ensureDB();
+            await firebaseFns.updateDoc(firebaseFns.doc(firestore, 'artifacts', appId, 'public', 'data', 'users', myName), { [`invites.${inviteKey}`]: firebaseFns.deleteField() });
+        } catch(e) {}
+        window.hmCloseFriendsModal();
+        if (game === 'wordle') {
+            window.location.href = `index.html?room=${code}`;
+        } else {
+            const inp = document.getElementById('hm-room-code-input');
+            if (inp) inp.value = code;
+            hmJoinRoom();
+        }
+    };
+
+    window.hmDeclineInvite = async (inviteKey) => {
+        const myName = getPlayerName();
+        if (!myName) return;
+        try {
+            const firestore = await ensureDB();
+            await firebaseFns.updateDoc(firebaseFns.doc(firestore, 'artifacts', appId, 'public', 'data', 'users', myName), { [`invites.${inviteKey}`]: firebaseFns.deleteField() });
+            delete _hmPendingInvites[inviteKey];
+            hmUpdateInviteBadge(Object.keys(_hmPendingInvites).length);
+            hmRenderInvitesSection();
+            showToast('Einladung abgelehnt', 'info');
+        } catch(e) {}
+    };
+
+    function hmRenderInvitesSection() {
+        const section = document.getElementById('hm-friends-invites-section');
+        if (!section) return;
+        const keys = Object.keys(_hmPendingInvites || {});
+        section.style.display = keys.length > 0 ? 'block' : 'none';
+        const listEl = document.getElementById('hm-friends-invites-list');
+        if (!listEl) return;
+        listEl.innerHTML = keys.map(k => {
+            const inv = _hmPendingInvites[k];
+            return `<div style="display:flex;align-items:center;justify-content:space-between;background:rgba(113,63,18,0.3);border:1px solid rgba(202,138,4,0.3);padding:10px;border-radius:12px;margin-bottom:4px;">
+                <div>
+                    <div style="font-size:0.85rem;color:white;font-weight:600;">🎮 ${inv.from}</div>
+                    <div style="font-size:0.75rem;color:#facc15;">${inv.game === 'hangman' ? '🔤 Hangman' : '🟩 Wolfle'} · <span style="font-family:monospace;">${inv.code}</span></div>
+                </div>
+                <div style="display:flex;gap:4px;">
+                    <button onclick="window.hmAcceptInvite('${k}','${inv.code}','${inv.game}')" style="font-size:0.75rem;background:#16a34a;color:white;border:none;padding:5px 8px;border-radius:8px;cursor:pointer;font-weight:600;">Beitreten</button>
+                    <button onclick="window.hmDeclineInvite('${k}')" style="font-size:0.75rem;background:#334155;color:white;border:none;padding:5px 8px;border-radius:8px;cursor:pointer;">✕</button>
+                </div>
+            </div>`;
+        }).join('');
+        lucide.createIcons();
+    }
+
+    let _hmPendingInvites = {};
+    let _hmInviteUnsubscribe = null;
+
+    async function hmSubscribeInvites(myName) {
+        if (!myName || localStorage.getItem('wolfle_is_guest') === '1') return;
+        if (_hmInviteUnsubscribe) _hmInviteUnsubscribe();
+        try {
+            const firestore = await ensureDB();
+            _hmInviteUnsubscribe = firebaseFns.onSnapshot(firebaseFns.doc(firestore, 'artifacts', appId, 'public', 'data', 'users', myName), (snap) => {
+                if (!snap.exists()) return;
+                const newInvites = snap.data().invites || {};
+                const newKeys = Object.keys(newInvites).filter(k => !_hmPendingInvites[k]);
+                if (newKeys.length > 0) newKeys.forEach(k => showToast(`🎮 ${newInvites[k].from} hat dich eingeladen!`, 'info'));
+                _hmPendingInvites = newInvites;
+                hmUpdateInviteBadge(Object.keys(newInvites).length);
+                hmRenderInvitesSection();
+            });
+        } catch(e) {}
+    }
+
+    function hmUpdateInviteBadge(count) {
+        const badge = document.getElementById('hm-invite-badge');
+        if (!badge) return;
+        badge.textContent = count > 9 ? '9+' : String(count);
+        badge.style.display = count > 0 ? 'flex' : 'none';
+    }
+
+    // ── PUBLIC ROOMS (Hangman) ────────────────────────────────
+    let _hmPubRoomsOpen = false;
+    window.hmTogglePublicRooms = async () => {
+        _hmPubRoomsOpen = !_hmPubRoomsOpen;
+        const section = document.getElementById('hm-public-rooms-section');
+        const chevron = document.getElementById('hm-pub-rooms-chevron');
+        if (!_hmPubRoomsOpen) {
+            section.style.display = 'none';
+            if (chevron) chevron.style.transform = '';
+            return;
+        }
+        section.style.display = 'block';
+        if (chevron) chevron.style.transform = 'rotate(180deg)';
+        await hmLoadPublicRooms();
+    };
+
+    async function hmLoadPublicRooms() {
+        const listEl = document.getElementById('hm-public-rooms-list');
+        if (!listEl) return;
+        listEl.innerHTML = '<div style="color:#64748b;font-size:0.85rem;font-style:italic;">Lädt...</div>';
+        try {
+            const firestore = await ensureDB();
+            const snap = await firebaseFns.getDocs(firebaseFns.query(
+                firebaseFns.collection(firestore, 'artifacts', appId, 'public', 'data', 'hangman_rooms'),
+                firebaseFns.where('isPrivate', '==', false),
+                firebaseFns.limit(10)
+            ));
+            if (snap.empty) { listEl.innerHTML = '<div style="color:#64748b;font-size:0.85rem;font-style:italic;">Keine offenen Räume</div>'; return; }
+            listEl.innerHTML = snap.docs.map(d => {
+                const r = d.data();
+                const playerCount = Object.keys(r.players || {}).length;
+                return `<div style="display:flex;align-items:center;justify-content:space-between;background:rgba(51,65,85,0.4);padding:8px;border-radius:8px;margin-bottom:4px;">
+                    <div>
+                        <span style="font-family:monospace;font-weight:700;color:white;font-size:0.9rem;">${d.id}</span>
+                        <span style="font-size:0.75rem;color:#94a3b8;margin-left:8px;">${playerCount} Spieler:in</span>
+                    </div>
+                    <button onclick="window.hmJoinPublicRoom('${d.id}')" style="font-size:0.75rem;background:#6366f1;color:white;border:none;padding:5px 10px;border-radius:8px;cursor:pointer;font-weight:600;">Beitreten</button>
+                </div>`;
+            }).join('');
+        } catch(e) { listEl.innerHTML = '<div style="color:#64748b;font-size:0.85rem;">Fehler beim Laden</div>'; }
+    }
+
+    window.hmJoinPublicRoom = (code) => {
+        window.hmCloseFriendsModal();
+        const inp = document.getElementById('hm-room-code-input');
+        if (inp) inp.value = code;
+        hmJoinRoom();
+    };
     function pickRandomWord(maxLength) {
         const germanPool = GERMAN_WORDS.filter(word => word.length >= 4 && word.length <= maxLength).map(word => ({ word, language: 'Deutsch' }));
         const englishPool = ENGLISH_WORDS.map(sanitizeWord).filter(word => word.length >= 4 && word.length <= maxLength).map(word => ({ word, language: 'English' }));
@@ -1356,6 +1597,7 @@
             currentTurnIndex: 0,
             wordSource: settings.wordSource,
             wordLanguage: null,
+            isPrivate: window._hmRoomIsPrivate || false,
             roomStatus: 'Raum erstellt – warte auf Mitspieler oder starte direkt die erste Runde.'
         };
         await firebaseFns.setDoc(roomDocRef(code), payload);
@@ -1862,6 +2104,7 @@
         updateLoginHeader();
         window.closeLoginModal();
         showToast(`Willkommen, ${name}! 👋`, 'success');
+        hmSubscribeInvites(name);
     };
     window.doLogout = () => {
         localStorage.removeItem('wolfle_logged_in');
@@ -1989,6 +2232,9 @@
     if (localStorage.getItem('wolfle_logged_in') !== '1') {
         localStorage.setItem('wolfle_is_guest', '1');
         window.openOnboarding();
+    }
+    if (localStorage.getItem('wolfle_user_name')) {
+        ensureDB().then(() => hmSubscribeInvites(localStorage.getItem('wolfle_user_name')));
     }
 </script>
 </body>

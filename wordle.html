@@ -817,6 +817,13 @@
                     <input type="number" id="create-room-time-input" min="30" max="300" value="120">
                 </div>
             </div>
+            <div class="mt-3">
+                <div class="text-xs text-slate-400 uppercase tracking-wider mb-1.5">Sichtbarkeit</div>
+                <div class="flex gap-2">
+                    <button id="vis-open-btn" onclick="window.setRoomPrivacy(false)" class="flex-1 py-2 rounded-xl text-sm font-semibold border border-indigo-500 bg-indigo-600 text-white transition-all">🌐 Öffentlich</button>
+                    <button id="vis-closed-btn" onclick="window.setRoomPrivacy(true)" class="flex-1 py-2 rounded-xl text-sm border border-slate-600 bg-slate-700 text-slate-400 transition-all">🔒 Privat</button>
+                </div>
+            </div>
             <div class="flex gap-3 mt-5">
                 <button onclick="window.closeCreateRoomModal()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-2.5 rounded-xl font-semibold transition-colors">
                     <span data-i18n="cancel">Abbrechen</span>
@@ -850,8 +857,9 @@
             <button id="settings-btn-mobile" onclick="window.openSettingsModal()" class="header-mobile-only text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Einstellungen">
                 <i data-lucide="settings" class="w-4 h-4"></i>
             </button>
-            <button onclick="window.openFriendsModal()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Freunde">
+            <button onclick="window.openFriendsModal()" class="relative text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Freunde">
                 <i data-lucide="users" class="w-4 h-4"></i>
+                <span id="invite-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:#ef4444;color:white;font-size:10px;font-weight:700;border-radius:9999px;width:16px;height:16px;align-items:center;justify-content:center;line-height:1;"></span>
             </button>
             <button id="login-header-btn" onclick="window.openLoginModal()" title="Anmelden" class="flex items-center gap-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white px-2 py-1.5 rounded-lg border border-slate-600 transition-all">
                 <span id="login-header-avatar">🐺</span>
@@ -984,11 +992,24 @@
     <!-- FRIENDS MODAL -->
     <div id="friends-modal" class="hidden fixed inset-0 bg-slate-900/80 z-[97] flex items-center justify-center p-4" onclick="if(event.target===this)window.closeFriendsModal()">
         <div class="w-full max-w-sm bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl" style="max-height:85dvh;overflow-y:auto;">
-            <div class="flex justify-between items-center mb-5">
+            <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-bold text-white flex items-center gap-2">
                     <i data-lucide="users" class="w-5 h-5"></i> Freunde
                 </h2>
                 <button onclick="window.closeFriendsModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <!-- Einladungen -->
+            <div id="friends-invites-section" style="display:none;" class="mb-4">
+                <div class="text-xs font-semibold text-yellow-400 uppercase tracking-wider mb-2 flex items-center gap-1"><i data-lucide="bell" class="w-3 h-3"></i> Einladungen</div>
+                <div id="friends-invites-list"></div>
+            </div>
+            <!-- Offene Räume -->
+            <button onclick="window.togglePublicRooms()" class="w-full flex items-center justify-between bg-slate-700/50 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl text-sm mb-3 transition-colors">
+                <span class="flex items-center gap-2"><i data-lucide="globe" class="w-4 h-4 text-cyan-400"></i> Offene Räume</span>
+                <i data-lucide="chevron-down" id="pub-rooms-chevron" class="w-4 h-4"></i>
+            </button>
+            <div id="public-rooms-section" style="display:none;" class="mb-4">
+                <div id="public-rooms-list"><div class="text-slate-500 italic text-sm">Lädt...</div></div>
             </div>
             <div class="flex gap-2 mb-2">
                 <input id="friend-search-input" type="text" placeholder="Spieler suchen..." maxlength="20"
@@ -1001,6 +1022,22 @@
             <div id="friend-search-results" class="mb-4"></div>
             <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Meine Freunde</div>
             <div id="friends-list"><div class="text-slate-500 italic text-sm">Lädt...</div></div>
+        </div>
+    </div>
+
+    <!-- INVITE FRIENDS TO ROOM MODAL -->
+    <div id="invite-friends-modal" class="hidden fixed inset-0 bg-slate-900/80 z-[98] flex items-center justify-center p-4" onclick="if(event.target===this)window.closeInviteFriendsModal()">
+        <div class="w-full max-w-sm bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl" style="max-height:80dvh;overflow-y:auto;">
+            <div class="flex justify-between items-center mb-5">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i data-lucide="user-plus" class="w-5 h-5"></i> Freunde einladen
+                </h2>
+                <button onclick="window.closeInviteFriendsModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="bg-slate-700/40 rounded-lg px-3 py-2 text-xs text-slate-400 mb-4 font-mono">
+                Raum: <span id="invite-modal-code" class="text-white font-bold"></span>
+            </div>
+            <div id="invite-friends-list"><div class="text-slate-500 italic text-sm">Lädt...</div></div>
         </div>
     </div>
 
@@ -1172,7 +1209,10 @@
                         <h3 class="text-sm font-semibold text-indigo-300"><span data-i18n="room">Raum</span>: <span class="room-code-display text-white font-mono"></span></h3>
                         <span class="round-display hidden text-xs text-slate-400"></span>
                     </div>
-                    <button onclick="window.leaveRoom()" class="text-red-400 hover:text-red-300"><i data-lucide="log-out" class="w-4 h-4"></i></button>
+                    <div class="flex gap-1.5">
+                        <button onclick="window.openInviteFriendsModal()" class="text-indigo-400 hover:text-indigo-300" title="Freunde einladen"><i data-lucide="user-plus" class="w-4 h-4"></i></button>
+                        <button onclick="window.leaveRoom()" class="text-red-400 hover:text-red-300"><i data-lucide="log-out" class="w-4 h-4"></i></button>
+                    </div>
                 </div>
                 <ul class="room-players-list space-y-1.5 text-sm"></ul>
                 <button onclick="window.nextRound()" class="next-round-btn hidden mt-2 w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded-lg text-sm font-semibold transition-colors"><span data-i18n="nextRound">Nächste Runde</span> →</button>
@@ -1712,9 +1752,11 @@
         document.getElementById('create-room-rounds-input').value = hostMaxRounds;
         document.getElementById('create-room-attempts-input').value = maxAttempts;
         document.getElementById('create-room-time-input').value = hostRoundTime;
+        window._roomIsPrivate = false;
         setModalOpen('create-room-modal', true);
         lucide.createIcons();
         applyTranslations();
+        setTimeout(() => window.setRoomPrivacy(false), 50);
     };
 
     window.closeCreateRoomModal = () => {
@@ -1751,6 +1793,7 @@
             localStorage.setItem('wolfle_user_name', trimmed);
             await getDB();
             loadLeaderboard();
+            subscribeInvites(trimmed);
         }
     });
 
@@ -2186,7 +2229,13 @@
         modal.style.display = 'flex';
         document.getElementById('friend-search-input').value = '';
         document.getElementById('friend-search-results').innerHTML = '';
+        _pubRoomsOpen = false;
+        const pubSec = document.getElementById('public-rooms-section');
+        if (pubSec) pubSec.style.display = 'none';
+        const chevron = document.getElementById('pub-rooms-chevron');
+        if (chevron) chevron.style.transform = '';
         lucide.createIcons();
+        renderInvitesSection();
         await loadFriendsList();
     };
     window.closeFriendsModal = () => {
@@ -2278,6 +2327,206 @@
         } catch(e) {}
     };
 
+    // ── ROOM PRIVACY ─────────────────────────────────────────
+    window._roomIsPrivate = false;
+    window.setRoomPrivacy = (isPrivate) => {
+        window._roomIsPrivate = isPrivate;
+        const openBtn = document.getElementById('vis-open-btn');
+        const closedBtn = document.getElementById('vis-closed-btn');
+        if (!openBtn || !closedBtn) return;
+        openBtn.className = isPrivate
+            ? 'flex-1 py-2 rounded-xl text-sm border border-slate-600 bg-slate-700 text-slate-400 transition-all'
+            : 'flex-1 py-2 rounded-xl text-sm font-semibold border border-indigo-500 bg-indigo-600 text-white transition-all';
+        closedBtn.className = isPrivate
+            ? 'flex-1 py-2 rounded-xl text-sm font-semibold border border-indigo-500 bg-indigo-600 text-white transition-all'
+            : 'flex-1 py-2 rounded-xl text-sm border border-slate-600 bg-slate-700 text-slate-400 transition-all';
+    };
+
+    // ── INVITE FRIENDS TO ROOM ────────────────────────────────
+    window.openInviteFriendsModal = async () => {
+        const code = currentRoomCode;
+        if (!code) { showToast('Du bist in keinem Raum', 'warning'); return; }
+        document.getElementById('invite-modal-code').textContent = code;
+        const modal = document.getElementById('invite-friends-modal');
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        lucide.createIcons();
+        const listEl = document.getElementById('invite-friends-list');
+        const myName = getPlayerName();
+        if (!myName) return;
+        listEl.innerHTML = '<div class="text-slate-500 italic text-sm">Lädt...</div>';
+        try {
+            const firestore = await getDB();
+            const myDoc = await getDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'users', myName));
+            const friends = myDoc.exists() ? (myDoc.data().friends || []) : [];
+            if (friends.length === 0) {
+                listEl.innerHTML = '<div class="text-slate-500 italic text-sm">Keine Freunde zum Einladen.<br>Füge zuerst Freunde über 👥 hinzu!</div>';
+                return;
+            }
+            listEl.innerHTML = friends.map(fname => `
+                <div class="flex items-center justify-between bg-slate-700/50 p-2 rounded-lg mb-1">
+                    <span class="text-sm text-white">${fname}</span>
+                    <button id="inv-btn-${fname.replace(/[^a-zA-Z0-9]/g,'_')}" onclick="window.sendInvite('${fname.replace(/'/g,"\\'")}', this)" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-2 py-1 rounded-lg transition-colors flex items-center gap-1">
+                        <i data-lucide="send" class="w-3 h-3"></i> Einladen
+                    </button>
+                </div>`).join('');
+            lucide.createIcons();
+        } catch(e) { listEl.innerHTML = '<div class="text-slate-500 italic text-sm">Fehler beim Laden</div>'; }
+    };
+    window.closeInviteFriendsModal = () => {
+        document.getElementById('invite-friends-modal').classList.add('hidden');
+        document.getElementById('invite-friends-modal').style.display = 'none';
+    };
+
+    window.sendInvite = async (toName, btn) => {
+        const myName = getPlayerName();
+        const code = currentRoomCode;
+        if (!myName || !code) return;
+        if (btn) { btn.disabled = true; btn.innerHTML = '✓ Eingeladen'; btn.style.background = '#16a34a'; }
+        try {
+            const firestore = await getDB();
+            const inviteKey = `${Date.now()}_${Math.random().toString(36).substr(2,4)}`;
+            await updateDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'users', toName), {
+                [`invites.${inviteKey}`]: { code, game: 'wordle', from: myName, createdAt: Date.now() }
+            });
+            showToast(`Einladung an ${toName} gesendet!`, 'success');
+        } catch(e) {
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="send" class="w-3 h-3"></i> Einladen'; lucide.createIcons(); }
+        }
+    };
+
+    window.acceptInvite = async (inviteKey, code, game) => {
+        const myName = getPlayerName();
+        if (!myName) return;
+        try {
+            const firestore = await getDB();
+            await updateDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'users', myName), { [`invites.${inviteKey}`]: deleteField() });
+        } catch(e) {}
+        window.closeFriendsModal();
+        if (game === 'hangman') {
+            window.location.href = `hangman.html?room=${code}`;
+        } else {
+            const inp = document.getElementById('roomInput');
+            if (inp) inp.value = code;
+            window.joinRoom();
+        }
+    };
+
+    window.declineInvite = async (inviteKey) => {
+        const myName = getPlayerName();
+        if (!myName) return;
+        try {
+            const firestore = await getDB();
+            await updateDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'users', myName), { [`invites.${inviteKey}`]: deleteField() });
+            delete _pendingInvites[inviteKey];
+            updateInviteBadge(Object.keys(_pendingInvites).length);
+            renderInvitesSection();
+            showToast('Einladung abgelehnt', 'info');
+        } catch(e) {}
+    };
+
+    function renderInvitesSection() {
+        const section = document.getElementById('friends-invites-section');
+        if (!section) return;
+        const keys = Object.keys(_pendingInvites || {});
+        section.style.display = keys.length > 0 ? 'block' : 'none';
+        const listEl = document.getElementById('friends-invites-list');
+        if (!listEl) return;
+        listEl.innerHTML = keys.map(k => {
+            const inv = _pendingInvites[k];
+            return `<div class="flex items-center justify-between bg-yellow-900/30 border border-yellow-600/30 p-2.5 rounded-xl mb-1">
+                <div>
+                    <div class="text-sm text-white font-semibold">🎮 ${inv.from}</div>
+                    <div class="text-xs text-yellow-400">${inv.game === 'hangman' ? '🔤 Hangman' : '🟩 Wolfle'} · <span class="font-mono">${inv.code}</span></div>
+                </div>
+                <div class="flex gap-1">
+                    <button onclick="window.acceptInvite('${k}','${inv.code}','${inv.game}')" class="text-xs bg-green-600 hover:bg-green-500 text-white px-2 py-1.5 rounded-lg font-semibold transition-colors">Beitreten</button>
+                    <button onclick="window.declineInvite('${k}')" class="text-xs bg-slate-600 hover:bg-slate-500 text-white px-2 py-1.5 rounded-lg transition-colors">✕</button>
+                </div>
+            </div>`;
+        }).join('');
+        lucide.createIcons();
+    }
+
+    let _pendingInvites = {};
+    let inviteUnsubscribe = null;
+
+    async function subscribeInvites(myName) {
+        if (!myName || localStorage.getItem('wolfle_is_guest') === '1') return;
+        if (inviteUnsubscribe) inviteUnsubscribe();
+        try {
+            const firestore = await getDB();
+            inviteUnsubscribe = onSnapshot(doc(firestore, 'artifacts', appId, 'public', 'data', 'users', myName), (snap) => {
+                if (!snap.exists()) return;
+                const newInvites = snap.data().invites || {};
+                const newKeys = Object.keys(newInvites).filter(k => !_pendingInvites[k]);
+                if (newKeys.length > 0) {
+                    newKeys.forEach(k => showToast(`🎮 ${newInvites[k].from} hat dich eingeladen!`, 'info'));
+                }
+                _pendingInvites = newInvites;
+                updateInviteBadge(Object.keys(newInvites).length);
+                renderInvitesSection();
+            });
+        } catch(e) {}
+    }
+
+    function updateInviteBadge(count) {
+        const badge = document.getElementById('invite-badge');
+        if (!badge) return;
+        badge.textContent = count > 9 ? '9+' : String(count);
+        badge.style.display = count > 0 ? 'flex' : 'none';
+    }
+
+    // ── PUBLIC ROOMS ──────────────────────────────────────────
+    let _pubRoomsOpen = false;
+    window.togglePublicRooms = async () => {
+        _pubRoomsOpen = !_pubRoomsOpen;
+        const section = document.getElementById('public-rooms-section');
+        const chevron = document.getElementById('pub-rooms-chevron');
+        if (!_pubRoomsOpen) {
+            section.style.display = 'none';
+            if (chevron) chevron.style.transform = '';
+            return;
+        }
+        section.style.display = 'block';
+        if (chevron) chevron.style.transform = 'rotate(180deg)';
+        await loadPublicRooms();
+    };
+
+    async function loadPublicRooms() {
+        const listEl = document.getElementById('public-rooms-list');
+        if (!listEl) return;
+        listEl.innerHTML = '<div class="text-slate-500 italic text-sm">Lädt...</div>';
+        try {
+            const firestore = await getDB();
+            const snap = await getDocs(query(collection(firestore, 'artifacts', appId, 'public', 'data', 'rooms'), where('isPrivate', '==', false), limit(10)));
+            if (snap.empty) {
+                listEl.innerHTML = '<div class="text-slate-500 italic text-sm">Keine offenen Räume gefunden</div>';
+                return;
+            }
+            listEl.innerHTML = snap.docs.map(d => {
+                const r = d.data();
+                const playerCount = Object.keys(r.players || {}).length;
+                return `<div class="flex items-center justify-between bg-slate-700/40 p-2 rounded-lg mb-1">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="font-mono text-sm font-bold text-white">${d.id}</span>
+                            <span class="text-xs text-slate-400">${playerCount} Spieler:in · Runde ${r.round||1}/${r.maxRounds||3}</span>
+                        </div>
+                    </div>
+                    <button onclick="window.joinPublicRoom('${d.id}')" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-2 py-1.5 rounded-lg transition-colors font-semibold">Beitreten</button>
+                </div>`;
+            }).join('');
+        } catch(e) { listEl.innerHTML = '<div class="text-slate-500 italic text-sm">Fehler beim Laden</div>'; }
+    }
+
+    window.joinPublicRoom = (code) => {
+        window.closeFriendsModal();
+        const inp = document.getElementById('roomInput');
+        if (inp) inp.value = code;
+        window.joinRoom();
+    };
+
     // ═══════════════════════════════════════════════════════════
     // MULTIPLAYER
     // ═══════════════════════════════════════════════════════════
@@ -2294,7 +2543,7 @@
         hostRoundTime = hostSettings.timeLimit;
 
         await setDoc(doc(firestore,'artifacts',appId,'public','data','rooms',code),
-            { word, round: 1, maxRounds: hostSettings.maxRounds, timeLimit: hostSettings.timeLimit, maxAttempts: hostSettings.maxAttempts, players: { [name]: { name, guesses:0, finished:false, won:false, totalScore:0, roundsWon:0 } } });
+            { word, round: 1, maxRounds: hostSettings.maxRounds, timeLimit: hostSettings.timeLimit, maxAttempts: hostSettings.maxAttempts, isPrivate: window._roomIsPrivate || false, players: { [name]: { name, guesses:0, finished:false, won:false, totalScore:0, roundsWon:0 } } });
         window.closeCreateRoomModal();
         joinInternal(code, word, 1, hostSettings.maxRounds, hostSettings.timeLimit, hostSettings.maxAttempts);
         document.querySelectorAll('.share-btn').forEach(b => b.classList.remove('hidden'));
@@ -3316,6 +3565,7 @@
         updateLoginHeader();
         window.closeLoginModal();
         showToast(`Willkommen, ${name}! 👋`, 'success');
+        subscribeInvites(name);
     };
     window.doLogout = () => {
         localStorage.removeItem('wolfle_logged_in');
@@ -3809,7 +4059,10 @@
 
     loadProfile();
     if (localStorage.getItem('wolfle_user_name')) {
-        getDB().then(() => loadLeaderboard());
+        getDB().then(() => {
+            loadLeaderboard();
+            subscribeInvites(getPlayerName());
+        });
     }
 
     // If not logged in, ensure guest flag is set to prevent ghost state
