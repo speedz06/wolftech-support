@@ -477,6 +477,9 @@
             <button id="haptic-btn" onclick="toggleHaptic()" class="mobile-only text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Vibration">
                 <i data-lucide="smartphone" class="w-4 h-4"></i>
             </button>
+            <button onclick="window.hmOpenFriendsModal()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Freunde">
+                <i data-lucide="users" class="w-4 h-4"></i>
+            </button>
             <button id="login-header-btn" onclick="window.openLoginModal()" title="Anmelden" class="flex items-center gap-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white px-2 py-1.5 rounded-lg border border-slate-600 transition-all">
                 <span id="login-header-avatar">🐺</span>
                 <span id="login-header-label">Anmelden</span>
@@ -649,8 +652,32 @@
                 <button onclick="window.hmClosePlayerProfile()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
             </div>
             <div id="hm-pp-avatar" class="text-5xl mb-2">🐺</div>
-            <div id="hm-pp-name" class="text-lg font-bold text-white mb-4"></div>
-            <div id="hm-pp-stats" class="flex gap-3 justify-center"></div>
+            <div id="hm-pp-name" class="text-lg font-bold text-white mb-3"></div>
+            <div id="hm-pp-stats" class="flex gap-3 justify-center mb-4"></div>
+            <div id="hm-pp-friend-btn"></div>
+        </div>
+    </div>
+
+    <!-- FRIENDS MODAL -->
+    <div id="hm-friends-modal" class="hidden fixed inset-0 bg-slate-900/80 z-[97] flex items-center justify-center p-4" onclick="if(event.target===this)window.hmCloseFriendsModal()">
+        <div class="w-full max-w-sm bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl" style="max-height:85dvh;overflow-y:auto;">
+            <div class="flex justify-between items-center mb-5">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i data-lucide="users" class="w-5 h-5"></i> Freunde
+                </h2>
+                <button onclick="window.hmCloseFriendsModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="flex gap-2 mb-2">
+                <input id="hm-friend-search-input" type="text" placeholder="Spieler suchen..." maxlength="20"
+                    class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white transition-colors"
+                    onkeydown="if(event.key==='Enter')window.hmSearchFriends()">
+                <button onclick="window.hmSearchFriends()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-lg transition-colors">
+                    <i data-lucide="search" class="w-4 h-4"></i>
+                </button>
+            </div>
+            <div id="hm-friend-search-results" class="mb-4"></div>
+            <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Meine Freunde</div>
+            <div id="hm-friends-list"><div class="text-slate-500 italic text-sm">Lädt...</div></div>
         </div>
     </div>
 
@@ -1117,7 +1144,10 @@
             const userSnap = await firebaseFns.getDoc(firebaseFns.doc(firestore, 'artifacts', appId, 'public', 'data', 'users', name));
             if (!userSnap.exists()) { showToast('Kein Profil gefunden', 'info'); return; }
             const ud = userSnap.data();
-            const scoreSnap = await firebaseFns.getDoc(firebaseFns.doc(firestore, 'artifacts', appId, 'public', 'data', 'hm_scores', name.toLowerCase()));
+            const [scoreSnap, myDoc] = await Promise.all([
+                firebaseFns.getDoc(firebaseFns.doc(firestore, 'artifacts', appId, 'public', 'data', 'hm_scores', name.toLowerCase())),
+                getPlayerName() ? firebaseFns.getDoc(firebaseFns.doc(firestore, 'artifacts', appId, 'public', 'data', 'users', getPlayerName())) : Promise.resolve(null),
+            ]);
             const sd = scoreSnap.exists() ? scoreSnap.data() : {};
             const weekKey = getWeekKey();
             const weekScore = sd.weekKey === weekKey ? (sd.weekScore || 0) : 0;
@@ -1127,6 +1157,17 @@
                 [sd.score || 0, 'Punkte Gesamt'],
                 [weekScore, 'Diese Woche'],
             ].map(([val, lbl]) => `<div style="flex:1;text-align:center;background:rgba(51,65,85,0.5);border-radius:12px;padding:10px 0;"><div style="font-size:1.4rem;font-weight:900;color:#e2e8f0;">${val}</div><div style="font-size:0.7rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-top:2px;">${lbl}</div></div>`).join('');
+            const myName = getPlayerName();
+            const friendBtnEl = document.getElementById('hm-pp-friend-btn');
+            if (!myName || localStorage.getItem('wolfle_is_guest') === '1' || name.toLowerCase() === myName.toLowerCase()) {
+                friendBtnEl.innerHTML = '';
+            } else {
+                const myFriends = myDoc && myDoc.exists() ? (myDoc.data().friends || []) : [];
+                const isFriend = myFriends.some(f => f.toLowerCase() === name.toLowerCase());
+                friendBtnEl.innerHTML = isFriend
+                    ? `<button onclick="window.hmRemoveFriend('${name.replace(/'/g,"\\'")}', true)" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;background:#334155;color:#cbd5e1;border:none;padding:8px 0;border-radius:12px;font-size:13px;cursor:pointer;"><i data-lucide="user-minus" class="w-4 h-4"></i> Freund entfernen</button>`
+                    : `<button onclick="window.hmAddFriend('${name.replace(/'/g,"\\'")}', null, true)" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;background:#6366f1;color:white;border:none;padding:8px 0;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer;"><i data-lucide="user-plus" class="w-4 h-4"></i> Freund hinzufügen</button>`;
+            }
             const modal = document.getElementById('hm-player-profile-modal');
             modal.classList.remove('hidden');
             modal.style.display = 'flex';
@@ -1137,6 +1178,105 @@
         const modal = document.getElementById('hm-player-profile-modal');
         modal.classList.add('hidden');
         modal.style.display = 'none';
+    };
+
+    // ── FRIENDS ──────────────────────────────────────────────
+    window.hmOpenFriendsModal = async () => {
+        const modal = document.getElementById('hm-friends-modal');
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        document.getElementById('hm-friend-search-input').value = '';
+        document.getElementById('hm-friend-search-results').innerHTML = '';
+        lucide.createIcons();
+        await hmLoadFriendsList();
+    };
+    window.hmCloseFriendsModal = () => {
+        document.getElementById('hm-friends-modal').classList.add('hidden');
+        document.getElementById('hm-friends-modal').style.display = 'none';
+    };
+    async function hmLoadFriendsList() {
+        const listEl = document.getElementById('hm-friends-list');
+        if (!listEl) return;
+        if (localStorage.getItem('wolfle_is_guest') === '1') {
+            listEl.innerHTML = '<div style="color:#64748b;font-size:0.85rem;text-align:center;padding:8px 0;">Nur für registrierte Accounts.<br><button onclick="window.hmCloseFriendsModal();window.openLoginModal();" style="margin-top:6px;background:#6366f1;color:white;border:none;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">Konto erstellen</button></div>';
+            return;
+        }
+        const myName = getPlayerName();
+        if (!myName) return;
+        listEl.innerHTML = '<div class="text-slate-500 italic text-sm">Lädt...</div>';
+        try {
+            const firestore = await ensureDB();
+            const myDoc = await firebaseFns.getDoc(firebaseFns.doc(firestore, 'artifacts', appId, 'public', 'data', 'users', myName));
+            const friends = myDoc.exists() ? (myDoc.data().friends || []) : [];
+            if (friends.length === 0) { listEl.innerHTML = '<div class="text-slate-500 italic text-sm">Noch keine Freunde. Suche nach Spielern!</div>'; return; }
+            const friendData = await Promise.all(friends.map(async (fname) => {
+                const [uSnap, sSnap] = await Promise.all([
+                    firebaseFns.getDoc(firebaseFns.doc(firestore, 'artifacts', appId, 'public', 'data', 'users', fname)),
+                    firebaseFns.getDoc(firebaseFns.doc(firestore, 'artifacts', appId, 'public', 'data', 'hm_scores', fname.toLowerCase())),
+                ]);
+                return { name: fname, avatar: uSnap.exists() ? (uSnap.data().avatar || '🐺') : '🐺', score: sSnap.exists() ? (sSnap.data().score || 0) : 0 };
+            }));
+            listEl.innerHTML = friendData.map(f => `
+                <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(51,65,85,0.5);padding:8px;border-radius:8px;margin-bottom:4px;">
+                    <button style="display:flex;align-items:center;gap:8px;background:none;border:none;color:white;cursor:pointer;flex:1;text-align:left;" onclick="window.hmCloseFriendsModal();window.hmOpenPlayerProfile('${f.name.replace(/'/g,"\\'")}')">
+                        <span style="font-size:1.3rem;">${f.avatar}</span>
+                        <div><div style="font-size:0.85rem;font-weight:600;">${f.name}</div><div style="font-size:0.75rem;color:#818cf8;">${f.score} Pts</div></div>
+                    </button>
+                    <button onclick="window.hmRemoveFriend('${f.name.replace(/'/g,"\\'")}', false)" style="background:none;border:none;color:#64748b;cursor:pointer;padding:6px;border-radius:6px;" title="Entfernen"><i data-lucide="user-minus" class="w-4 h-4"></i></button>
+                </div>`).join('');
+            lucide.createIcons();
+        } catch(e) { listEl.innerHTML = '<div class="text-slate-500 italic text-sm">Fehler beim Laden</div>'; }
+    }
+    window.hmSearchFriends = async () => {
+        const queryText = document.getElementById('hm-friend-search-input').value.trim();
+        const resultsEl = document.getElementById('hm-friend-search-results');
+        if (!queryText) { resultsEl.innerHTML = ''; return; }
+        resultsEl.innerHTML = '<div class="text-slate-500 text-sm">Suche...</div>';
+        try {
+            const firestore = await ensureDB();
+            const snap = await firebaseFns.getDocs(firebaseFns.query(
+                firebaseFns.collection(firestore, 'artifacts', appId, 'public', 'data', 'users'),
+                firebaseFns.where('name', '>=', queryText),
+                firebaseFns.where('name', '<=', queryText + '\uf8ff'),
+                firebaseFns.limit(8)
+            ));
+            const myName = getPlayerName();
+            const myDoc = await firebaseFns.getDoc(firebaseFns.doc(firestore, 'artifacts', appId, 'public', 'data', 'users', myName));
+            const myFriends = myDoc.exists() ? (myDoc.data().friends || []) : [];
+            if (snap.empty) { resultsEl.innerHTML = '<div class="text-slate-500 text-sm py-1">Keine Spieler gefunden</div>'; return; }
+            const rows = snap.docs.filter(d => d.data().name?.toLowerCase() !== myName.toLowerCase()).map(d => {
+                const ud = d.data();
+                const isFriend = myFriends.some(f => f.toLowerCase() === ud.name.toLowerCase());
+                return `<div style="display:flex;align-items:center;justify-content:space-between;background:rgba(51,65,85,0.4);padding:8px;border-radius:8px;margin-bottom:4px;">
+                    <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:1.3rem;">${ud.avatar || '🐺'}</span><span style="font-size:0.85rem;color:white;">${ud.name}</span></div>
+                    ${isFriend ? '<span style="font-size:0.75rem;color:#4ade80;display:flex;align-items:center;gap:3px;"><i data-lucide="check" class="w-3 h-3"></i> Freund</span>'
+                        : `<button onclick="window.hmAddFriend('${ud.name.replace(/'/g,"\\'")}', this, false)" style="font-size:0.75rem;background:#6366f1;color:white;border:none;padding:4px 10px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:4px;"><i data-lucide="user-plus" class="w-3 h-3"></i> Hinzufügen</button>`}
+                </div>`;
+            });
+            resultsEl.innerHTML = rows.length ? rows.join('') : '<div class="text-slate-500 text-sm py-1">Keine anderen Spieler gefunden</div>';
+            lucide.createIcons();
+        } catch(e) { resultsEl.innerHTML = '<div class="text-slate-500 text-sm">Fehler bei der Suche</div>'; }
+    };
+    window.hmAddFriend = async (theirName, btn, fromProfile) => {
+        const myName = getPlayerName();
+        if (!myName || localStorage.getItem('wolfle_is_guest') === '1') return;
+        if (btn) { btn.disabled = true; btn.textContent = '...'; }
+        try {
+            const firestore = await ensureDB();
+            await firebaseFns.updateDoc(firebaseFns.doc(firestore, 'artifacts', appId, 'public', 'data', 'users', myName), { friends: firebaseFns.arrayUnion(theirName) });
+            showToast(`${theirName} als Freund hinzugefügt!`, 'success');
+            if (fromProfile) window.hmOpenPlayerProfile(theirName); else { hmLoadFriendsList(); window.hmSearchFriends(); }
+        } catch(e) { if (btn) { btn.disabled = false; lucide.createIcons(); } }
+    };
+    window.hmRemoveFriend = async (theirName, fromProfile) => {
+        const myName = getPlayerName();
+        if (!myName) return;
+        try {
+            const firestore = await ensureDB();
+            await firebaseFns.updateDoc(firebaseFns.doc(firestore, 'artifacts', appId, 'public', 'data', 'users', myName), { friends: firebaseFns.arrayRemove(theirName) });
+            showToast(`${theirName} entfernt`, 'info');
+            if (fromProfile) window.hmOpenPlayerProfile(theirName); else hmLoadFriendsList();
+        } catch(e) {}
     };
     function pickRandomWord(maxLength) {
         const germanPool = GERMAN_WORDS.filter(word => word.length >= 4 && word.length <= maxLength).map(word => ({ word, language: 'Deutsch' }));
