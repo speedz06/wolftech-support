@@ -1440,18 +1440,38 @@
     };
     window.closeLoginModal = () => document.getElementById('login-modal').classList.add('hidden');
 
-    window.doLogin = () => {
+    window.doLogin = async () => {
         const nameInput = document.getElementById('login-name-input');
         const pinInput = document.getElementById('login-pin-input');
         const errorEl = document.getElementById('login-error');
         const name = nameInput.value.trim();
         if (!name) { errorEl.textContent = 'Bitte einen Namen eingeben.'; errorEl.classList.remove('hidden'); return; }
         const pin = pinInput.value;
-        const existingPin = localStorage.getItem('wolfle_account_pin_' + name);
-        if (existingPin && pin && hashPin(pin) !== existingPin) {
-            errorEl.textContent = 'Falscher PIN.'; errorEl.classList.remove('hidden'); return;
+        errorEl.classList.add('hidden');
+        try {
+            const firestore = await ensureDB();
+            const { doc: fsDoc, setDoc: fsSetDoc, getDoc: fsGetDoc } = firebaseFns;
+            const snap = await fsGetDoc(fsDoc(firestore,'artifacts',appId,'public','data','users',name));
+            if (snap.exists()) {
+                const ud = snap.data();
+                if (ud.pinHash) {
+                    if (!pin) { errorEl.textContent = 'Bitte PIN eingeben.'; errorEl.classList.remove('hidden'); return; }
+                    if (hashPin(pin) !== ud.pinHash) { errorEl.textContent = 'Falscher PIN.'; errorEl.classList.remove('hidden'); return; }
+                }
+                if (ud.avatar) localStorage.setItem('wolfle_avatar', ud.avatar);
+                if (ud.pinHash) localStorage.setItem('wolfle_account_pin_' + name, ud.pinHash);
+            } else {
+                const pinHash = pin ? hashPin(pin) : null;
+                const avatar = localStorage.getItem('wolfle_avatar') || '🐺';
+                await fsSetDoc(fsDoc(firestore,'artifacts',appId,'public','data','users',name),
+                    { name, avatar, pinHash: pinHash || null, createdAt: Date.now() });
+                if (pin) localStorage.setItem('wolfle_account_pin_' + name, hashPin(pin));
+            }
+        } catch(e) {
+            const existingPin = localStorage.getItem('wolfle_account_pin_' + name);
+            if (existingPin && pin && hashPin(pin) !== existingPin) { errorEl.textContent = 'Falscher PIN.'; errorEl.classList.remove('hidden'); return; }
+            if (!existingPin && pin) localStorage.setItem('wolfle_account_pin_' + name, hashPin(pin));
         }
-        if (!existingPin && pin) localStorage.setItem('wolfle_account_pin_' + name, hashPin(pin));
         localStorage.setItem('wolfle_user_name', name);
         localStorage.setItem('wolfle_logged_in', '1');
         localStorage.setItem('wolfle_onboarded', '1');
@@ -1460,6 +1480,7 @@
         if (nameEl) nameEl.value = name;
         updateLoginHeader();
         window.closeLoginModal();
+        showToast(`Willkommen, ${name}! 👋`, 'success');
     };
     window.doLogout = () => {
         localStorage.removeItem('wolfle_logged_in');

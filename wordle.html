@@ -882,6 +882,9 @@
             </div>
             <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Dein Name</label>
             <input id="profile-name-input" type="text" maxlength="15" placeholder="Name eingeben..."
+                class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white mb-3 transition-colors">
+            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">PIN ändern <span class="text-slate-600 font-normal normal-case tracking-normal">(leer lassen = unverändert)</span></label>
+            <input id="profile-pin-input" type="password" maxlength="8" placeholder="Neuer PIN..."
                 class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white mb-4 transition-colors">
             <div class="flex gap-3 mb-4" id="profile-quick-stats">
                 <!-- filled by JS -->
@@ -2832,13 +2835,27 @@
         updateAvatarUI();
     }
 
-    window.saveProfile = () => {
+    window.saveProfile = async () => {
         const name = (document.getElementById('profile-name-input').value || '').trim();
+        const newPin = (document.getElementById('profile-pin-input').value || '');
         if (name) {
             document.querySelectorAll('.name-input').forEach(el => el.value = name);
             localStorage.setItem('wolfle_user_name', name);
         }
+        localStorage.setItem('wolfle_avatar', selectedAvatar);
         localStorage.setItem('wolfle_profile', JSON.stringify({ name, avatar: selectedAvatar }));
+        // Sync to Firebase
+        try {
+            const firestore = await getDB();
+            if (firestore && name) {
+                const updates = { name, avatar: selectedAvatar };
+                if (newPin) {
+                    updates.pinHash = hashPin(newPin);
+                    localStorage.setItem('wolfle_account_pin_' + name, hashPin(newPin));
+                }
+                await setDoc(doc(firestore,'artifacts',appId,'public','data','users',name), updates, { merge: true });
+            }
+        } catch(e) {}
         updateAvatarUI();
         window.closeProfileModal();
         showToast('Profil gespeichert ✓', 'success');
@@ -2999,28 +3016,51 @@
         modal.classList.add('hidden');
         modal.style.display = 'none';
     };
-    window.doLogin = () => {
+    window.doLogin = async () => {
         const nameInput = document.getElementById('login-name-input');
         const pinInput = document.getElementById('login-pin-input');
         const errorEl = document.getElementById('login-error');
         const name = nameInput.value.trim();
         if (!name) { errorEl.textContent = 'Bitte einen Namen eingeben.'; errorEl.classList.remove('hidden'); return; }
         const pin = pinInput.value;
-        const existingPin = localStorage.getItem('wolfle_account_pin_' + name);
-        if (existingPin && pin && hashPin(pin) !== existingPin) {
-            errorEl.textContent = 'Falscher PIN.'; errorEl.classList.remove('hidden'); return;
-        }
-        if (!existingPin && pin) {
-            localStorage.setItem('wolfle_account_pin_' + name, hashPin(pin));
+        errorEl.classList.add('hidden');
+        // Firebase-backed login
+        try {
+            const firestore = await getDB();
+            if (firestore) {
+                const snap = await getDoc(doc(firestore,'artifacts',appId,'public','data','users',name));
+                if (snap.exists()) {
+                    const ud = snap.data();
+                    if (ud.pinHash) {
+                        if (!pin) { errorEl.textContent = 'Bitte PIN eingeben.'; errorEl.classList.remove('hidden'); return; }
+                        if (hashPin(pin) !== ud.pinHash) { errorEl.textContent = 'Falscher PIN.'; errorEl.classList.remove('hidden'); return; }
+                    }
+                    // Sync profile from Firebase
+                    if (ud.avatar) { selectedAvatar = ud.avatar; localStorage.setItem('wolfle_avatar', ud.avatar); }
+                    if (ud.pinHash) localStorage.setItem('wolfle_account_pin_' + name, ud.pinHash);
+                } else {
+                    // New user – register in Firebase
+                    const pinHash = pin ? hashPin(pin) : null;
+                    await setDoc(doc(firestore,'artifacts',appId,'public','data','users',name),
+                        { name, avatar: selectedAvatar || '🐺', pinHash: pinHash || null, createdAt: Date.now() });
+                    if (pin) localStorage.setItem('wolfle_account_pin_' + name, hashPin(pin));
+                }
+            } else { throw new Error('no db'); }
+        } catch(e) {
+            // Offline fallback – local PIN check
+            const existingPin = localStorage.getItem('wolfle_account_pin_' + name);
+            if (existingPin && pin && hashPin(pin) !== existingPin) { errorEl.textContent = 'Falscher PIN.'; errorEl.classList.remove('hidden'); return; }
+            if (!existingPin && pin) localStorage.setItem('wolfle_account_pin_' + name, hashPin(pin));
         }
         localStorage.setItem('wolfle_user_name', name);
         localStorage.setItem('wolfle_logged_in', '1');
         localStorage.setItem('wolfle_onboarded', '1');
         const playerNameEl = document.getElementById('playerName');
         if (playerNameEl) playerNameEl.value = name;
+        updateAvatarUI();
         updateLoginHeader();
         window.closeLoginModal();
-        showToast(`Willkommen, ${name}!`, 'success');
+        showToast(`Willkommen, ${name}! 👋`, 'success');
     };
     window.doLogout = () => {
         localStorage.removeItem('wolfle_logged_in');
