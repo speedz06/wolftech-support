@@ -292,7 +292,10 @@
                 <button id="login-submit-btn" onclick="doLogin()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors mb-2">Anmelden / Registrieren</button>
             </div>
             <div id="login-loggedin-section" class="hidden text-center">
-                <div id="login-welcome-avatar" class="text-5xl mb-2">🐺</div>
+                <div id="login-welcome-avatar" class="text-5xl mb-1 cursor-pointer" onclick="toggleLoginAvatarGrid()" title="Avatar ändern">🐺</div>
+                <div class="text-xs text-slate-500 mb-2">Tippe zum Ändern</div>
+                <div id="login-avatar-grid" class="avatar-grid hidden mb-3"></div>
+                <button id="login-avatar-save-btn" onclick="saveLoginAvatar()" class="hidden w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-xl text-sm font-semibold transition-colors mb-3">Avatar speichern</button>
                 <div class="text-lg font-bold text-white mb-1" id="login-welcome-name"></div>
                 <div class="text-xs text-slate-400 mb-4">Erfolgreich angemeldet</div>
                 <button onclick="doLogout()" class="w-full bg-red-900/40 hover:bg-red-900/60 border border-red-800/40 text-red-400 py-2 rounded-xl text-sm transition-colors">Abmelden</button>
@@ -393,8 +396,11 @@
         if (loggedIn) {
             const name = localStorage.getItem('wolfle_user_name') || '';
             const avatar = localStorage.getItem('wolfle_avatar') || '🐺';
+            _loginSelectedAvatar = avatar;
             document.getElementById('login-welcome-name').textContent = name;
             document.getElementById('login-welcome-avatar').textContent = avatar;
+            document.getElementById('login-avatar-grid').classList.add('hidden');
+            document.getElementById('login-avatar-save-btn').classList.add('hidden');
         }
         document.getElementById('login-modal').classList.remove('hidden');
         lucide.createIcons();
@@ -445,6 +451,41 @@
         localStorage.removeItem('wolfle_logged_in');
         updateLoginHeader();
         closeLoginModal();
+    }
+
+    // Avatar editor in logged-in modal
+    let _loginSelectedAvatar = localStorage.getItem('wolfle_avatar') || '🐺';
+    function toggleLoginAvatarGrid() {
+        const grid = document.getElementById('login-avatar-grid');
+        const saveBtn = document.getElementById('login-avatar-save-btn');
+        const open = grid.classList.toggle('hidden');
+        saveBtn.classList.toggle('hidden', open);
+        if (!open) {
+            grid.innerHTML = AVATARS.map(a =>
+                `<button class="avatar-btn${a===_loginSelectedAvatar?' selected':''}" onclick="selectLoginAvatar('${a}')">${a}</button>`
+            ).join('');
+        }
+    }
+    function selectLoginAvatar(a) {
+        _loginSelectedAvatar = a;
+        document.getElementById('login-welcome-avatar').textContent = a;
+        document.querySelectorAll('#login-avatar-grid .avatar-btn').forEach(b => b.classList.toggle('selected', b.textContent === a));
+    }
+    async function saveLoginAvatar() {
+        const name = localStorage.getItem('wolfle_user_name') || '';
+        localStorage.setItem('wolfle_avatar', _loginSelectedAvatar);
+        updateLoginHeader();
+        // Sync to Firebase
+        try {
+            const firestore = await getDB();
+            if (firestore && name) {
+                const { doc, setDoc } = _fbFns;
+                await setDoc(doc(firestore,'artifacts',appId,'public','data','users',name),
+                    { avatar: _loginSelectedAvatar }, { merge: true });
+            }
+        } catch(e) {}
+        document.getElementById('login-avatar-grid').classList.add('hidden');
+        document.getElementById('login-avatar-save-btn').classList.add('hidden');
     }
 
     // Onboarding
