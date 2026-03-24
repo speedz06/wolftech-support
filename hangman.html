@@ -1037,6 +1037,7 @@
         if (!points) return;
         const name = getPlayerName();
         if (!name || localStorage.getItem('wolfle_logged_in') !== '1') return;
+        if (localStorage.getItem('wolfle_is_guest') === '1') return;
         try {
             const firestore = await ensureDB();
             if (!firestore) return;
@@ -1673,6 +1674,7 @@
         localStorage.setItem('wolfle_user_name', name);
         localStorage.setItem('wolfle_logged_in', '1');
         localStorage.setItem('wolfle_onboarded', '1');
+        localStorage.removeItem('wolfle_is_guest');
         gameState.playerName = name;
         const nameEl = document.getElementById('hm-player-name');
         if (nameEl) nameEl.value = name;
@@ -1684,6 +1686,7 @@
         localStorage.removeItem('wolfle_logged_in');
         localStorage.removeItem('wolfle_user_name');
         localStorage.removeItem('wolfle_avatar');
+        localStorage.removeItem('wolfle_is_guest');
         selectedAvatar = '🐺';
         gameState.playerName = '';
         const nameEl = document.getElementById('hm-player-name');
@@ -1783,6 +1786,7 @@
         localStorage.setItem('wolfle_avatar', onboardAvatar);
         localStorage.setItem('wolfle_onboarded', '1');
         localStorage.setItem('wolfle_logged_in', '1');
+        localStorage.setItem('wolfle_is_guest', '1');
         gameState.playerName = name;
         const nameEl = document.getElementById('hm-player-name');
         if (nameEl) nameEl.value = name;

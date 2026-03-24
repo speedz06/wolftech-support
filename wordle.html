@@ -1935,7 +1935,7 @@
                 playerRoundsWon += 1;
             }
             const name = getPlayerName();
-            if (name && localStorage.getItem('wolfle_logged_in') === '1') {
+            if (name && localStorage.getItem('wolfle_logged_in') === '1' && localStorage.getItem('wolfle_is_guest') !== '1') {
                 const firestore = await getDB();
                 if (firestore) {
                     try {
@@ -2955,6 +2955,7 @@
         localStorage.setItem('wolfle_profile', JSON.stringify({ name, avatar: onboardAvatar }));
         localStorage.setItem('wolfle_onboarded', '1');
         localStorage.setItem('wolfle_logged_in', '1');
+        localStorage.setItem('wolfle_is_guest', '1');
         document.querySelectorAll('.name-input').forEach(el => el.value = name);
         updateAvatarUI();
         updateLoginHeader();
@@ -3125,6 +3126,7 @@
         localStorage.setItem('wolfle_user_name', name);
         localStorage.setItem('wolfle_logged_in', '1');
         localStorage.setItem('wolfle_onboarded', '1');
+        localStorage.removeItem('wolfle_is_guest');
         const playerNameEl = document.getElementById('playerName');
         if (playerNameEl) playerNameEl.value = name;
         updateAvatarUI();
@@ -3137,6 +3139,7 @@
         localStorage.removeItem('wolfle_user_name');
         localStorage.removeItem('wolfle_avatar');
         localStorage.removeItem('wolfle_profile');
+        localStorage.removeItem('wolfle_is_guest');
         selectedAvatar = '🐺';
         document.querySelectorAll('.name-input').forEach(el => el.value = '');
         updateAvatarUI();
@@ -3147,9 +3150,13 @@
     updateLoginHeader();
 
     function refreshQuickStats() {
-        const s = getStats();
         const el = document.getElementById('profile-quick-stats');
         if (!el) return;
+        if (localStorage.getItem('wolfle_is_guest') === '1') {
+            el.innerHTML = `<div style="color:#94a3b8;font-size:0.8rem;text-align:center;width:100%;">Nur für registrierte Accounts</div>`;
+            return;
+        }
+        const s = getStats();
         const rate = s.totalGames > 0 ? Math.round(s.totalWins / s.totalGames * 100) : 0;
         el.innerHTML = [
             ['🎮', s.totalGames, 'Spiele'],
@@ -3182,6 +3189,7 @@
     }
 
     function updateStats(win, attempts) {
+        if (localStorage.getItem('wolfle_is_guest') === '1') return;
         const s = getStats();
         s.totalGames++;
         if (win) {
@@ -3203,6 +3211,14 @@
     };
 
     window.openStatsModal = () => {
+        if (localStorage.getItem('wolfle_is_guest') === '1') {
+            document.getElementById('stats-overview').innerHTML = `<div style="text-align:center;color:#94a3b8;font-size:0.85rem;padding:12px 0;">Statistiken sind nur für registrierte Accounts verfügbar.<br><br><button onclick="window.closeStatsModal();window.openLoginModal();" style="background:#6366f1;color:white;border:none;padding:8px 20px;border-radius:10px;cursor:pointer;font-weight:600;">Konto erstellen</button></div>`;
+            document.getElementById('stats-distribution').innerHTML = '';
+            document.getElementById('stats-modal').style.display = 'flex';
+            document.getElementById('stats-modal').classList.remove('hidden');
+            lucide.createIcons();
+            return;
+        }
         const s = getStats();
         const rate = s.totalGames > 0 ? Math.round(s.totalWins / s.totalGames * 100) : 0;
         document.getElementById('stats-overview').innerHTML = [
