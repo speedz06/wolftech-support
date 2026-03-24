@@ -2956,6 +2956,7 @@
         localStorage.setItem('wolfle_onboarded', '1');
         localStorage.setItem('wolfle_logged_in', '1');
         localStorage.setItem('wolfle_is_guest', '1');
+        localStorage.removeItem('wolfle_stats');
         document.querySelectorAll('.name-input').forEach(el => el.value = name);
         updateAvatarUI();
         updateLoginHeader();
@@ -3139,7 +3140,8 @@
         localStorage.removeItem('wolfle_user_name');
         localStorage.removeItem('wolfle_avatar');
         localStorage.removeItem('wolfle_profile');
-        localStorage.removeItem('wolfle_is_guest');
+        localStorage.setItem('wolfle_is_guest', '1');
+        localStorage.removeItem('wolfle_stats');
         selectedAvatar = '🐺';
         document.querySelectorAll('.name-input').forEach(el => el.value = '');
         updateAvatarUI();
@@ -3628,7 +3630,9 @@
         getDB().then(() => loadLeaderboard());
     }
 
+    // If not logged in, ensure guest flag is set to prevent ghost state
     if (localStorage.getItem('wolfle_logged_in') !== '1') {
+        localStorage.setItem('wolfle_is_guest', '1');
         window.openOnboarding();
     }
 
