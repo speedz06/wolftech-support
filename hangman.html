@@ -642,6 +642,18 @@
         </button>
     </div>
 
+    <!-- PLAYER PROFILE MODAL -->
+    <div id="hm-player-profile-modal" class="hidden fixed inset-0 bg-slate-900/80 z-[96] flex items-center justify-center p-4" onclick="if(event.target===this)window.hmClosePlayerProfile()">
+        <div class="w-full max-w-xs bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl text-center">
+            <div class="flex justify-end mb-2">
+                <button onclick="window.hmClosePlayerProfile()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <div id="hm-pp-avatar" class="text-5xl mb-2">🐺</div>
+            <div id="hm-pp-name" class="text-lg font-bold text-white mb-4"></div>
+            <div id="hm-pp-stats" class="flex gap-3 justify-center"></div>
+        </div>
+    </div>
+
     <!-- ONBOARDING MODAL -->
     <div id="onboarding-modal" class="hidden fixed inset-0 bg-slate-900/95 z-[110] flex items-center justify-center p-4">
         <div class="w-full max-w-sm bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl">
@@ -1089,7 +1101,7 @@
                     const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
                     const isMe = s.name.toLowerCase() === me;
                     const pts = hmLeaderboardTab === 'week' ? (s.weekScore || 0) : s.score;
-                    return `<li class="flex justify-between ${isMe ? 'bg-indigo-900/40 border border-indigo-500/30' : 'bg-slate-800/40'} p-2 rounded text-sm">
+                    return `<li class="flex justify-between items-center ${isMe ? 'bg-indigo-900/40 border border-indigo-500/30' : 'bg-slate-800/40 hover:bg-slate-700/60'} p-2 rounded text-sm cursor-pointer transition-colors" onclick="window.hmOpenPlayerProfile('${s.name.replace(/'/g,"\\'")}')">
                         <span>${medal} ${s.name}</span><span class="text-indigo-400 font-bold">${pts}</span></li>`;
                 }).join('');
         } catch(e) {
@@ -1097,6 +1109,35 @@
         }
     }
     window.setHmLeaderboardTab = (tab) => { hmLeaderboardTab = tab; loadHmLeaderboard(); };
+
+    window.hmOpenPlayerProfile = async (name) => {
+        try {
+            const firestore = await ensureDB();
+            if (!firestore) return;
+            const userSnap = await firebaseFns.getDoc(firebaseFns.doc(firestore, 'artifacts', appId, 'public', 'data', 'users', name));
+            if (!userSnap.exists()) { showToast('Kein Profil gefunden', 'info'); return; }
+            const ud = userSnap.data();
+            const scoreSnap = await firebaseFns.getDoc(firebaseFns.doc(firestore, 'artifacts', appId, 'public', 'data', 'hm_scores', name.toLowerCase()));
+            const sd = scoreSnap.exists() ? scoreSnap.data() : {};
+            const weekKey = getWeekKey();
+            const weekScore = sd.weekKey === weekKey ? (sd.weekScore || 0) : 0;
+            document.getElementById('hm-pp-avatar').textContent = ud.avatar || '🐺';
+            document.getElementById('hm-pp-name').textContent = ud.name || name;
+            document.getElementById('hm-pp-stats').innerHTML = [
+                [sd.score || 0, 'Punkte Gesamt'],
+                [weekScore, 'Diese Woche'],
+            ].map(([val, lbl]) => `<div style="flex:1;text-align:center;background:rgba(51,65,85,0.5);border-radius:12px;padding:10px 0;"><div style="font-size:1.4rem;font-weight:900;color:#e2e8f0;">${val}</div><div style="font-size:0.7rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-top:2px;">${lbl}</div></div>`).join('');
+            const modal = document.getElementById('hm-player-profile-modal');
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
+            lucide.createIcons();
+        } catch(e) {}
+    };
+    window.hmClosePlayerProfile = () => {
+        const modal = document.getElementById('hm-player-profile-modal');
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+    };
     function pickRandomWord(maxLength) {
         const germanPool = GERMAN_WORDS.filter(word => word.length >= 4 && word.length <= maxLength).map(word => ({ word, language: 'Deutsch' }));
         const englishPool = ENGLISH_WORDS.map(sanitizeWord).filter(word => word.length >= 4 && word.length <= maxLength).map(word => ({ word, language: 'English' }));
