@@ -289,7 +289,7 @@
                 <input id="login-pin-input" type="password" maxlength="8" placeholder="PIN (optional)..."
                     class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white mb-4 transition-colors">
                 <div id="login-error" class="hidden text-red-400 text-xs mb-3 text-center"></div>
-                <button onclick="doLogin()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors mb-2">Anmelden / Registrieren</button>
+                <button id="login-submit-btn" onclick="doLogin()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors mb-2">Anmelden / Registrieren</button>
             </div>
             <div id="login-loggedin-section" class="hidden text-center">
                 <div id="login-welcome-avatar" class="text-5xl mb-2">🐺</div>
@@ -368,10 +368,16 @@
     }
 
     function updateLoginHeader() {
+        const loggedIn = localStorage.getItem('wolfle_logged_in') === '1';
         const name = localStorage.getItem('wolfle_user_name') || '';
         const avatar = localStorage.getItem('wolfle_avatar') || '🐺';
-        document.getElementById('login-header-label').textContent = name || 'Anmelden';
+        const btn = document.getElementById('login-header-btn');
+        document.getElementById('login-header-label').textContent = loggedIn && name ? name : 'Anmelden';
         document.getElementById('login-header-avatar').textContent = avatar;
+        if (btn) {
+            btn.classList.toggle('border-indigo-500/50', loggedIn && !!name);
+            btn.classList.toggle('border-slate-600', !loggedIn || !name);
+        }
     }
 
     function hashPin(pin) {
@@ -399,8 +405,11 @@
         const name = document.getElementById('login-name-input').value.trim();
         const pin = document.getElementById('login-pin-input').value;
         const errEl = document.getElementById('login-error');
+        const submitBtn = document.getElementById('login-submit-btn');
         if (!name) { errEl.textContent = 'Bitte einen Namen eingeben.'; errEl.classList.remove('hidden'); return; }
         errEl.classList.add('hidden');
+        const resetBtn = () => { if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Anmelden / Registrieren'; } };
+        if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Laden...'; }
         try {
             const firestore = await getDB();
             if (!firestore) throw new Error('offline');
@@ -409,8 +418,8 @@
             if (snap.exists()) {
                 const ud = snap.data();
                 if (ud.pinHash) {
-                    if (!pin) { errEl.textContent = 'Bitte PIN eingeben.'; errEl.classList.remove('hidden'); return; }
-                    if (hashPin(pin) !== ud.pinHash) { errEl.textContent = 'Falscher PIN.'; errEl.classList.remove('hidden'); return; }
+                    if (!pin) { errEl.textContent = 'Bitte PIN eingeben.'; errEl.classList.remove('hidden'); resetBtn(); return; }
+                    if (hashPin(pin) !== ud.pinHash) { errEl.textContent = 'Falscher PIN.'; errEl.classList.remove('hidden'); resetBtn(); return; }
                 }
                 if (ud.avatar) { onboardAvatar = ud.avatar; localStorage.setItem('wolfle_avatar', ud.avatar); }
                 if (ud.pinHash) localStorage.setItem('wolfle_account_pin_' + name, ud.pinHash);
@@ -423,7 +432,7 @@
             }
         } catch(e) {
             const existingPin = localStorage.getItem('wolfle_account_pin_' + name);
-            if (existingPin && pin && hashPin(pin) !== existingPin) { errEl.textContent = 'Falscher PIN.'; errEl.classList.remove('hidden'); return; }
+            if (existingPin && pin && hashPin(pin) !== existingPin) { errEl.textContent = 'Falscher PIN.'; errEl.classList.remove('hidden'); resetBtn(); return; }
             if (!existingPin && pin) localStorage.setItem('wolfle_account_pin_' + name, hashPin(pin));
         }
         localStorage.setItem('wolfle_user_name', name);

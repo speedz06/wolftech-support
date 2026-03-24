@@ -623,7 +623,7 @@
                 <input id="login-pin-input" type="password" maxlength="8" placeholder="PIN (optional)..."
                     class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white mb-4 transition-colors">
                 <div id="login-error" class="hidden text-red-400 text-xs mb-3 text-center"></div>
-                <button onclick="window.doLogin()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors mb-2">Anmelden / Registrieren</button>
+                <button id="login-submit-btn" onclick="window.doLogin()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors mb-2">Anmelden / Registrieren</button>
             </div>
             <div id="login-loggedin-section" class="hidden text-center">
                 <div id="login-welcome-avatar" class="text-5xl mb-2">🐺</div>
@@ -1444,10 +1444,13 @@
         const nameInput = document.getElementById('login-name-input');
         const pinInput = document.getElementById('login-pin-input');
         const errorEl = document.getElementById('login-error');
+        const submitBtn = document.getElementById('login-submit-btn');
         const name = nameInput.value.trim();
         if (!name) { errorEl.textContent = 'Bitte einen Namen eingeben.'; errorEl.classList.remove('hidden'); return; }
         const pin = pinInput.value;
         errorEl.classList.add('hidden');
+        const resetBtn = () => { if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Anmelden / Registrieren'; } };
+        if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Laden...'; }
         try {
             const firestore = await ensureDB();
             const { doc: fsDoc, setDoc: fsSetDoc, getDoc: fsGetDoc } = firebaseFns;
@@ -1455,8 +1458,8 @@
             if (snap.exists()) {
                 const ud = snap.data();
                 if (ud.pinHash) {
-                    if (!pin) { errorEl.textContent = 'Bitte PIN eingeben.'; errorEl.classList.remove('hidden'); return; }
-                    if (hashPin(pin) !== ud.pinHash) { errorEl.textContent = 'Falscher PIN.'; errorEl.classList.remove('hidden'); return; }
+                    if (!pin) { errorEl.textContent = 'Bitte PIN eingeben.'; errorEl.classList.remove('hidden'); resetBtn(); return; }
+                    if (hashPin(pin) !== ud.pinHash) { errorEl.textContent = 'Falscher PIN.'; errorEl.classList.remove('hidden'); resetBtn(); return; }
                 }
                 if (ud.avatar) localStorage.setItem('wolfle_avatar', ud.avatar);
                 if (ud.pinHash) localStorage.setItem('wolfle_account_pin_' + name, ud.pinHash);
@@ -1469,7 +1472,7 @@
             }
         } catch(e) {
             const existingPin = localStorage.getItem('wolfle_account_pin_' + name);
-            if (existingPin && pin && hashPin(pin) !== existingPin) { errorEl.textContent = 'Falscher PIN.'; errorEl.classList.remove('hidden'); return; }
+            if (existingPin && pin && hashPin(pin) !== existingPin) { errorEl.textContent = 'Falscher PIN.'; errorEl.classList.remove('hidden'); resetBtn(); return; }
             if (!existingPin && pin) localStorage.setItem('wolfle_account_pin_' + name, hashPin(pin));
         }
         localStorage.setItem('wolfle_user_name', name);
