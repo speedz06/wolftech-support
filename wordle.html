@@ -2936,6 +2936,7 @@
         localStorage.setItem('wolfle_user_name', name);
         localStorage.setItem('wolfle_profile', JSON.stringify({ name, avatar: onboardAvatar }));
         localStorage.setItem('wolfle_onboarded', '1');
+        localStorage.setItem('wolfle_logged_in', '1');
         document.querySelectorAll('.name-input').forEach(el => el.value = name);
         updateAvatarUI();
         updateLoginHeader();
