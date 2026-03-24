@@ -919,7 +919,10 @@
                 <button onclick="window.closeLoginModal()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 py-2 rounded-xl text-sm transition-colors">Als Gast spielen</button>
             </div>
             <div id="login-loggedin-section" class="hidden text-center">
-                <div id="login-welcome-avatar" class="text-5xl mb-2">🐺</div>
+                <div id="login-welcome-avatar" class="text-5xl mb-1 cursor-pointer" onclick="window.toggleLoginAvatarGrid()" title="Avatar ändern">🐺</div>
+                <div class="text-xs text-slate-500 mb-2">Tippe zum Ändern</div>
+                <div id="login-avatar-grid" class="avatar-grid hidden mb-3"></div>
+                <button id="login-avatar-save-btn" onclick="window.saveLoginAvatar()" class="hidden w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-xl text-sm font-semibold transition-colors mb-3">Avatar speichern</button>
                 <div class="text-lg font-bold text-white mb-1" id="login-welcome-name"></div>
                 <div class="text-xs text-slate-400 mb-4">Erfolgreich angemeldet</div>
                 <button onclick="window.closeLoginModal();window.openStatsModal()" class="w-full bg-slate-700 hover:bg-slate-600 text-white py-2.5 rounded-xl text-sm transition-colors mb-2">📊 Statistiken</button>
@@ -3013,8 +3016,11 @@
         if (loggedIn) {
             const name = localStorage.getItem('wolfle_user_name') || '';
             const avatar = localStorage.getItem('wolfle_avatar') || '🐺';
+            _loginSelectedAvatar = avatar;
             document.getElementById('login-welcome-name').textContent = name;
             document.getElementById('login-welcome-avatar').textContent = avatar;
+            document.getElementById('login-avatar-grid').classList.add('hidden');
+            document.getElementById('login-avatar-save-btn').classList.add('hidden');
             form.classList.add('hidden');
             loggedInSection.classList.remove('hidden');
         } else {
@@ -3033,6 +3039,43 @@
         const modal = document.getElementById('login-modal');
         modal.classList.add('hidden');
         modal.style.display = 'none';
+    };
+
+    // Avatar editor in logged-in modal
+    let _loginSelectedAvatar = localStorage.getItem('wolfle_avatar') || '🐺';
+    window.toggleLoginAvatarGrid = () => {
+        const grid = document.getElementById('login-avatar-grid');
+        const saveBtn = document.getElementById('login-avatar-save-btn');
+        const open = grid.classList.toggle('hidden');
+        saveBtn.classList.toggle('hidden', open);
+        if (!open) {
+            grid.innerHTML = AVATARS.map(a =>
+                `<button class="avatar-btn${a===_loginSelectedAvatar?' selected':''}" onclick="window.selectLoginAvatar('${a}')">${a}</button>`
+            ).join('');
+        }
+    };
+    window.selectLoginAvatar = (a) => {
+        _loginSelectedAvatar = a;
+        document.getElementById('login-welcome-avatar').textContent = a;
+        document.querySelectorAll('#login-avatar-grid .avatar-btn').forEach(b => b.classList.toggle('selected', b.textContent === a));
+    };
+    window.saveLoginAvatar = async () => {
+        const name = localStorage.getItem('wolfle_user_name') || '';
+        localStorage.setItem('wolfle_avatar', _loginSelectedAvatar);
+        selectedAvatar = _loginSelectedAvatar;
+        updateAvatarUI();
+        updateLoginHeader();
+        try {
+            const firestore = await getDB();
+            if (firestore && name) {
+                await setDoc(doc(firestore,'artifacts',appId,'public','data','users',name),
+                    { avatar: _loginSelectedAvatar }, { merge: true });
+                localStorage.setItem('wolfle_profile', JSON.stringify({ name, avatar: _loginSelectedAvatar }));
+            }
+        } catch(e) {}
+        document.getElementById('login-avatar-grid').classList.add('hidden');
+        document.getElementById('login-avatar-save-btn').classList.add('hidden');
+        showToast('Avatar gespeichert! ✓', 'success');
     };
     window.doLogin = async () => {
         const nameInput = document.getElementById('login-name-input');
