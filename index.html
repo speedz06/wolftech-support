@@ -290,6 +290,7 @@
                     class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white mb-4 transition-colors">
                 <div id="login-error" class="hidden text-red-400 text-xs mb-3 text-center"></div>
                 <button id="login-submit-btn" onclick="doLogin()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors mb-2">Anmelden / Registrieren</button>
+                <button onclick="openGuestFlow()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 py-2 rounded-xl text-sm transition-colors">👤 Als Gast spielen</button>
             </div>
             <div id="login-loggedin-section" class="hidden text-center">
                 <div id="login-welcome-avatar" class="text-5xl mb-1 cursor-pointer" onclick="toggleLoginAvatarGrid()" title="Avatar ändern">🐺</div>
@@ -406,6 +407,11 @@
         lucide.createIcons();
     }
     function closeLoginModal() { document.getElementById('login-modal').classList.add('hidden'); }
+    function openGuestFlow() {
+        closeLoginModal();
+        document.getElementById('onboarding-modal').classList.remove('hidden');
+        onboardChooseGuest();
+    }
 
     async function doLogin() {
         const name = document.getElementById('login-name-input').value.trim();
