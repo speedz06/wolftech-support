@@ -305,6 +305,29 @@
     const THEMES = ['dark','light','retro','ocean','pastel'];
     const AVATARS = ['🐺','🦊','🐻','🦁','🐯','🐸','🐧','🦅','🦋','🐙','🦄','🐬','🌟','🔥','💎','🌈','🍀','⚡'];
     let onboardAvatar = localStorage.getItem('wolfle_avatar') || '🐺';
+
+    // ── Firebase (lazy dynamic import) ──
+    const appId = 'wolfle-v1';
+    const firebaseConfig = {
+        apiKey: "AIzaSyDTPO-01gusabZGy-TthEWZWntwct6LrEQ",
+        authDomain: "wolfle.firebaseapp.com", projectId: "wolfle",
+        storageBucket: "wolfle.firebasestorage.app",
+        messagingSenderId: "286289741614",
+        appId: "1:286289741614:web:14e5faad1616fe75755cbf"
+    };
+    let _fbDb = null, _fbFns = null;
+    async function getDB() {
+        if (_fbDb) return _fbDb;
+        try {
+            const [appMod, storeMod] = await Promise.all([
+                import('https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js'),
+                import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js')
+            ]);
+            _fbFns = storeMod;
+            _fbDb = storeMod.getFirestore(appMod.initializeApp(firebaseConfig));
+            return _fbDb;
+        } catch(e) { return null; }
+    }
     let soundEnabled = localStorage.getItem('wolfle_sound') !== 'false';
     let hapticEnabled = localStorage.getItem('wolfle_haptic') === 'true';
 
@@ -372,16 +395,37 @@
     }
     function closeLoginModal() { document.getElementById('login-modal').classList.add('hidden'); }
 
-    function doLogin() {
+    async function doLogin() {
         const name = document.getElementById('login-name-input').value.trim();
         const pin = document.getElementById('login-pin-input').value;
         const errEl = document.getElementById('login-error');
         if (!name) { errEl.textContent = 'Bitte einen Namen eingeben.'; errEl.classList.remove('hidden'); return; }
-        const existingPin = localStorage.getItem('wolfle_account_pin_' + name);
-        if (existingPin && pin && hashPin(pin) !== existingPin) {
-            errEl.textContent = 'Falscher PIN.'; errEl.classList.remove('hidden'); return;
+        errEl.classList.add('hidden');
+        try {
+            const firestore = await getDB();
+            if (!firestore) throw new Error('offline');
+            const { doc, setDoc, getDoc } = _fbFns;
+            const snap = await getDoc(doc(firestore,'artifacts',appId,'public','data','users',name));
+            if (snap.exists()) {
+                const ud = snap.data();
+                if (ud.pinHash) {
+                    if (!pin) { errEl.textContent = 'Bitte PIN eingeben.'; errEl.classList.remove('hidden'); return; }
+                    if (hashPin(pin) !== ud.pinHash) { errEl.textContent = 'Falscher PIN.'; errEl.classList.remove('hidden'); return; }
+                }
+                if (ud.avatar) { onboardAvatar = ud.avatar; localStorage.setItem('wolfle_avatar', ud.avatar); }
+                if (ud.pinHash) localStorage.setItem('wolfle_account_pin_' + name, ud.pinHash);
+            } else {
+                const pinHash = pin ? hashPin(pin) : null;
+                const avatar = localStorage.getItem('wolfle_avatar') || '🐺';
+                await setDoc(doc(firestore,'artifacts',appId,'public','data','users',name),
+                    { name, avatar, pinHash: pinHash || null, createdAt: Date.now() });
+                if (pin) localStorage.setItem('wolfle_account_pin_' + name, hashPin(pin));
+            }
+        } catch(e) {
+            const existingPin = localStorage.getItem('wolfle_account_pin_' + name);
+            if (existingPin && pin && hashPin(pin) !== existingPin) { errEl.textContent = 'Falscher PIN.'; errEl.classList.remove('hidden'); return; }
+            if (!existingPin && pin) localStorage.setItem('wolfle_account_pin_' + name, hashPin(pin));
         }
-        if (!existingPin && pin) localStorage.setItem('wolfle_account_pin_' + name, hashPin(pin));
         localStorage.setItem('wolfle_user_name', name);
         localStorage.setItem('wolfle_logged_in', '1');
         localStorage.setItem('wolfle_onboarded', '1');
