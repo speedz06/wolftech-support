@@ -612,6 +612,20 @@
         .blitz-chain-num { font-size: 1.8rem; font-weight: 900; color: #fb923c; line-height: 1; }
         .blitz-lives { display: flex; gap: 3px; }
 
+        /* ── DUEL ONLINE WAITING OVERLAY ── */
+        #duel-online-waiting {
+            position: fixed; inset: 0;
+            background: radial-gradient(circle at center, #0f172a, #020617);
+            z-index: 175; flex-direction: column;
+            align-items: center; justify-content: center; gap: 20px;
+            text-align: center; padding: 24px;
+        }
+        #duel-online-waiting:not(.hidden) { display: flex; }
+        .duel-ow-result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .duel-ow-card { text-align: center; padding: 12px 10px; border-radius: 12px; background: rgba(30,41,59,0.7); border: 1px solid #334155; }
+        .duel-ow-card.winner { border-color: #6366f1; background: rgba(99,102,241,0.15); }
+        .duel-ow-card.loser { border-color: #ef4444; background: rgba(239,68,68,0.07); }
+
         /* ── DUEL MODE ── */
         #duel-cover {
             position: fixed; inset: 0;
@@ -966,7 +980,13 @@
                 <h2 class="text-xl font-bold text-white flex items-center gap-2">⚔️ Duell</h2>
                 <button onclick="window.closeDuelSetup()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
-            <div class="space-y-3 mb-4">
+            <!-- Mode tabs -->
+            <div class="flex gap-1 bg-slate-900 p-1 rounded-xl mb-4">
+                <button id="duel-tab-local" onclick="window.switchDuelTab('local')" class="flex-1 py-1.5 rounded-lg text-sm font-semibold transition-colors bg-slate-700 text-white">📱 Lokal</button>
+                <button id="duel-tab-online" onclick="window.switchDuelTab('online')" class="flex-1 py-1.5 rounded-lg text-sm font-semibold transition-colors text-slate-400 hover:text-white">🌐 Online</button>
+            </div>
+            <!-- LOCAL panel -->
+            <div id="duel-panel-local" class="space-y-3 mb-4">
                 <div>
                     <label class="block text-xs text-slate-400 mb-1">Spieler 1 Name</label>
                     <input id="duel-p1-input" type="text" maxlength="12" placeholder="Spieler 1" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
@@ -980,7 +1000,31 @@
                     <input id="duel-rounds-input" type="number" min="1" max="7" value="3" class="w-16 bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm text-white text-center">
                 </div>
             </div>
-            <button onclick="window.confirmDuel()" class="w-full bg-pink-700 hover:bg-pink-600 text-white py-2.5 rounded-xl font-semibold transition-colors">Duell starten ⚔️</button>
+            <button id="duel-local-btn" onclick="window.confirmDuel()" class="w-full bg-pink-700 hover:bg-pink-600 text-white py-2.5 rounded-xl font-semibold transition-colors">Duell starten ⚔️</button>
+            <!-- ONLINE panel -->
+            <div id="duel-panel-online" class="hidden space-y-3">
+                <div class="flex items-center justify-between bg-slate-900/50 rounded-lg px-3 py-2">
+                    <label class="text-sm text-slate-300">Runden</label>
+                    <input id="duel-online-rounds" type="number" min="1" max="7" value="3" class="w-16 bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm text-white text-center">
+                </div>
+                <button onclick="window.createOnlineDuel()" class="w-full bg-pink-700 hover:bg-pink-600 text-white py-2.5 rounded-xl font-semibold transition-colors">Raum erstellen ⚔️</button>
+                <!-- Created room code -->
+                <div id="duel-room-created" class="hidden p-3 bg-pink-900/20 rounded-xl border border-pink-500/30 text-center">
+                    <p class="text-xs text-slate-400 mb-1">Raumcode teilen:</p>
+                    <div id="duel-room-code-display" class="text-2xl font-black tracking-widest text-pink-400 mb-2"></div>
+                    <button onclick="window.shareOnlineDuelRoom()" class="w-full text-xs bg-slate-700 hover:bg-slate-600 text-white py-1.5 rounded-lg transition-colors">Link kopieren 📋</button>
+                    <p class="text-xs text-slate-500 mt-2 animate-pulse">Warte auf zweiten Spieler...</p>
+                </div>
+                <div class="relative flex items-center py-1">
+                    <div class="flex-grow border-t border-slate-700"></div>
+                    <span class="mx-3 text-slate-500 text-xs">oder beitreten</span>
+                    <div class="flex-grow border-t border-slate-700"></div>
+                </div>
+                <div class="flex gap-2">
+                    <input id="duel-online-room-input" type="text" placeholder="CODE" maxlength="5" class="w-1/2 bg-slate-900 border border-slate-700 rounded-xl px-2 py-2 text-center uppercase tracking-widest text-white focus:border-pink-500 transition-colors">
+                    <button onclick="window.joinOnlineDuel()" class="w-1/2 bg-cyan-600 hover:bg-cyan-500 text-white py-2 rounded-xl font-semibold transition-colors">Beitreten</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -991,6 +1035,15 @@
         <p class="text-slate-400 text-sm" id="duel-cover-subtitle">Gib das Gerät an den nächsten Spieler weiter.</p>
         <div id="duel-score-preview" class="duel-score-preview hidden"></div>
         <button onclick="window.duelCoverReveal()" class="bg-pink-700 hover:bg-pink-600 text-white px-8 py-3 rounded-xl font-bold text-lg transition-colors" id="duel-cover-btn">Los geht's!</button>
+    </div>
+
+    <!-- ONLINE DUEL WAITING OVERLAY -->
+    <div id="duel-online-waiting" class="hidden fixed inset-0 z-[175]">
+        <div id="duel-ow-icon" class="text-5xl">⚔️</div>
+        <h2 id="duel-ow-title" class="text-2xl font-black text-white">Warte...</h2>
+        <p id="duel-ow-sub" class="text-slate-400 text-sm max-w-xs"></p>
+        <div id="duel-ow-result" class="hidden w-full max-w-xs bg-slate-800/60 rounded-2xl p-4 border border-slate-700"></div>
+        <button id="duel-ow-btn" class="hidden bg-pink-700 hover:bg-pink-600 text-white px-8 py-3 rounded-xl font-bold text-lg transition-colors">Weiter →</button>
     </div>
 
     <!-- GAME TABS -->
@@ -1927,7 +1980,11 @@
             return;
         }
 
-        if (currentRoomCode) updateRoomProgress(currentRow, true, win, playerTotalScore, playerRoundsWon);
+        if (onlineDuelMode && currentRoomCode) {
+            await finishOnlineDuelTurn(win, currentRow);
+        } else if (currentRoomCode) {
+            updateRoomProgress(currentRow, true, win, playerTotalScore, playerRoundsWon);
+        }
         setTimeout(() => showEndModal(win, points), 400);
     }
 
@@ -2109,16 +2166,20 @@
                 maxAttempts = mAttempts;
                 timeLimit = timeLim;
                 targetWord = data.word;
-                resetGame();
-                window.closeModal();
-                if (isRematch) {
-                    playerTotalScore = 0; playerRoundsWon = 0;
-                    showToast(`Rematch! ${t('round')} 1/${mRounds} 🔄`, "success");
-                } else {
-                    showToast(`${t('round')} ${newRound} ${t('of')} ${mRounds}!`, "success");
+                onlineDuelGameStarted = false;
+                onlineDuelLastPhase = '';
+                if (!data.duel) {
+                    resetGame();
+                    window.closeModal();
+                    if (isRematch) {
+                        playerTotalScore = 0; playerRoundsWon = 0;
+                        showToast(`Rematch! ${t('round')} 1/${mRounds} 🔄`, "success");
+                    } else {
+                        showToast(`${t('round')} ${newRound} ${t('of')} ${mRounds}!`, "success");
+                    }
+                    updateRoundDisplay();
+                    if (timerEnabled) startTimer();
                 }
-                updateRoundDisplay();
-                if (timerEnabled) startTimer();
             } else {
                 maxRounds = mRounds;
                 maxAttempts = mAttempts;
@@ -2150,13 +2211,106 @@
                 btn.classList.toggle('hidden', !(allFinished && roundsDone));
             });
 
-            const chatHtml = (data.chat || []).slice(-20).map(c =>
-                `<div><span class="font-semibold text-indigo-400">${c.n}:</span> <span class="text-slate-300">${c.m}</span></div>`
-            ).join('');
-            document.querySelectorAll('.chat-messages').forEach(el => {
-                el.innerHTML = chatHtml;
-                el.scrollTop = el.scrollHeight;
-            });
+            if (!data.duel) {
+                const chatHtml = (data.chat || []).slice(-20).map(c =>
+                    `<div><span class="font-semibold text-indigo-400">${c.n}:</span> <span class="text-slate-300">${c.m}</span></div>`
+                ).join('');
+                document.querySelectorAll('.chat-messages').forEach(el => {
+                    el.innerHTML = chatHtml;
+                    el.scrollTop = el.scrollHeight;
+                });
+            }
+
+            // ── ONLINE DUEL PHASE HANDLING ──
+            if (data.duel && onlineDuelMode) {
+                const phase = data.duelPhase || 'waiting';
+                const playerOrder = data.playerOrder || [];
+                const myName = getPlayerName();
+                const myIdx = playerOrder.indexOf(myName);
+                if (phase === onlineDuelLastPhase && phase !== 'waiting') {
+                    // no change, skip re-render except for first arrival
+                } else {
+                    onlineDuelLastPhase = phase;
+                    if (phase === 'waiting') {
+                        if (myIdx === 0) showDuelOnlineWaiting('⚔️', 'Warte auf zweiten Spieler...', 'Teile den Raumcode mit deinem Gegner.', false);
+                    } else if (phase === 'p1' || phase === 'p2') {
+                        const activePIdx = phase === 'p1' ? 0 : 1;
+                        const isMyTurn = myIdx === activePIdx;
+                        if (isMyTurn && !onlineDuelGameStarted) {
+                            onlineDuelGameStarted = true;
+                            window.closeDuelSetup();
+                            window.closeDrawer();
+                            targetWord = data.word;
+                            currentRound = data.round || 1;
+                            maxRounds = data.maxRounds || 3;
+                            maxAttempts = data.maxAttempts || 6;
+                            resetGame();
+                            hideDuelOnlineWaiting();
+                            window.closeModal();
+                            document.getElementById('duel-player-hud').classList.remove('hidden');
+                            document.getElementById('duel-current-label').textContent = `⚔️ ${myName}`;
+                            document.getElementById('blitz-hud').classList.add('hidden');
+                            updateRoundDisplay();
+                            showToast(`Runde ${currentRound}/${maxRounds} – Du bist dran! ⚔️`, 'info');
+                        } else if (!isMyTurn) {
+                            onlineDuelGameStarted = false;
+                            const oppName = playerOrder[activePIdx];
+                            showDuelOnlineWaiting('⌨️', `${oppName} spielt...`, 'Warte bis dein Gegner fertig ist.', false);
+                        }
+                    } else if (phase === 'result') {
+                        onlineDuelGameStarted = false;
+                        const p1 = players[playerOrder[0]];
+                        const p2 = players[playerOrder[1]];
+                        if (p1 && p2) {
+                            const a1 = p1.duelAttempts ?? (p1.won ? p1.guesses : 7);
+                            const a2 = p2.duelAttempts ?? (p2.won ? p2.guesses : 7);
+                            const p1wins = a1 < a2, p2wins = a2 < a1;
+                            const winnerName = p1wins ? p1.name : p2wins ? p2.name : null;
+                            const title = winnerName ? `🏆 ${winnerName} gewinnt die Runde!` : '🤝 Unentschieden!';
+                            const isLastRound = (data.round || 1) >= (data.maxRounds || 3);
+                            const resultEl = document.getElementById('duel-ow-result');
+                            resultEl.innerHTML = `
+                                <div style="font-size:11px;color:#94a3b8;margin-bottom:8px">Das Wort war: <strong style="color:#e2e8f0">${data.word}</strong></div>
+                                <div class="duel-ow-result-grid">
+                                    <div class="duel-ow-card ${p1wins?'winner':p2wins?'loser':''}">
+                                        <div style="font-size:11px;color:#94a3b8">${p1.name}</div>
+                                        <div style="font-size:1.4rem;font-weight:900;color:#818cf8">${p1.roundsWon||0}</div>
+                                        <div style="font-size:11px;color:#94a3b8">${a1>=7?'Verloren':a1+' Vers.'}</div>
+                                    </div>
+                                    <div class="duel-ow-card ${p2wins?'winner':p1wins?'loser':''}">
+                                        <div style="font-size:11px;color:#94a3b8">${p2.name}</div>
+                                        <div style="font-size:1.4rem;font-weight:900;color:#818cf8">${p2.roundsWon||0}</div>
+                                        <div style="font-size:11px;color:#94a3b8">${a2>=7?'Verloren':a2+' Vers.'}</div>
+                                    </div>
+                                </div>`;
+                            resultEl.classList.remove('hidden');
+                            const btn = document.getElementById('duel-ow-btn');
+                            if (isLastRound) {
+                                btn.textContent = '🏆 Ergebnis anzeigen';
+                                btn.onclick = () => {
+                                    hideDuelOnlineWaiting();
+                                    const winner = (p1.roundsWon||0) > (p2.roundsWon||0) ? p1.name : (p2.roundsWon||0) > (p1.roundsWon||0) ? p2.name : null;
+                                    showToast(winner ? `🏆 ${winner} gewinnt das Duell!` : '🤝 Unentschieden!', 'success');
+                                    onlineDuelMode = false; onlineDuelGameStarted = false;
+                                    document.getElementById('duel-player-hud').classList.add('hidden');
+                                };
+                            } else if (myIdx === 0) {
+                                btn.textContent = `Runde ${(data.round||1)+1} starten →`;
+                                btn.onclick = async () => { await window.nextRound(); };
+                            } else {
+                                btn.textContent = 'Warte auf nächste Runde...';
+                                btn.disabled = true;
+                                btn.classList.add('opacity-50', 'cursor-not-allowed');
+                            }
+                            btn.classList.remove('hidden');
+                            document.getElementById('duel-ow-icon').textContent = winnerName ? '🏆' : '🤝';
+                            document.getElementById('duel-ow-title').textContent = title;
+                            document.getElementById('duel-ow-sub').textContent = '';
+                            document.getElementById('duel-online-waiting').classList.remove('hidden');
+                        }
+                    }
+                }
+            }
         });
     }
 
@@ -2200,9 +2354,11 @@
         }
         currentRoomCode = null;
         currentRound = 1; maxRounds = 3; playerTotalScore = 0; playerRoundsWon = 0;
-        hostMaxRounds = 3;
-        maxAttempts = 6;
-        hostRoundTime = 120;
+        hostMaxRounds = 3; maxAttempts = 6; hostRoundTime = 120;
+        onlineDuelMode = false; onlineDuelGameStarted = false; onlineDuelLastPhase = '';
+        onlineDuelPlayerIndex = -1;
+        hideDuelOnlineWaiting();
+        document.getElementById('duel-player-hud').classList.add('hidden');
         document.querySelectorAll('.room-status').forEach(el => el.classList.add('hidden'));
         document.querySelectorAll('.share-btn').forEach(b => b.classList.add('hidden'));
         document.querySelectorAll('.round-display').forEach(el => el.classList.add('hidden'));
@@ -2223,8 +2379,10 @@
             resetPlayers[k] = { name: v.name, guesses: 0, finished: false, won: false,
                 totalScore: v.totalScore || 0, roundsWon: v.roundsWon || 0 };
         });
-        await setDoc(doc(firestore,'artifacts',appId,'public','data','rooms',currentRoomCode),
-            { word: newWord, round: newRound, maxRounds: data.maxRounds || 3, maxAttempts: data.maxAttempts || 6, timeLimit: data.timeLimit || 120, players: resetPlayers });
+        const baseUpdate = { word: newWord, round: newRound, maxRounds: data.maxRounds || 3, maxAttempts: data.maxAttempts || 6, timeLimit: data.timeLimit || 120, players: resetPlayers };
+        if (data.duel) { baseUpdate.duelPhase = 'p1'; baseUpdate.duel = true; baseUpdate.playerOrder = data.playerOrder || []; }
+        await setDoc(doc(firestore,'artifacts',appId,'public','data','rooms',currentRoomCode), baseUpdate);
+        if (data.duel) { document.getElementById('duel-ow-btn').disabled = false; document.getElementById('duel-ow-btn').classList.remove('opacity-50','cursor-not-allowed'); }
     };
 
     window.rematch = async () => {
@@ -2238,8 +2396,9 @@
         Object.entries(data.players || {}).forEach(([k, v]) => {
             resetPlayers[k] = { name: v.name, guesses: 0, finished: false, won: false, totalScore: 0, roundsWon: 0 };
         });
-        await setDoc(doc(firestore,'artifacts',appId,'public','data','rooms',currentRoomCode),
-            { word: newWord, round: 1, maxRounds: data.maxRounds || 3, maxAttempts: data.maxAttempts || 6, timeLimit: data.timeLimit || 120, players: resetPlayers });
+        const baseUpdate = { word: newWord, round: 1, maxRounds: data.maxRounds || 3, maxAttempts: data.maxAttempts || 6, timeLimit: data.timeLimit || 120, players: resetPlayers };
+        if (data.duel) { baseUpdate.duelPhase = 'p1'; baseUpdate.duel = true; baseUpdate.playerOrder = data.playerOrder || []; }
+        await setDoc(doc(firestore,'artifacts',appId,'public','data','rooms',currentRoomCode), baseUpdate);
     };
 
     window.sendChat = async (btn) => {
@@ -3064,11 +3223,136 @@
     let duelAttempts = {1: null, 2: null};
     let duelWord = '';
 
+    // ── ONLINE DUEL STATE ──
+    let onlineDuelMode = false;
+    let onlineDuelPlayerIndex = -1; // 0 = p1, 1 = p2
+    let onlineDuelGameStarted = false;
+    let onlineDuelLastPhase = '';
+
+    window.switchDuelTab = (tab) => {
+        const isLocal = tab === 'local';
+        document.getElementById('duel-tab-local').className = `flex-1 py-1.5 rounded-lg text-sm font-semibold transition-colors ${isLocal ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white'}`;
+        document.getElementById('duel-tab-online').className = `flex-1 py-1.5 rounded-lg text-sm font-semibold transition-colors ${!isLocal ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white'}`;
+        document.getElementById('duel-panel-local').classList.toggle('hidden', !isLocal);
+        document.getElementById('duel-local-btn').classList.toggle('hidden', !isLocal);
+        document.getElementById('duel-panel-online').classList.toggle('hidden', isLocal);
+    };
+
+    window.createOnlineDuel = async () => {
+        const name = getPlayerName();
+        if (!name) { showToast(t('enterNameFirst'), 'warning'); return; }
+        const firestore = await getDB(); if (!firestore) return;
+        const rounds = parseInt(document.getElementById('duel-online-rounds').value) || 3;
+        const code = Math.random().toString(36).substring(2,7).toUpperCase();
+        const word = WORDS[Math.floor(Math.random() * WORDS.length)].toUpperCase();
+        await setDoc(doc(firestore,'artifacts',appId,'public','data','rooms',code), {
+            word, round: 1, maxRounds: rounds, timeLimit: 0, maxAttempts: 6,
+            duel: true, duelPhase: 'waiting', playerOrder: [name],
+            players: { [name]: { name, guesses:0, finished:false, won:false, totalScore:0, roundsWon:0 } }
+        });
+        document.getElementById('duel-room-created').classList.remove('hidden');
+        document.getElementById('duel-room-code-display').textContent = code;
+        onlineDuelMode = true; onlineDuelPlayerIndex = 0; onlineDuelGameStarted = false;
+        currentRoomCode = code; maxRounds = rounds; maxAttempts = 6; timeLimit = 0;
+        document.querySelectorAll('.room-code-display').forEach(el => el.textContent = code);
+        document.querySelectorAll('.room-status').forEach(el => el.classList.remove('hidden'));
+        listenToRoom(code);
+        showDuelOnlineWaiting('⚔️', 'Warte auf zweiten Spieler...', 'Teile den Raumcode mit deinem Gegner.', false);
+    };
+
+    window.joinOnlineDuel = async () => {
+        const name = getPlayerName();
+        if (!name) { showToast(t('enterNameFirst'), 'warning'); return; }
+        const firestore = await getDB(); if (!firestore) return;
+        const code = (document.getElementById('duel-online-room-input')?.value || '').toUpperCase().trim();
+        if (!code) { showToast('Bitte Raumcode eingeben!', 'warning'); return; }
+        const snap = await getDoc(doc(firestore,'artifacts',appId,'public','data','rooms',code));
+        if (!snap.exists()) { showToast(t('roomNotFound'), 'error'); return; }
+        const data = snap.data();
+        if (!data.duel) { showToast('Das ist kein Duell-Raum!', 'warning'); return; }
+        const existingPlayers = Object.keys(data.players || {});
+        if (existingPlayers.length >= 2 && !existingPlayers.includes(name)) {
+            showToast('Duell-Raum ist voll!', 'error'); return;
+        }
+        const existingOrder = data.playerOrder || [existingPlayers[0]];
+        const playerOrder = existingOrder.includes(name) ? existingOrder : [...existingOrder, name];
+        await setDoc(doc(firestore,'artifacts',appId,'public','data','rooms',code), {
+            players: { [name]: { name, guesses:0, finished:false, won:false, totalScore:0, roundsWon:0 } },
+            playerOrder, duelPhase: 'p1'
+        }, { merge: true });
+        window.closeDuelSetup(); window.closeDrawer();
+        onlineDuelMode = true; onlineDuelPlayerIndex = 1; onlineDuelGameStarted = false;
+        currentRoomCode = code; maxRounds = data.maxRounds || 3; maxAttempts = data.maxAttempts || 6; timeLimit = 0;
+        document.querySelectorAll('.room-code-display').forEach(el => el.textContent = code);
+        document.querySelectorAll('.room-status').forEach(el => el.classList.remove('hidden'));
+        listenToRoom(code);
+        showDuelOnlineWaiting('⏳', `${playerOrder[0]} spielt zuerst!`, 'Dein Zug kommt gleich.', false);
+    };
+
+    window.shareOnlineDuelRoom = () => {
+        const code = document.getElementById('duel-room-code-display')?.textContent;
+        if (!code) return;
+        const url = `${location.origin}${location.pathname}?room=${code}`;
+        navigator.clipboard.writeText(url).then(() => showToast('Link kopiert! 📋', 'success'));
+    };
+
+    function showDuelOnlineWaiting(icon, title, sub, showBtn, btnText = 'Weiter →') {
+        document.getElementById('duel-ow-icon').textContent = icon;
+        document.getElementById('duel-ow-title').textContent = title;
+        document.getElementById('duel-ow-sub').textContent = sub;
+        document.getElementById('duel-ow-result').classList.add('hidden');
+        const btn = document.getElementById('duel-ow-btn');
+        btn.textContent = btnText;
+        btn.classList.toggle('hidden', !showBtn);
+        document.getElementById('duel-online-waiting').classList.remove('hidden');
+    }
+
+    function hideDuelOnlineWaiting() {
+        document.getElementById('duel-online-waiting').classList.add('hidden');
+        document.getElementById('duel-ow-result').classList.add('hidden');
+    }
+
+    async function finishOnlineDuelTurn(win, attempts) {
+        if (!currentRoomCode) return;
+        const firestore = await getDB(); if (!firestore) return;
+        const name = getPlayerName();
+        const myAttempts = win ? attempts : 7;
+        const snap = await getDoc(doc(firestore,'artifacts',appId,'public','data','rooms',currentRoomCode));
+        if (!snap.exists()) return;
+        const data = snap.data();
+        const phase = data.duelPhase || 'p1';
+        const playerOrder = data.playerOrder || [];
+        let newPhase = phase === 'p1' ? 'p2' : 'result';
+        let updates = {
+            players: { [name]: { name, guesses: attempts, finished: true, won: win, totalScore: playerTotalScore, roundsWon: playerRoundsWon, duelAttempts: myAttempts } },
+            duelPhase: newPhase
+        };
+        // If p2 finishes, also update p1's roundsWon based on result
+        if (phase === 'p2' && playerOrder.length >= 2) {
+            const p1Name = playerOrder[0];
+            const p1Data = data.players?.[p1Name];
+            const p1Att = p1Data?.duelAttempts ?? (p1Data?.won ? p1Data?.guesses : 7);
+            const p2wins = myAttempts < p1Att;
+            const p1wins = p1Att < myAttempts;
+            if (p1wins) {
+                const p1RoundsWon = (p1Data?.roundsWon || 0) + 1;
+                updates.players[p1Name] = { ...p1Data, roundsWon: p1RoundsWon };
+            }
+            if (p2wins) {
+                playerRoundsWon++;
+                updates.players[name].roundsWon = playerRoundsWon;
+            }
+        }
+        await setDoc(doc(firestore,'artifacts',appId,'public','data','rooms',currentRoomCode), updates, { merge: true });
+    }
+
     window.openDuelSetup = () => {
         const saved = localStorage.getItem('wolfle_user_name') || '';
         document.getElementById('duel-p1-input').value = saved;
         document.getElementById('duel-p2-input').value = '';
         document.getElementById('duel-rounds-input').value = 3;
+        document.getElementById('duel-room-created').classList.add('hidden');
+        window.switchDuelTab('local');
         document.getElementById('duel-setup-modal').style.display = 'flex';
         document.getElementById('duel-setup-modal').classList.remove('hidden');
         lucide.createIcons();
