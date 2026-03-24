@@ -597,10 +597,11 @@
         #duel-cover {
             position: fixed; inset: 0;
             background: radial-gradient(circle at center, #0f172a, #020617);
-            z-index: 180; display: flex; flex-direction: column;
+            z-index: 180; flex-direction: column;
             align-items: center; justify-content: center; gap: 20px;
             text-align: center; padding: 24px;
         }
+        #duel-cover:not(.hidden) { display: flex; }
         .duel-player-tag {
             display: inline-flex; align-items: center; gap: 6px;
             background: rgba(244,63,94,0.15); border: 1px solid rgba(244,63,94,0.4);
