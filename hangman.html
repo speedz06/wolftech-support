@@ -678,7 +678,7 @@
             </div>
             <div id="hm-pp-avatar" class="text-5xl mb-2">🐺</div>
             <div id="hm-pp-name" class="text-lg font-bold text-white mb-3"></div>
-            <div id="hm-pp-stats" class="flex gap-3 justify-center mb-4"></div>
+            <div id="hm-pp-stats" class="grid grid-cols-4 gap-2 mb-4"></div>
             <div id="hm-pp-friend-btn"></div>
         </div>
     </div>
@@ -1198,19 +1198,24 @@
             const userSnap = await firebaseFns.getDoc(firebaseFns.doc(firestore, 'artifacts', appId, 'public', 'data', 'users', name));
             if (!userSnap.exists()) { showToast('Kein Profil gefunden', 'info'); return; }
             const ud = userSnap.data();
-            const [scoreSnap, myDoc] = await Promise.all([
+            const [scoreSnap, wScoreSnap, myDoc] = await Promise.all([
                 firebaseFns.getDoc(firebaseFns.doc(firestore, 'artifacts', appId, 'public', 'data', 'hm_scores', name.toLowerCase())),
+                firebaseFns.getDoc(firebaseFns.doc(firestore, 'artifacts', appId, 'public', 'data', 'scores', name.toLowerCase())),
                 getPlayerName() ? firebaseFns.getDoc(firebaseFns.doc(firestore, 'artifacts', appId, 'public', 'data', 'users', getPlayerName())) : Promise.resolve(null),
             ]);
             const sd = scoreSnap.exists() ? scoreSnap.data() : {};
+            const wsd = wScoreSnap.exists() ? wScoreSnap.data() : {};
             const weekKey = getWeekKey();
             const weekScore = sd.weekKey === weekKey ? (sd.weekScore || 0) : 0;
+            const friendsCount = ud.friends ? ud.friends.length : 0;
             document.getElementById('hm-pp-avatar').textContent = ud.avatar || '🐺';
             document.getElementById('hm-pp-name').textContent = ud.name || name;
             document.getElementById('hm-pp-stats').innerHTML = [
-                [sd.score || 0, 'Punkte Gesamt'],
+                [sd.score || 0, 'Hangman Pts'],
                 [weekScore, 'Diese Woche'],
-            ].map(([val, lbl]) => `<div style="flex:1;text-align:center;background:rgba(51,65,85,0.5);border-radius:12px;padding:10px 0;"><div style="font-size:1.4rem;font-weight:900;color:#e2e8f0;">${val}</div><div style="font-size:0.7rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-top:2px;">${lbl}</div></div>`).join('');
+                [wsd.score || 0, 'Wordle Pts'],
+                [friendsCount, 'Freunde'],
+            ].map(([val, lbl]) => `<div style="text-align:center;background:rgba(51,65,85,0.5);border-radius:12px;padding:10px 0;"><div style="font-size:1.3rem;font-weight:900;color:#e2e8f0;">${val}</div><div style="font-size:0.65rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-top:2px;">${lbl}</div></div>`).join('');
             const myName = getPlayerName();
             const friendBtnEl = document.getElementById('hm-pp-friend-btn');
             if (!myName || localStorage.getItem('wolfle_is_guest') === '1' || name.toLowerCase() === myName.toLowerCase()) {
@@ -1653,11 +1658,15 @@
         const data = snap.data();
         const players = { ...(data.players || {}) };
         delete players[name];
-        await firebaseFns.setDoc(roomDocRef(gameState.roomCode), {
-            players,
-            roomStatus: Object.keys(players).length === 0 ? 'Raum leer.' : 'Jemand hat den Raum verlassen.',
-            currentPicker: data.currentPicker === name ? Object.keys(players)[0] || null : data.currentPicker
-        }, { merge: true });
+        if (Object.keys(players).length === 0) {
+            await firebaseFns.deleteDoc(roomDocRef(gameState.roomCode));
+        } else {
+            await firebaseFns.setDoc(roomDocRef(gameState.roomCode), {
+                players,
+                roomStatus: 'Jemand hat den Raum verlassen.',
+                currentPicker: data.currentPicker === name ? Object.keys(players)[0] || null : data.currentPicker
+            }, { merge: true });
+        }
         if (roomUnsubscribe) roomUnsubscribe();
         roomUnsubscribe = null;
         gameState.roomCode = null;
