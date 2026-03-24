@@ -957,7 +957,7 @@
                 </div>
                 <div id="onboard-avatar-grid" class="avatar-grid mb-4"></div>
                 <div id="onboard-error" class="hidden text-red-400 text-xs mb-3 text-center"></div>
-                <button onclick="window.onboardConfirmGuest()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors">Weiter spielen</button>
+                <button id="onboard-confirm-btn" onclick="window.onboardConfirmGuest()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors">Weiter spielen</button>
             </div>
         </div>
     </div>
@@ -2927,11 +2927,26 @@
         window.openLoginModal();
     };
 
-    window.onboardConfirmGuest = () => {
+    window.onboardConfirmGuest = async () => {
         const name = document.getElementById('onboard-name-input').value.trim();
         const errEl = document.getElementById('onboard-error');
+        const btn = document.getElementById('onboard-confirm-btn');
         if (!name) { errEl.textContent = 'Bitte einen Namen eingeben.'; errEl.classList.remove('hidden'); return; }
         errEl.classList.add('hidden');
+        if (btn) { btn.disabled = true; btn.textContent = 'Prüfen...'; }
+        try {
+            const firestore = await getDB();
+            if (firestore) {
+                const snap = await getDoc(doc(firestore,'artifacts',appId,'public','data','users',name));
+                if (snap.exists()) {
+                    errEl.textContent = 'Name bereits vergeben – bitte melde dich an oder wähle einen anderen Namen.';
+                    errEl.classList.remove('hidden');
+                    if (btn) { btn.disabled = false; btn.textContent = 'Weiter spielen'; }
+                    return;
+                }
+            }
+        } catch(e) {}
+        if (btn) { btn.disabled = false; btn.textContent = 'Weiter spielen'; }
         selectedAvatar = onboardAvatar;
         localStorage.setItem('wolfle_user_name', name);
         localStorage.setItem('wolfle_profile', JSON.stringify({ name, avatar: onboardAvatar }));
