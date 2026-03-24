@@ -1493,8 +1493,15 @@
     };
     window.doLogout = () => {
         localStorage.removeItem('wolfle_logged_in');
+        localStorage.removeItem('wolfle_user_name');
+        localStorage.removeItem('wolfle_avatar');
+        selectedAvatar = '🐺';
+        gameState.playerName = '';
+        const nameEl = document.getElementById('hm-player-name');
+        if (nameEl) nameEl.value = '';
         updateLoginHeader();
         window.closeLoginModal();
+        showToast('Abgemeldet', 'info');
     };
 
     // Avatar editor in logged-in modal

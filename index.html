@@ -449,6 +449,9 @@
     }
     function doLogout() {
         localStorage.removeItem('wolfle_logged_in');
+        localStorage.removeItem('wolfle_user_name');
+        localStorage.removeItem('wolfle_avatar');
+        onboardAvatar = '🐺';
         updateLoginHeader();
         closeLoginModal();
     }

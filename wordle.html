@@ -1935,7 +1935,7 @@
                 playerRoundsWon += 1;
             }
             const name = getPlayerName();
-            if (name) {
+            if (name && localStorage.getItem('wolfle_logged_in') === '1') {
                 const firestore = await getDB();
                 if (firestore) {
                     try {
@@ -3129,6 +3129,12 @@
     };
     window.doLogout = () => {
         localStorage.removeItem('wolfle_logged_in');
+        localStorage.removeItem('wolfle_user_name');
+        localStorage.removeItem('wolfle_avatar');
+        localStorage.removeItem('wolfle_profile');
+        selectedAvatar = '🐺';
+        document.querySelectorAll('.name-input').forEach(el => el.value = '');
+        updateAvatarUI();
         updateLoginHeader();
         window.closeLoginModal();
         showToast('Abgemeldet', 'info');
