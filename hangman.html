@@ -355,6 +355,20 @@
         }
         .hm-muted { color: #94a3b8; }
         .hm-empty { display: none; }
+        /* ── BOTTOM NAV THEME OVERRIDES ── */
+        html.light #hm-bottom-nav { background: #f1f5f9 !important; border-color: #cbd5e1 !important; }
+        html.light .hm-nav-btn { color: #94a3b8 !important; }
+        html.light .hm-nav-btn.active { color: #be123c !important; }
+        html.retro #hm-bottom-nav { background: #000 !important; border-color: #00ff41 !important; }
+        html.retro .hm-nav-btn { color: #007a1f !important; }
+        html.retro .hm-nav-btn.active { color: #00ff41 !important; }
+        html.ocean #hm-bottom-nav { background: #05101f !important; border-color: #1d4e6e !important; }
+        html.ocean .hm-nav-btn { color: #4d89ac !important; }
+        html.ocean .hm-nav-btn.active { color: #38bdf8 !important; }
+        html.pastel #hm-bottom-nav { background: #fce7f3 !important; border-color: #f0abdb !important; }
+        html.pastel .hm-nav-btn { color: #c084db !important; }
+        html.pastel .hm-nav-btn.active { color: #9333ea !important; }
+
         html.light body { background: linear-gradient(135deg, #dde3ed, #f0f4f8); color: #1e293b; }
         html.light #hm-header, html.light #game-tabs { background: #f1f5f9; border-color: #cbd5e1; }
         html.light .tab-link { color: #94a3b8; }
@@ -417,7 +431,9 @@
             }
             #hm-sidebar-right { display: none !important; }
             #hm-bottom-nav { display: flex; }
-            #hm-game-center { overflow: hidden; height: 100%; padding-bottom: 0; }
+            #hm-game-center { overflow: hidden; min-height: 0; padding-bottom: 0; }
+            /* nav handles safe-area-inset-bottom */
+            #hm-keyboard { padding-bottom: 4px; }
         }
         @media (max-width: 480px) {
             .hm-key { height: clamp(30px, 4.5vh, 40px); }
