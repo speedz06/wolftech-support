@@ -46,7 +46,11 @@
             border-bottom: 1px solid #1e293b;
             flex-shrink: 0;
             padding: 0 12px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
         }
+        #game-tabs::-webkit-scrollbar { display: none; }
         .tab-link {
             display: flex;
             align-items: center;
@@ -100,10 +104,10 @@
         }
         .game-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
             gap: 16px;
             width: 100%;
-            max-width: 580px;
+            max-width: 860px;
         }
         .game-card {
             background: rgba(30,41,59,0.8);
@@ -129,6 +133,11 @@
         }
         .game-card.wordle .icon-wrap { background: rgba(99,102,241,0.2); color: #818cf8; }
         .game-card.hangman .icon-wrap { background: rgba(244,63,94,0.15); color: #fb7185; }
+        .game-card.verbinde .icon-wrap { background: rgba(234,179,8,0.15); color: #facc15; }
+        .game-card.slf .icon-wrap { background: rgba(34,197,94,0.15); color: #4ade80; }
+        .game-card.tipp .icon-wrap { background: rgba(6,182,212,0.15); color: #22d3ee; }
+        .game-card.anagramm .icon-wrap { background: rgba(249,115,22,0.15); color: #fb923c; }
+        .game-card.quiz .icon-wrap { background: rgba(168,85,247,0.15); color: #c084fc; }
         .game-card h2 { font-size: 1.2rem; font-weight: 800; color: #e2e8f0; }
         .game-card p { font-size: 0.85rem; color: #94a3b8; line-height: 1.5; }
         .play-btn {
@@ -140,6 +149,11 @@
         }
         .game-card.wordle .play-btn { background: #4f46e5; color: white; }
         .game-card.hangman .play-btn { background: #e11d48; color: white; }
+        .game-card.verbinde .play-btn { background: #a16207; color: white; }
+        .game-card.slf .play-btn { background: #15803d; color: white; }
+        .game-card.tipp .play-btn { background: #0e7490; color: white; }
+        .game-card.anagramm .play-btn { background: #c2410c; color: white; }
+        .game-card.quiz .play-btn { background: #7e22ce; color: white; }
         .game-card:hover .play-btn { opacity: 0.88; }
         .page-footer { color: #475569; font-size: 0.72rem; text-align: center; margin-top: 28px; }
 
@@ -217,6 +231,21 @@
         <a href="hangman.html" class="tab-link">
             <i data-lucide="skull" class="w-4 h-4"></i> Hangman
         </a>
+        <a href="verbinde.html" class="tab-link">
+            <i data-lucide="link" class="w-4 h-4"></i> Verbinde
+        </a>
+        <a href="stadtlandfuss.html" class="tab-link">
+            <i data-lucide="globe" class="w-4 h-4"></i> SLF
+        </a>
+        <a href="tipprennen.html" class="tab-link">
+            <i data-lucide="keyboard" class="w-4 h-4"></i> Tippen
+        </a>
+        <a href="anagramm.html" class="tab-link">
+            <i data-lucide="shuffle" class="w-4 h-4"></i> Anagramm
+        </a>
+        <a href="quiz.html" class="tab-link">
+            <i data-lucide="help-circle" class="w-4 h-4"></i> Quiz
+        </a>
     </div>
 
     <!-- CONTENT -->
@@ -238,6 +267,36 @@
                 <div class="icon-wrap"><i data-lucide="skull" class="w-7 h-7"></i></div>
                 <h2>Hangman</h2>
                 <p>Das klassische Galgenspiel – errate das Wort, bevor du aufgehängt wirst!</p>
+                <span class="play-btn"><i data-lucide="play" class="w-4 h-4"></i> Spielen</span>
+            </a>
+            <a href="verbinde.html" class="game-card verbinde">
+                <div class="icon-wrap"><i data-lucide="link" class="w-7 h-7"></i></div>
+                <h2>Verbinde</h2>
+                <p>Finde 4 Gruppen aus 16 Wörtern. Schwieriger als es aussieht!</p>
+                <span class="play-btn"><i data-lucide="play" class="w-4 h-4"></i> Spielen</span>
+            </a>
+            <a href="stadtlandfuss.html" class="game-card slf">
+                <div class="icon-wrap"><i data-lucide="globe" class="w-7 h-7"></i></div>
+                <h2>Stadt Land Fluss</h2>
+                <p>Nenne Stadt, Land, Fluss und mehr – schneller als deine Gegner!</p>
+                <span class="play-btn"><i data-lucide="play" class="w-4 h-4"></i> Spielen</span>
+            </a>
+            <a href="tipprennen.html" class="game-card tipp">
+                <div class="icon-wrap"><i data-lucide="keyboard" class="w-7 h-7"></i></div>
+                <h2>Tipp-Rennen</h2>
+                <p>Tippe Texte so schnell wie möglich – wer ist der schnellste Tippkünstler?</p>
+                <span class="play-btn"><i data-lucide="play" class="w-4 h-4"></i> Spielen</span>
+            </a>
+            <a href="anagramm.html" class="game-card anagramm">
+                <div class="icon-wrap"><i data-lucide="shuffle" class="w-7 h-7"></i></div>
+                <h2>Anagramm</h2>
+                <p>Finde aus einem Buchstabenmix so viele Wörter wie möglich in 90 Sekunden!</p>
+                <span class="play-btn"><i data-lucide="play" class="w-4 h-4"></i> Spielen</span>
+            </a>
+            <a href="quiz.html" class="game-card quiz">
+                <div class="icon-wrap"><i data-lucide="help-circle" class="w-7 h-7"></i></div>
+                <h2>Quiz</h2>
+                <p>Teste dein Wissen in Geografie, Geschichte, Wissenschaft und mehr!</p>
                 <span class="play-btn"><i data-lucide="play" class="w-4 h-4"></i> Spielen</span>
             </a>
         </div>
