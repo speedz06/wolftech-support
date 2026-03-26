@@ -178,20 +178,14 @@
         }
 
         .message {
-            margin-top: 16px;
-            font-size: 1rem;
+            font-size: 0.95rem;
             min-height: 1.5em;
+            margin-bottom: 16px;
             text-align: center;
         }
 
         .message.error { color: #e35b5b; }
         .message.success { color: #538d4e; }
-
-        .mistakes {
-            margin-top: 12px;
-            color: #818384;
-            font-size: 0.85rem;
-        }
     </style>
 </head>
 <body>
@@ -203,13 +197,12 @@
     <div class="solved-area" id="solvedArea"></div>
     <div class="grid" id="grid"></div>
 
+    <p class="message" id="message"></p>
+
     <div class="controls">
         <button class="action" id="deselectBtn" onclick="deselectAll()" disabled>Abwählen</button>
-        <button class="action submit" id="submitBtn" onclick="submitGuess()" disabled>Prüfen</button>
+        <button class="action submit" id="submitBtn" onclick="submitGuess()">Prüfen</button>
     </div>
-
-    <p class="message" id="message"></p>
-    <p class="mistakes" id="mistakes"></p>
 
     <script>
         const puzzleData = {
@@ -240,18 +233,14 @@
         let selected = [];
         let solvedGroups = [];
         let remainingWords = [];
-        let mistakesLeft = 4;
-
         function init() {
             remainingWords = puzzleData.groups.flatMap(g => g.words);
             shuffle(remainingWords);
             solvedGroups = [];
             selected = [];
-            mistakesLeft = 4;
             document.getElementById('solvedArea').innerHTML = '';
             renderGrid();
             updateUI();
-            updateMistakes();
         }
 
         function shuffle(arr) {
@@ -298,14 +287,7 @@
             const count = selected.length;
             document.getElementById('selectionCount').textContent =
                 count > 0 ? `${count} / 4 ausgewählt` : '';
-            document.getElementById('submitBtn').disabled = count !== 4;
             document.getElementById('deselectBtn').disabled = count === 0;
-        }
-
-        function updateMistakes() {
-            const dots = '● '.repeat(mistakesLeft) + '○ '.repeat(4 - mistakesLeft);
-            document.getElementById('mistakes').textContent =
-                `Verbleibende Versuche: ${dots.trim()}`;
         }
 
         function showMessage(text, type) {
@@ -316,89 +298,13 @@
         }
 
         function submitGuess() {
-            if (selected.length !== 4) return;
-
-            const match = puzzleData.groups.find(g =>
-                !solvedGroups.includes(g) &&
-                g.words.every(w => selected.includes(w)) &&
-                selected.every(w => g.words.includes(w))
-            );
-
-            if (match) {
-                solvedGroups.push(match);
-                remainingWords = remainingWords.filter(w => !match.words.includes(w));
-                selected = [];
-
-                const area = document.getElementById('solvedArea');
-                const div = document.createElement('div');
-                div.className = `solved-group difficulty-${match.difficulty}`;
-                div.innerHTML = `
-                    <div class="group-name">${match.name}</div>
-                    <div class="group-words">${match.words.join(', ')}</div>
-                `;
-                area.appendChild(div);
-
-                renderGrid();
-                updateUI();
-
-                if (solvedGroups.length === 4) {
-                    showMessage('Gelöst! Gut gemacht! 🎉', 'success');
-                } else {
-                    showMessage('Richtig!', 'success');
-                }
-            } else {
-                mistakesLeft--;
-                updateMistakes();
-
-                // Check for "one away"
-                const oneAway = puzzleData.groups.some(g =>
-                    !solvedGroups.includes(g) &&
-                    selected.filter(w => g.words.includes(w)).length === 3
-                );
-
-                if (mistakesLeft <= 0) {
-                    showMessage('Leider verloren!', 'error');
-                    revealAll();
-                } else if (oneAway) {
-                    showMessage('Knapp daneben! Nur 1 falsch.', 'error');
-                    shakeTiles();
-                } else {
-                    showMessage('Falsch!', 'error');
-                    shakeTiles();
-                }
+            if (selected.length !== 4) {
+                showMessage('Wähle genau 4 Wörter aus', 'error');
+                return;
             }
-        }
 
-        function shakeTiles() {
-            document.querySelectorAll('.tile.selected').forEach(tile => {
-                tile.classList.add('shake');
-                setTimeout(() => tile.classList.remove('shake'), 500);
-            });
-        }
-
-        function revealAll() {
-            const grid = document.getElementById('grid');
-            grid.innerHTML = '';
-            const area = document.getElementById('solvedArea');
-
-            puzzleData.groups
-                .filter(g => !solvedGroups.includes(g))
-                .sort((a, b) => a.difficulty - b.difficulty)
-                .forEach(g => {
-                    const div = document.createElement('div');
-                    div.className = `solved-group difficulty-${g.difficulty}`;
-                    div.innerHTML = `
-                        <div class="group-name">${g.name}</div>
-                        <div class="group-words">${g.words.join(', ')}</div>
-                    `;
-                    area.appendChild(div);
-                });
-
-            remainingWords = [];
-            selected = [];
-            document.getElementById('submitBtn').disabled = true;
-            document.getElementById('deselectBtn').disabled = true;
-            document.getElementById('selectionCount').textContent = '';
+            console.log('Submitted words:', selected.slice());
+            showMessage('Gruppe eingereicht!', 'success');
         }
 
         init();
