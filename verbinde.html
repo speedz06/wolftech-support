@@ -231,6 +231,8 @@
         .vb-controls {
             display: flex;
             gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
         }
         .vb-btn {
             border: 1px solid #334155;
@@ -275,6 +277,161 @@
             border-color: #334155;
             color: #94a3b8;
         }
+
+        /* ── MODE SELECT ── */
+        .mode-select {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            padding: 20px 0;
+            width: 100%;
+            max-width: 400px;
+        }
+        .mode-card {
+            width: 100%;
+            background: rgba(30,41,59,0.6);
+            border: 2px solid #334155;
+            border-radius: 16px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.15s;
+            text-align: left;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .mode-card:hover {
+            border-color: #eab308;
+            background: rgba(30,41,59,0.8);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(234,179,8,0.15);
+        }
+        .mode-card:active { transform: scale(0.98); }
+        .mode-card h3 {
+            font-size: 1rem;
+            font-weight: 800;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .mode-card p {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            line-height: 1.4;
+        }
+        .mode-card .mode-icon { font-size: 1.3rem; }
+
+        /* ── DUELL ── */
+        .vb-timer {
+            font-size: 1.8rem;
+            font-weight: 900;
+            font-variant-numeric: tabular-nums;
+            text-align: center;
+            min-width: 80px;
+        }
+        .vb-timer.urgent { color: #f87171; animation: vbPulse 0.5s infinite; }
+        @keyframes vbPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .vb-player-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 480px;
+            gap: 12px;
+        }
+        .vb-player-chip {
+            flex: 1;
+            text-align: center;
+            padding: 8px 12px;
+            border-radius: 10px;
+            border: 2px solid #334155;
+            background: rgba(30,41,59,0.5);
+            font-size: 0.8rem;
+            font-weight: 700;
+            transition: all 0.2s;
+        }
+        .vb-player-chip.active {
+            border-color: #eab308;
+            background: rgba(234,179,8,0.15);
+            color: #fef08a;
+            box-shadow: 0 0 12px rgba(234,179,8,0.2);
+        }
+        .vb-player-chip .score {
+            font-size: 1.2rem;
+            font-weight: 900;
+            display: block;
+        }
+        .vb-vs { font-weight: 800; color: #64748b; font-size: 0.7rem; }
+
+        /* ── MEMORY ── */
+        .mem-grid {
+            display: grid;
+            gap: 6px;
+            width: 100%;
+            max-width: 520px;
+        }
+        .mem-grid.size-6x4 { grid-template-columns: repeat(6, 1fr); }
+        .mem-grid.size-4x4 { grid-template-columns: repeat(4, 1fr); }
+        .mem-card {
+            aspect-ratio: 1;
+            perspective: 600px;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .mem-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.4s;
+            transform-style: preserve-3d;
+        }
+        .mem-card.flipped .mem-card-inner { transform: rotateY(180deg); }
+        .mem-card.matched .mem-card-inner { transform: rotateY(180deg); }
+        .mem-card-face {
+            position: absolute;
+            inset: 0;
+            backface-visibility: hidden;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: clamp(0.55rem, 2vw, 0.75rem);
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            word-break: break-word;
+            text-align: center;
+            padding: 4px;
+        }
+        .mem-card-back {
+            background: rgba(30,41,59,0.6);
+            border: 2px solid #334155;
+            color: #475569;
+            font-size: 1.2rem;
+        }
+        .mem-card-back::after { content: '?'; }
+        .mem-card-front {
+            background: rgba(234,179,8,0.15);
+            border: 2px solid #eab308;
+            color: #fef08a;
+            transform: rotateY(180deg);
+        }
+        .mem-card.matched .mem-card-front {
+            background: rgba(132,204,22,0.2);
+            border-color: #84cc16;
+            color: #a3e635;
+        }
+        .mem-stats {
+            display: flex;
+            gap: 20px;
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+        .mem-stats span { font-weight: 700; color: #e2e8f0; }
 
         /* ── THEME OVERRIDES ── */
         html.light body { background: linear-gradient(135deg, #f1f5f9, #e2e8f0); color: #1e293b; }
@@ -390,23 +547,89 @@
     <!-- GAME CENTER -->
     <div id="vb-game-center">
         <div class="vb-title">Verbinde</div>
-        <div class="vb-subtitle">Finde die 4 Gruppen mit je 4 zusammengehörenden Begriffen</div>
+        <div class="vb-subtitle" id="subtitleText">Wähle einen Spielmodus</div>
 
-        <div class="vb-selection-count" id="selectionCount"></div>
-
-        <div class="vb-solved-area" id="solvedArea"></div>
-        <div class="vb-grid" id="grid"></div>
-
-        <div class="vb-mistakes" id="mistakesDisplay"></div>
-
-        <div class="vb-message" id="message"></div>
-
-        <div class="vb-controls">
-            <button class="vb-btn" id="deselectBtn" onclick="deselectAll()" disabled>Abwählen</button>
-            <button class="vb-btn submit" id="submitBtn" onclick="submitGuess()">Prüfen</button>
-            <button class="vb-btn" id="newGameBtn" onclick="init()">
-                <i data-lucide="refresh-cw" class="w-3.5 h-3.5" style="display:inline;vertical-align:middle;margin-right:4px"></i>Neu
+        <!-- MODE SELECT -->
+        <div class="mode-select" id="modeSelect">
+            <button class="mode-card" onclick="startClassic()">
+                <h3><span class="mode-icon">🧩</span> Klassisch</h3>
+                <p>Finde die 4 Gruppen aus 16 Wörtern. 4 Versuche.</p>
             </button>
+            <button class="mode-card" onclick="showDuellSetup()">
+                <h3><span class="mode-icon">⚔️</span> Duell</h3>
+                <p>Spiele gegen einen Freund! Wer findet die Gruppen schneller?</p>
+            </button>
+            <button class="mode-card" onclick="startMemory()">
+                <h3><span class="mode-icon">🃏</span> Memory</h3>
+                <p>Finde Wort-Paare die zusammengehören. Drehe je 2 Karten um!</p>
+            </button>
+        </div>
+
+        <!-- DUELL SETUP -->
+        <div id="duellSetup" style="display:none" class="mode-select">
+            <div style="font-size:0.85rem;color:#94a3b8;text-align:center">Namen eingeben</div>
+            <input id="duellP1Name" type="text" placeholder="Spieler 1" maxlength="12" class="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-4 py-2.5 text-center text-white focus:border-yellow-500 transition-colors outline-none" style="max-width:280px">
+            <input id="duellP2Name" type="text" placeholder="Spieler 2" maxlength="12" class="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-4 py-2.5 text-center text-white focus:border-yellow-500 transition-colors outline-none" style="max-width:280px">
+            <button class="vb-btn submit" onclick="startDuell()">Duell starten!</button>
+            <button class="vb-btn" onclick="showModeSelect()">Zurück</button>
+        </div>
+
+        <!-- CLASSIC MODE -->
+        <div id="classicView" style="display:none;width:100%;display:none;flex-direction:column;align-items:center;gap:10px">
+            <div class="vb-selection-count" id="selectionCount"></div>
+            <div class="vb-solved-area" id="solvedArea"></div>
+            <div class="vb-grid" id="grid"></div>
+            <div class="vb-mistakes" id="mistakesDisplay"></div>
+            <div class="vb-message" id="message"></div>
+            <div class="vb-controls">
+                <button class="vb-btn" id="deselectBtn" onclick="deselectAll()" disabled>Abwählen</button>
+                <button class="vb-btn submit" id="submitBtn" onclick="submitGuess()">Prüfen</button>
+                <button class="vb-btn" onclick="init()">Neu</button>
+                <button class="vb-btn" onclick="showModeSelect()">Modi</button>
+            </div>
+        </div>
+
+        <!-- DUELL MODE -->
+        <div id="duellView" style="display:none;width:100%;display:none;flex-direction:column;align-items:center;gap:10px">
+            <div class="vb-player-bar">
+                <div class="vb-player-chip" id="duellChip1">
+                    <div id="duellName1">Spieler 1</div>
+                    <span class="score" id="duellScore1">0</span>
+                </div>
+                <div class="vb-vs">VS</div>
+                <div class="vb-player-chip" id="duellChip2">
+                    <div id="duellName2">Spieler 2</div>
+                    <span class="score" id="duellScore2">0</span>
+                </div>
+            </div>
+            <div class="vb-timer" id="duellTimer">0:00</div>
+            <div class="vb-selection-count" id="duellSelCount"></div>
+            <div class="vb-solved-area" id="duellSolvedArea"></div>
+            <div class="vb-grid" id="duellGrid"></div>
+            <div class="vb-message" id="duellMessage"></div>
+            <div class="vb-controls">
+                <button class="vb-btn" id="duellDeselectBtn" onclick="duellDeselectAll()" disabled>Abwählen</button>
+                <button class="vb-btn submit" id="duellSubmitBtn" onclick="duellSubmitGuess()">Prüfen</button>
+            </div>
+        </div>
+
+        <!-- DUELL RESULT -->
+        <div id="duellResult" style="display:none;width:100%;display:none;flex-direction:column;align-items:center;gap:14px;text-align:center">
+        </div>
+
+        <!-- MEMORY MODE -->
+        <div id="memoryView" style="display:none;width:100%;display:none;flex-direction:column;align-items:center;gap:10px">
+            <div class="mem-stats">
+                Paare: <span id="memPairsFound">0</span> / <span id="memPairsTotal">0</span>
+                &nbsp;&nbsp; Züge: <span id="memMoves">0</span>
+                &nbsp;&nbsp; Zeit: <span id="memTimer">0:00</span>
+            </div>
+            <div class="mem-grid" id="memGrid"></div>
+            <div class="vb-message" id="memMessage"></div>
+            <div class="vb-controls">
+                <button class="vb-btn" onclick="startMemory()">Neu</button>
+                <button class="vb-btn" onclick="showModeSelect()">Modi</button>
+            </div>
         </div>
     </div>
 
@@ -505,350 +728,525 @@
         }
     }
 
-    // ── GAME LOGIC ──
+    // ── PUZZLE DATA ──
     const allPuzzles = [
-        {
-            groups: [
-                { name: "Obst", words: ["Apfel", "Birne", "Kirsche", "Traube"], difficulty: 0 },
-                { name: "Farben", words: ["Rot", "Blau", "Grün", "Gelb"], difficulty: 1 },
-                { name: "Planeten", words: ["Mars", "Venus", "Saturn", "Jupiter"], difficulty: 2 },
-                { name: "Musikinstrumente", words: ["Gitarre", "Klavier", "Geige", "Flöte"], difficulty: 3 }
-            ]
-        },
-        {
-            groups: [
-                { name: "Tiere im Wald", words: ["Fuchs", "Reh", "Dachs", "Eule"], difficulty: 0 },
-                { name: "Schulfächer", words: ["Mathe", "Deutsch", "Physik", "Kunst"], difficulty: 1 },
-                { name: "Hauptstädte", words: ["Berlin", "Paris", "Tokyo", "London"], difficulty: 2 },
-                { name: "Gewürze", words: ["Salz", "Pfeffer", "Zimt", "Oregano"], difficulty: 3 }
-            ]
-        },
-        {
-            groups: [
-                { name: "Sportarten", words: ["Fußball", "Tennis", "Schwimmen", "Boxen"], difficulty: 0 },
-                { name: "Möbelstücke", words: ["Tisch", "Stuhl", "Regal", "Sofa"], difficulty: 1 },
-                { name: "Elemente", words: ["Feuer", "Wasser", "Erde", "Luft"], difficulty: 2 },
-                { name: "Berufe", words: ["Arzt", "Lehrer", "Koch", "Pilot"], difficulty: 3 }
-            ]
-        },
-        {
-            groups: [
-                { name: "Kleidung", words: ["Hemd", "Hose", "Jacke", "Schal"], difficulty: 0 },
-                { name: "Getränke", words: ["Kaffee", "Tee", "Saft", "Milch"], difficulty: 1 },
-                { name: "Märchenfiguren", words: ["Hexe", "Zwerg", "Riese", "Fee"], difficulty: 2 },
-                { name: "Werkzeuge", words: ["Hammer", "Zange", "Säge", "Bohrer"], difficulty: 3 }
-            ]
-        },
-        {
-            groups: [
-                { name: "Wetter", words: ["Regen", "Schnee", "Hagel", "Sturm"], difficulty: 0 },
-                { name: "Körperteile", words: ["Hand", "Fuß", "Knie", "Kopf"], difficulty: 1 },
-                { name: "Bäume", words: ["Eiche", "Birke", "Tanne", "Buche"], difficulty: 2 },
-                { name: "Gefühle", words: ["Freude", "Angst", "Wut", "Stolz"], difficulty: 3 }
-            ]
-        },
-        {
-            groups: [
-                { name: "Gemüse", words: ["Gurke", "Tomate", "Zwiebel", "Paprika"], difficulty: 0 },
-                { name: "Fahrzeuge", words: ["Auto", "Zug", "Schiff", "Fahrrad"], difficulty: 1 },
-                { name: "Metalle", words: ["Gold", "Silber", "Eisen", "Kupfer"], difficulty: 2 },
-                { name: "Griechische Götter", words: ["Zeus", "Hera", "Ares", "Hermes"], difficulty: 3 }
-            ]
-        },
-        {
-            groups: [
-                { name: "Blumen", words: ["Rose", "Tulpe", "Lilie", "Nelke"], difficulty: 0 },
-                { name: "Süßigkeiten", words: ["Schokolade", "Bonbon", "Keks", "Eis"], difficulty: 1 },
-                { name: "Länder", words: ["Spanien", "Brasilien", "Ägypten", "Norwegen"], difficulty: 2 },
-                { name: "Tanzstile", words: ["Walzer", "Tango", "Salsa", "Ballett"], difficulty: 3 }
-            ]
-        },
-        {
-            groups: [
-                { name: "Meerestiere", words: ["Hai", "Wal", "Qualle", "Krabbe"], difficulty: 0 },
-                { name: "Instrumente", words: ["Trommel", "Harfe", "Orgel", "Cello"], difficulty: 1 },
-                { name: "Sprachen", words: ["Englisch", "Spanisch", "Arabisch", "Chinesisch"], difficulty: 2 },
-                { name: "Astronomie", words: ["Stern", "Komet", "Nebel", "Galaxie"], difficulty: 3 }
-            ]
-        },
-        {
-            groups: [
-                { name: "Obst (tropisch)", words: ["Mango", "Ananas", "Kiwi", "Banane"], difficulty: 0 },
-                { name: "Räume im Haus", words: ["Küche", "Bad", "Keller", "Dachboden"], difficulty: 1 },
-                { name: "Kartenspiele", words: ["Poker", "Skat", "Uno", "Mau-Mau"], difficulty: 2 },
-                { name: "Philosophen", words: ["Platon", "Kant", "Nietzsche", "Sokrates"], difficulty: 3 }
-            ]
-        },
-        {
-            groups: [
-                { name: "Vögel", words: ["Adler", "Spatz", "Rabe", "Storch"], difficulty: 0 },
-                { name: "Backzutaten", words: ["Mehl", "Zucker", "Butter", "Hefe"], difficulty: 1 },
-                { name: "Kontinente", words: ["Europa", "Afrika", "Asien", "Amerika"], difficulty: 2 },
-                { name: "Mythische Wesen", words: ["Drache", "Einhorn", "Phoenix", "Greif"], difficulty: 3 }
-            ]
-        },
-        {
-            groups: [
-                { name: "Jahreszeiten-Wörter", words: ["Ernte", "Frost", "Blüte", "Hitze"], difficulty: 0 },
-                { name: "Schreibwaren", words: ["Stift", "Lineal", "Radierer", "Schere"], difficulty: 1 },
-                { name: "Flüsse", words: ["Donau", "Rhein", "Elbe", "Isar"], difficulty: 2 },
-                { name: "Opern", words: ["Carmen", "Aida", "Fidelio", "Otello"], difficulty: 3 }
-            ]
-        },
-        {
-            groups: [
-                { name: "Insekten", words: ["Biene", "Ameise", "Käfer", "Libelle"], difficulty: 0 },
-                { name: "Stoffe", words: ["Seide", "Wolle", "Leinen", "Baumwolle"], difficulty: 1 },
-                { name: "Gebirge", words: ["Alpen", "Anden", "Ural", "Himalaya"], difficulty: 2 },
-                { name: "Erfinder", words: ["Edison", "Tesla", "Nobel", "Diesel"], difficulty: 3 }
-            ]
-        },
-        {
-            groups: [
-                { name: "Frühstück", words: ["Brötchen", "Müsli", "Marmelade", "Ei"], difficulty: 0 },
-                { name: "Edelsteine", words: ["Rubin", "Saphir", "Smaragd", "Diamant"], difficulty: 1 },
-                { name: "Filmgenres", words: ["Krimi", "Horror", "Komödie", "Western"], difficulty: 2 },
-                { name: "Schachfiguren", words: ["König", "Dame", "Turm", "Springer"], difficulty: 3 }
-            ]
-        },
-        {
-            groups: [
-                { name: "Haustiere", words: ["Hund", "Katze", "Hamster", "Papagei"], difficulty: 0 },
-                { name: "Währungen", words: ["Euro", "Dollar", "Yen", "Pfund"], difficulty: 1 },
-                { name: "Zauberworte", words: ["Abrakadabra", "Simsalabim", "Hokuspokus", "Hex"], difficulty: 2 },
-                { name: "Komponisten", words: ["Bach", "Mozart", "Beethoven", "Brahms"], difficulty: 3 }
-            ]
-        },
-        {
-            groups: [
-                { name: "Brotsorten", words: ["Roggen", "Dinkel", "Vollkorn", "Pumpernickel"], difficulty: 0 },
-                { name: "Sportgeräte", words: ["Ball", "Schläger", "Netz", "Tor"], difficulty: 1 },
-                { name: "Sternzeichen", words: ["Widder", "Löwe", "Waage", "Fische"], difficulty: 2 },
-                { name: "Physik-Begriffe", words: ["Kraft", "Masse", "Energie", "Impuls"], difficulty: 3 }
-            ]
-        },
-        {
-            groups: [
-                { name: "Gemüse (grün)", words: ["Spinat", "Brokkoli", "Erbse", "Lauch"], difficulty: 0 },
-                { name: "Musikrichtungen", words: ["Rock", "Jazz", "Klassik", "Techno"], difficulty: 1 },
-                { name: "Kartenfarben", words: ["Herz", "Karo", "Pik", "Kreuz"], difficulty: 2 },
-                { name: "Planeten (äußere)", words: ["Uranus", "Neptun", "Pluto", "Merkur"], difficulty: 3 }
-            ]
-        },
-        {
-            groups: [
-                { name: "Wintersport", words: ["Ski", "Rodeln", "Eislauf", "Biathlon"], difficulty: 0 },
-                { name: "Küchengeräte", words: ["Mixer", "Ofen", "Herd", "Toaster"], difficulty: 1 },
-                { name: "Meere", words: ["Atlantik", "Pazifik", "Arktis", "Indik"], difficulty: 2 },
-                { name: "Dichter", words: ["Goethe", "Schiller", "Heine", "Rilke"], difficulty: 3 }
-            ]
-        },
-        {
-            groups: [
-                { name: "Nüsse", words: ["Walnuss", "Mandel", "Cashew", "Pistazie"], difficulty: 0 },
-                { name: "Bauwerke", words: ["Turm", "Brücke", "Dom", "Palast"], difficulty: 1 },
-                { name: "Märchen", words: ["Rapunzel", "Aschenputtel", "Schneewittchen", "Rotkäppchen"], difficulty: 2 },
-                { name: "Mathematik", words: ["Integral", "Vektor", "Matrix", "Funktion"], difficulty: 3 }
-            ]
-        },
-        {
-            groups: [
-                { name: "Käsesorten", words: ["Gouda", "Brie", "Emmentaler", "Mozzarella"], difficulty: 0 },
-                { name: "Himmelsrichtungen", words: ["Norden", "Süden", "Osten", "Westen"], difficulty: 1 },
-                { name: "Brettspiels", words: ["Schach", "Risiko", "Monopoly", "Cluedo"], difficulty: 2 },
-                { name: "Maler", words: ["Monet", "Picasso", "Rembrandt", "Vermeer"], difficulty: 3 }
-            ]
-        }
+        { groups: [
+            { name: "Obst", words: ["Apfel", "Birne", "Kirsche", "Traube"], difficulty: 0 },
+            { name: "Farben", words: ["Rot", "Blau", "Grün", "Gelb"], difficulty: 1 },
+            { name: "Planeten", words: ["Mars", "Venus", "Saturn", "Jupiter"], difficulty: 2 },
+            { name: "Musikinstrumente", words: ["Gitarre", "Klavier", "Geige", "Flöte"], difficulty: 3 }
+        ]},
+        { groups: [
+            { name: "Tiere im Wald", words: ["Fuchs", "Reh", "Dachs", "Eule"], difficulty: 0 },
+            { name: "Schulfächer", words: ["Mathe", "Deutsch", "Physik", "Kunst"], difficulty: 1 },
+            { name: "Hauptstädte", words: ["Berlin", "Paris", "Tokyo", "London"], difficulty: 2 },
+            { name: "Gewürze", words: ["Salz", "Pfeffer", "Zimt", "Oregano"], difficulty: 3 }
+        ]},
+        { groups: [
+            { name: "Sportarten", words: ["Fußball", "Tennis", "Schwimmen", "Boxen"], difficulty: 0 },
+            { name: "Möbelstücke", words: ["Tisch", "Stuhl", "Regal", "Sofa"], difficulty: 1 },
+            { name: "Elemente", words: ["Feuer", "Wasser", "Erde", "Luft"], difficulty: 2 },
+            { name: "Berufe", words: ["Arzt", "Lehrer", "Koch", "Pilot"], difficulty: 3 }
+        ]},
+        { groups: [
+            { name: "Kleidung", words: ["Hemd", "Hose", "Jacke", "Schal"], difficulty: 0 },
+            { name: "Getränke", words: ["Kaffee", "Tee", "Saft", "Milch"], difficulty: 1 },
+            { name: "Märchenfiguren", words: ["Hexe", "Zwerg", "Riese", "Fee"], difficulty: 2 },
+            { name: "Werkzeuge", words: ["Hammer", "Zange", "Säge", "Bohrer"], difficulty: 3 }
+        ]},
+        { groups: [
+            { name: "Wetter", words: ["Regen", "Schnee", "Hagel", "Sturm"], difficulty: 0 },
+            { name: "Körperteile", words: ["Hand", "Fuß", "Knie", "Kopf"], difficulty: 1 },
+            { name: "Bäume", words: ["Eiche", "Birke", "Tanne", "Buche"], difficulty: 2 },
+            { name: "Gefühle", words: ["Freude", "Angst", "Wut", "Stolz"], difficulty: 3 }
+        ]},
+        { groups: [
+            { name: "Gemüse", words: ["Gurke", "Tomate", "Zwiebel", "Paprika"], difficulty: 0 },
+            { name: "Fahrzeuge", words: ["Auto", "Zug", "Schiff", "Fahrrad"], difficulty: 1 },
+            { name: "Metalle", words: ["Gold", "Silber", "Eisen", "Kupfer"], difficulty: 2 },
+            { name: "Griechische Götter", words: ["Zeus", "Hera", "Ares", "Hermes"], difficulty: 3 }
+        ]},
+        { groups: [
+            { name: "Blumen", words: ["Rose", "Tulpe", "Lilie", "Nelke"], difficulty: 0 },
+            { name: "Süßigkeiten", words: ["Schokolade", "Bonbon", "Keks", "Eis"], difficulty: 1 },
+            { name: "Länder", words: ["Spanien", "Brasilien", "Ägypten", "Norwegen"], difficulty: 2 },
+            { name: "Tanzstile", words: ["Walzer", "Tango", "Salsa", "Ballett"], difficulty: 3 }
+        ]},
+        { groups: [
+            { name: "Meerestiere", words: ["Hai", "Wal", "Qualle", "Krabbe"], difficulty: 0 },
+            { name: "Instrumente", words: ["Trommel", "Harfe", "Orgel", "Cello"], difficulty: 1 },
+            { name: "Sprachen", words: ["Englisch", "Spanisch", "Arabisch", "Chinesisch"], difficulty: 2 },
+            { name: "Astronomie", words: ["Stern", "Komet", "Nebel", "Galaxie"], difficulty: 3 }
+        ]},
+        { groups: [
+            { name: "Obst (tropisch)", words: ["Mango", "Ananas", "Kiwi", "Banane"], difficulty: 0 },
+            { name: "Räume im Haus", words: ["Küche", "Bad", "Keller", "Dachboden"], difficulty: 1 },
+            { name: "Kartenspiele", words: ["Poker", "Skat", "Uno", "Mau-Mau"], difficulty: 2 },
+            { name: "Philosophen", words: ["Platon", "Kant", "Nietzsche", "Sokrates"], difficulty: 3 }
+        ]},
+        { groups: [
+            { name: "Vögel", words: ["Adler", "Spatz", "Rabe", "Storch"], difficulty: 0 },
+            { name: "Backzutaten", words: ["Mehl", "Zucker", "Butter", "Hefe"], difficulty: 1 },
+            { name: "Kontinente", words: ["Europa", "Afrika", "Asien", "Amerika"], difficulty: 2 },
+            { name: "Mythische Wesen", words: ["Drache", "Einhorn", "Phoenix", "Greif"], difficulty: 3 }
+        ]},
+        { groups: [
+            { name: "Jahreszeiten-Wörter", words: ["Ernte", "Frost", "Blüte", "Hitze"], difficulty: 0 },
+            { name: "Schreibwaren", words: ["Stift", "Lineal", "Radierer", "Schere"], difficulty: 1 },
+            { name: "Flüsse", words: ["Donau", "Rhein", "Elbe", "Isar"], difficulty: 2 },
+            { name: "Opern", words: ["Carmen", "Aida", "Fidelio", "Otello"], difficulty: 3 }
+        ]},
+        { groups: [
+            { name: "Insekten", words: ["Biene", "Ameise", "Käfer", "Libelle"], difficulty: 0 },
+            { name: "Stoffe", words: ["Seide", "Wolle", "Leinen", "Baumwolle"], difficulty: 1 },
+            { name: "Gebirge", words: ["Alpen", "Anden", "Ural", "Himalaya"], difficulty: 2 },
+            { name: "Erfinder", words: ["Edison", "Tesla", "Nobel", "Diesel"], difficulty: 3 }
+        ]},
+        { groups: [
+            { name: "Frühstück", words: ["Brötchen", "Müsli", "Marmelade", "Ei"], difficulty: 0 },
+            { name: "Edelsteine", words: ["Rubin", "Saphir", "Smaragd", "Diamant"], difficulty: 1 },
+            { name: "Filmgenres", words: ["Krimi", "Horror", "Komödie", "Western"], difficulty: 2 },
+            { name: "Schachfiguren", words: ["König", "Dame", "Turm", "Springer"], difficulty: 3 }
+        ]},
+        { groups: [
+            { name: "Haustiere", words: ["Hund", "Katze", "Hamster", "Papagei"], difficulty: 0 },
+            { name: "Währungen", words: ["Euro", "Dollar", "Yen", "Pfund"], difficulty: 1 },
+            { name: "Zauberworte", words: ["Abrakadabra", "Simsalabim", "Hokuspokus", "Hex"], difficulty: 2 },
+            { name: "Komponisten", words: ["Bach", "Mozart", "Beethoven", "Brahms"], difficulty: 3 }
+        ]},
+        { groups: [
+            { name: "Brotsorten", words: ["Roggen", "Dinkel", "Vollkorn", "Pumpernickel"], difficulty: 0 },
+            { name: "Sportgeräte", words: ["Ball", "Schläger", "Netz", "Tor"], difficulty: 1 },
+            { name: "Sternzeichen", words: ["Widder", "Löwe", "Waage", "Fische"], difficulty: 2 },
+            { name: "Physik-Begriffe", words: ["Kraft", "Masse", "Energie", "Impuls"], difficulty: 3 }
+        ]},
+        { groups: [
+            { name: "Gemüse (grün)", words: ["Spinat", "Brokkoli", "Erbse", "Lauch"], difficulty: 0 },
+            { name: "Musikrichtungen", words: ["Rock", "Jazz", "Klassik", "Techno"], difficulty: 1 },
+            { name: "Kartenfarben", words: ["Herz", "Karo", "Pik", "Kreuz"], difficulty: 2 },
+            { name: "Planeten (äußere)", words: ["Uranus", "Neptun", "Pluto", "Merkur"], difficulty: 3 }
+        ]},
+        { groups: [
+            { name: "Wintersport", words: ["Ski", "Rodeln", "Eislauf", "Biathlon"], difficulty: 0 },
+            { name: "Küchengeräte", words: ["Mixer", "Ofen", "Herd", "Toaster"], difficulty: 1 },
+            { name: "Meere", words: ["Atlantik", "Pazifik", "Arktis", "Indik"], difficulty: 2 },
+            { name: "Dichter", words: ["Goethe", "Schiller", "Heine", "Rilke"], difficulty: 3 }
+        ]},
+        { groups: [
+            { name: "Nüsse", words: ["Walnuss", "Mandel", "Cashew", "Pistazie"], difficulty: 0 },
+            { name: "Bauwerke", words: ["Turm", "Brücke", "Dom", "Palast"], difficulty: 1 },
+            { name: "Märchen", words: ["Rapunzel", "Aschenputtel", "Schneewittchen", "Rotkäppchen"], difficulty: 2 },
+            { name: "Mathematik", words: ["Integral", "Vektor", "Matrix", "Funktion"], difficulty: 3 }
+        ]},
+        { groups: [
+            { name: "Käsesorten", words: ["Gouda", "Brie", "Emmentaler", "Mozzarella"], difficulty: 0 },
+            { name: "Himmelsrichtungen", words: ["Norden", "Süden", "Osten", "Westen"], difficulty: 1 },
+            { name: "Brettspiele", words: ["Schach", "Risiko", "Monopoly", "Cluedo"], difficulty: 2 },
+            { name: "Maler", words: ["Monet", "Picasso", "Rembrandt", "Vermeer"], difficulty: 3 }
+        ]}
     ];
 
-    let puzzleData = allPuzzles[0];
-    let selected = [];
-    let solvedGroups = [];
-    let remainingWords = [];
-    let mistakesLeft = 4;
-    let gameOver = false;
-
-    function pickRandomPuzzle() {
-        puzzleData = allPuzzles[Math.floor(Math.random() * allPuzzles.length)];
-    }
-
-    function init() {
-        pickRandomPuzzle();
-        remainingWords = puzzleData.groups.flatMap(g => g.words);
-        shuffle(remainingWords);
-        solvedGroups = [];
-        selected = [];
-        mistakesLeft = 4;
-        gameOver = false;
-        document.getElementById('solvedArea').innerHTML = '';
-        document.getElementById('message').textContent = '';
-        document.getElementById('message').className = 'vb-message';
-        updateMistakes();
-        renderGrid();
-        updateUI();
-        lucide.createIcons();
-    }
-
+    // ── HELPERS ──
     function shuffle(arr) {
         for (let i = arr.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [arr[i], arr[j]] = [arr[j], arr[i]];
         }
     }
+    function pickRandom() { return allPuzzles[Math.floor(Math.random() * allPuzzles.length)]; }
+    function fmtTime(s) { return Math.floor(s/60) + ':' + String(s%60).padStart(2,'0'); }
 
-    function renderGrid() {
-        const grid = document.getElementById('grid');
-        grid.innerHTML = '';
-        remainingWords.forEach(word => {
-            const tile = document.createElement('button');
-            tile.className = 'vb-tile';
-            if (selected.includes(word)) tile.classList.add('selected');
-            tile.textContent = word;
-            tile.onclick = () => toggleSelect(word, tile);
-            grid.appendChild(tile);
+    // ── VIEW MANAGEMENT ──
+    const VIEWS = ['modeSelect','classicView','duellSetup','duellView','duellResult','memoryView'];
+    function showView(id) {
+        VIEWS.forEach(v => {
+            const el = document.getElementById(v);
+            if (el) el.style.display = v === id ? 'flex' : 'none';
         });
     }
+    function showModeSelect() {
+        clearInterval(duellTimerInterval);
+        clearInterval(memTimerInterval);
+        document.getElementById('subtitleText').textContent = 'Wähle einen Spielmodus';
+        showView('modeSelect');
+    }
 
-    function toggleSelect(word, tileEl) {
-        if (gameOver) return;
-        if (selected.includes(word)) {
-            selected = selected.filter(w => w !== word);
-            tileEl.classList.remove('selected', 'bounce');
-        } else if (selected.length < 4) {
-            selected.push(word);
-            tileEl.classList.add('selected', 'bounce');
-            tileEl.addEventListener('animationend', () => {
-                tileEl.classList.remove('bounce');
-            }, { once: true });
+    // ══════════════════════════════════
+    // ══  CLASSIC MODE
+    // ══════════════════════════════════
+    let cPuzzle, cSelected = [], cSolved = [], cRemaining = [], cMistakes = 4, cGameOver = false;
+
+    function startClassic() {
+        document.getElementById('subtitleText').textContent = 'Finde die 4 Gruppen mit je 4 zusammengehörenden Begriffen';
+        showView('classicView');
+        cPuzzle = pickRandom();
+        cRemaining = cPuzzle.groups.flatMap(g => g.words);
+        shuffle(cRemaining);
+        cSelected = []; cSolved = []; cMistakes = 4; cGameOver = false;
+        document.getElementById('solvedArea').innerHTML = '';
+        cRenderGrid(); cUpdateUI(); cUpdateMistakes();
+        cShowMsg('', '');
+    }
+    function init() { startClassic(); }
+
+    function cRenderGrid() {
+        const grid = document.getElementById('grid');
+        grid.innerHTML = '';
+        cRemaining.forEach(word => {
+            const t = document.createElement('button');
+            t.className = 'vb-tile';
+            if (cSelected.includes(word)) t.classList.add('selected');
+            t.textContent = word;
+            t.onclick = () => cToggle(word, t);
+            grid.appendChild(t);
+        });
+    }
+    function cToggle(word, el) {
+        if (cGameOver) return;
+        if (cSelected.includes(word)) {
+            cSelected = cSelected.filter(w => w !== word);
+            el.classList.remove('selected','bounce');
+        } else if (cSelected.length < 4) {
+            cSelected.push(word);
+            el.classList.add('selected','bounce');
+            el.addEventListener('animationend', () => el.classList.remove('bounce'), {once:true});
             triggerHaptic('type');
         }
-        updateUI();
+        cUpdateUI();
     }
-
-    function deselectAll() {
-        selected = [];
-        renderGrid();
-        updateUI();
+    function deselectAll() { cSelected = []; cRenderGrid(); cUpdateUI(); }
+    function cUpdateUI() {
+        const c = cSelected.length;
+        document.getElementById('selectionCount').textContent = c > 0 ? `${c} / 4 ausgewählt` : '';
+        document.getElementById('deselectBtn').disabled = c === 0;
     }
-
-    function updateUI() {
-        const count = selected.length;
-        document.getElementById('selectionCount').textContent =
-            count > 0 ? `${count} / 4 ausgewählt` : '';
-        document.getElementById('deselectBtn').disabled = count === 0;
-    }
-
-    function showMessage(text, type) {
-        const msg = document.getElementById('message');
-        msg.textContent = text;
-        msg.className = `vb-message ${type}`;
-        setTimeout(() => { msg.textContent = ''; msg.className = 'vb-message'; }, 2000);
-    }
-
-    function updateMistakes() {
+    function cUpdateMistakes() {
         const el = document.getElementById('mistakesDisplay');
         if (!el) return;
-        el.innerHTML = 'Versuche übrig: ' + '<span class="vb-dot filled">●</span> '.repeat(mistakesLeft) + '<span class="vb-dot empty">●</span> '.repeat(4 - mistakesLeft);
+        el.innerHTML = 'Versuche übrig: ' + '<span class="vb-dot filled">●</span> '.repeat(cMistakes) + '<span class="vb-dot empty">●</span> '.repeat(4 - cMistakes);
     }
-
-    function shakeTiles() {
-        document.querySelectorAll('.vb-tile.selected').forEach(tile => {
-            tile.classList.add('shake');
-            setTimeout(() => tile.classList.remove('shake'), 500);
+    function cShowMsg(text, type) {
+        const m = document.getElementById('message');
+        m.textContent = text; m.className = 'vb-message ' + type;
+        if (text) setTimeout(() => { m.textContent = ''; m.className = 'vb-message'; }, 2500);
+    }
+    function cShake() {
+        document.querySelectorAll('#grid .vb-tile.selected').forEach(t => {
+            t.classList.add('shake');
+            setTimeout(() => t.classList.remove('shake'), 500);
         });
     }
-
-    function revealAll() {
-        gameOver = true;
-        const grid = document.getElementById('grid');
-        grid.innerHTML = '';
+    function cRevealAll() {
+        cGameOver = true;
+        document.getElementById('grid').innerHTML = '';
         const area = document.getElementById('solvedArea');
-
-        puzzleData.groups
-            .filter(g => !solvedGroups.includes(g))
-            .sort((a, b) => a.difficulty - b.difficulty)
-            .forEach(g => {
-                const div = document.createElement('div');
-                div.className = `vb-solved-group difficulty-${g.difficulty}`;
-                div.innerHTML = `
-                    <div class="group-name">${g.name}</div>
-                    <div class="group-words">${g.words.join(', ')}</div>
-                `;
-                area.appendChild(div);
-            });
-
-        remainingWords = [];
-        selected = [];
-        updateUI();
+        cPuzzle.groups.filter(g => !cSolved.includes(g)).sort((a,b) => a.difficulty - b.difficulty).forEach(g => {
+            const d = document.createElement('div');
+            d.className = `vb-solved-group difficulty-${g.difficulty}`;
+            d.innerHTML = `<div class="group-name">${g.name}</div><div class="group-words">${g.words.join(', ')}</div>`;
+            area.appendChild(d);
+        });
+        cRemaining = []; cSelected = []; cUpdateUI();
+    }
+    function submitGuess() {
+        if (cGameOver) return;
+        if (cSelected.length !== 4) { cShowMsg('Wähle genau 4 Wörter aus', 'error'); return; }
+        const match = cPuzzle.groups.find(g =>
+            !cSolved.includes(g) && g.words.every(w => cSelected.includes(w)) && cSelected.every(w => g.words.includes(w))
+        );
+        if (match) {
+            cSolved.push(match);
+            cRemaining = cRemaining.filter(w => !match.words.includes(w));
+            cSelected = [];
+            const area = document.getElementById('solvedArea');
+            const d = document.createElement('div');
+            d.className = `vb-solved-group difficulty-${match.difficulty}`;
+            d.innerHTML = `<div class="group-name">${match.name}</div><div class="group-words">${match.words.join(', ')}</div>`;
+            area.appendChild(d);
+            cRenderGrid(); cUpdateUI();
+            triggerHaptic('correct'); playTone(523,'sine',0.2);
+            if (cSolved.length === 4) {
+                cGameOver = true; cShowMsg('Gelöst! Gut gemacht!', 'success');
+                playTone(659,'sine',0.15); setTimeout(()=>playTone(784,'sine',0.15),120); setTimeout(()=>playTone(1047,'sine',0.3),240);
+            } else cShowMsg('Richtig!', 'success');
+        } else {
+            cMistakes--; cUpdateMistakes(); triggerHaptic('wrong'); playTone(220,'sawtooth',0.2,0.15);
+            const oneAway = cPuzzle.groups.some(g => !cSolved.includes(g) && cSelected.filter(w => g.words.includes(w)).length === 3);
+            if (cMistakes <= 0) { cShowMsg('Leider verloren!','error'); cShake(); setTimeout(cRevealAll, 600); }
+            else if (oneAway) { cShowMsg('Knapp daneben! Nur 1 falsch.','error'); cShake(); }
+            else { cShowMsg('Falsch! Versuch es nochmal.','error'); cShake(); }
+        }
     }
 
-    function submitGuess() {
-        if (gameOver) return;
-        if (selected.length !== 4) {
-            showMessage('Wähle genau 4 Wörter aus', 'error');
-            return;
-        }
+    // ══════════════════════════════════
+    // ══  DUELL MODE
+    // ══════════════════════════════════
+    let dPuzzle, dSelected = [], dSolved = [], dRemaining = [];
+    let dScores = [0, 0], dCurrentPlayer = 0, dNames = ['Spieler 1', 'Spieler 2'];
+    let dTimer = 0, duellTimerInterval = null, dGameOver = false;
+    const DUELL_TIME = 90; // seconds per player turn
 
-        // Check for exact match
-        const match = puzzleData.groups.find(g =>
-            !solvedGroups.includes(g) &&
-            g.words.every(w => selected.includes(w)) &&
-            selected.every(w => g.words.includes(w))
+    function showDuellSetup() {
+        document.getElementById('subtitleText').textContent = 'Duell – Spieler eingeben';
+        showView('duellSetup');
+        document.getElementById('duellP1Name').value = localStorage.getItem('wolfle_user_name') || '';
+        document.getElementById('duellP2Name').value = '';
+        document.getElementById('duellP1Name').focus();
+    }
+    function startDuell() {
+        dNames[0] = document.getElementById('duellP1Name').value.trim() || 'Spieler 1';
+        dNames[1] = document.getElementById('duellP2Name').value.trim() || 'Spieler 2';
+        dPuzzle = pickRandom();
+        dRemaining = dPuzzle.groups.flatMap(g => g.words);
+        shuffle(dRemaining);
+        dSelected = []; dSolved = []; dScores = [0, 0]; dCurrentPlayer = 0; dGameOver = false;
+        document.getElementById('subtitleText').textContent = 'Duell – Wer ist schneller?';
+        showView('duellView');
+        document.getElementById('duellSolvedArea').innerHTML = '';
+        dUpdatePlayerBar(); dRenderGrid(); dUpdateUI(); dShowMsg('','');
+        dStartTimer();
+    }
+    function dStartTimer() {
+        clearInterval(duellTimerInterval);
+        dTimer = DUELL_TIME;
+        dUpdateTimerDisplay();
+        duellTimerInterval = setInterval(() => {
+            dTimer--;
+            dUpdateTimerDisplay();
+            if (dTimer <= 0) {
+                clearInterval(duellTimerInterval);
+                // Time's up for current player, switch
+                dShowMsg(`Zeit abgelaufen für ${dNames[dCurrentPlayer]}!`, 'error');
+                setTimeout(() => dSwitchPlayer(), 1000);
+            }
+        }, 1000);
+    }
+    function dUpdateTimerDisplay() {
+        const el = document.getElementById('duellTimer');
+        el.textContent = fmtTime(dTimer);
+        el.classList.toggle('urgent', dTimer <= 10);
+    }
+    function dUpdatePlayerBar() {
+        document.getElementById('duellName1').textContent = dNames[0];
+        document.getElementById('duellName2').textContent = dNames[1];
+        document.getElementById('duellScore1').textContent = dScores[0];
+        document.getElementById('duellScore2').textContent = dScores[1];
+        document.getElementById('duellChip1').classList.toggle('active', dCurrentPlayer === 0);
+        document.getElementById('duellChip2').classList.toggle('active', dCurrentPlayer === 1);
+    }
+    function dRenderGrid() {
+        const grid = document.getElementById('duellGrid');
+        grid.innerHTML = '';
+        dRemaining.forEach(word => {
+            const t = document.createElement('button');
+            t.className = 'vb-tile';
+            if (dSelected.includes(word)) t.classList.add('selected');
+            t.textContent = word;
+            t.onclick = () => dToggle(word, t);
+            grid.appendChild(t);
+        });
+    }
+    function dToggle(word, el) {
+        if (dGameOver) return;
+        if (dSelected.includes(word)) {
+            dSelected = dSelected.filter(w => w !== word);
+            el.classList.remove('selected','bounce');
+        } else if (dSelected.length < 4) {
+            dSelected.push(word);
+            el.classList.add('selected','bounce');
+            el.addEventListener('animationend', () => el.classList.remove('bounce'), {once:true});
+            triggerHaptic('type');
+        }
+        dUpdateUI();
+    }
+    function duellDeselectAll() { dSelected = []; dRenderGrid(); dUpdateUI(); }
+    function dUpdateUI() {
+        const c = dSelected.length;
+        document.getElementById('duellSelCount').textContent = c > 0 ? `${c} / 4 ausgewählt` : '';
+        document.getElementById('duellDeselectBtn').disabled = c === 0;
+    }
+    function dShowMsg(text, type) {
+        const m = document.getElementById('duellMessage');
+        m.textContent = text; m.className = 'vb-message ' + type;
+        if (text) setTimeout(() => { m.textContent = ''; m.className = 'vb-message'; }, 2000);
+    }
+    function dSwitchPlayer() {
+        if (dGameOver) return;
+        if (dSolved.length >= 4) { dEndGame(); return; }
+        dCurrentPlayer = 1 - dCurrentPlayer;
+        dSelected = [];
+        dUpdatePlayerBar(); dRenderGrid(); dUpdateUI();
+        dShowMsg(`${dNames[dCurrentPlayer]} ist dran!`, 'success');
+        dStartTimer();
+    }
+    function dEndGame() {
+        dGameOver = true;
+        clearInterval(duellTimerInterval);
+        showView('duellResult');
+        document.getElementById('subtitleText').textContent = 'Duell – Ergebnis';
+        const res = document.getElementById('duellResult');
+        let winner;
+        if (dScores[0] > dScores[1]) winner = dNames[0];
+        else if (dScores[1] > dScores[0]) winner = dNames[1];
+        else winner = null;
+        res.innerHTML = `
+            <div style="font-size:3rem;margin-bottom:4px">${winner ? '🏆' : '🤝'}</div>
+            <div style="font-size:1.3rem;font-weight:800">${winner ? winner + ' gewinnt!' : 'Unentschieden!'}</div>
+            <div class="vb-player-bar" style="max-width:320px">
+                <div class="vb-player-chip ${dScores[0] >= dScores[1] ? 'active' : ''}">
+                    <div>${dNames[0]}</div><span class="score">${dScores[0]}</span>
+                </div>
+                <div class="vb-vs">VS</div>
+                <div class="vb-player-chip ${dScores[1] >= dScores[0] ? 'active' : ''}">
+                    <div>${dNames[1]}</div><span class="score">${dScores[1]}</span>
+                </div>
+            </div>
+            <div class="vb-controls" style="margin-top:8px">
+                <button class="vb-btn submit" onclick="startDuell()">Nochmal!</button>
+                <button class="vb-btn" onclick="showModeSelect()">Modi</button>
+            </div>
+        `;
+    }
+    function duellSubmitGuess() {
+        if (dGameOver) return;
+        if (dSelected.length !== 4) { dShowMsg('Wähle genau 4 Wörter aus','error'); return; }
+        const match = dPuzzle.groups.find(g =>
+            !dSolved.includes(g) && g.words.every(w => dSelected.includes(w)) && dSelected.every(w => g.words.includes(w))
         );
-
         if (match) {
-            // Correct group found
-            solvedGroups.push(match);
-            remainingWords = remainingWords.filter(w => !match.words.includes(w));
-            selected = [];
-
-            const area = document.getElementById('solvedArea');
-            const div = document.createElement('div');
-            div.className = `vb-solved-group difficulty-${match.difficulty}`;
-            div.innerHTML = `
-                <div class="group-name">${match.name}</div>
-                <div class="group-words">${match.words.join(', ')}</div>
-            `;
-            area.appendChild(div);
-
-            renderGrid();
-            updateUI();
-            triggerHaptic('correct');
-            playTone(523, 'sine', 0.2);
-
-            if (solvedGroups.length === 4) {
-                gameOver = true;
-                showMessage('Gelöst! Gut gemacht!', 'success');
-                playTone(659, 'sine', 0.15);
-                setTimeout(() => playTone(784, 'sine', 0.15), 120);
-                setTimeout(() => playTone(1047, 'sine', 0.3), 240);
-            } else {
-                showMessage('Richtig!', 'success');
-            }
+            dSolved.push(match);
+            dRemaining = dRemaining.filter(w => !match.words.includes(w));
+            dScores[dCurrentPlayer] += (1 + match.difficulty); // harder groups = more points
+            dSelected = [];
+            const area = document.getElementById('duellSolvedArea');
+            const d = document.createElement('div');
+            d.className = `vb-solved-group difficulty-${match.difficulty}`;
+            d.innerHTML = `<div class="group-name">${match.name}</div><div class="group-words">${match.words.join(', ')}</div>`;
+            area.appendChild(d);
+            dUpdatePlayerBar(); dRenderGrid(); dUpdateUI();
+            triggerHaptic('correct'); playTone(523,'sine',0.2);
+            if (dSolved.length >= 4) { dShowMsg('Alle Gruppen gefunden!','success'); setTimeout(dEndGame, 800); }
+            else { dShowMsg('Richtig! +' + (1 + match.difficulty) + ' Punkte','success'); setTimeout(dSwitchPlayer, 1200); }
         } else {
-            // Wrong guess
-            mistakesLeft--;
-            updateMistakes();
-            triggerHaptic('wrong');
-            playTone(220, 'sawtooth', 0.2, 0.15);
+            triggerHaptic('wrong'); playTone(220,'sawtooth',0.2,0.15);
+            const oneAway = dPuzzle.groups.some(g => !dSolved.includes(g) && dSelected.filter(w => g.words.includes(w)).length === 3);
+            if (oneAway) dShowMsg('Knapp daneben! Spieler wechselt...','error');
+            else dShowMsg('Falsch! Spieler wechselt...','error');
+            document.querySelectorAll('#duellGrid .vb-tile.selected').forEach(t => {
+                t.classList.add('shake'); setTimeout(() => t.classList.remove('shake'), 500);
+            });
+            setTimeout(dSwitchPlayer, 1200);
+        }
+    }
 
-            const oneAway = puzzleData.groups.some(g =>
-                !solvedGroups.includes(g) &&
-                selected.filter(w => g.words.includes(w)).length === 3
-            );
+    // ══════════════════════════════════
+    // ══  MEMORY MODE
+    // ══════════════════════════════════
+    let memCards = [], memFlipped = [], memMatched = 0, memTotalPairs = 0;
+    let memMoves = 0, memLocked = false, memTimer = 0, memTimerInterval = null, memStarted = false;
 
-            if (mistakesLeft <= 0) {
-                showMessage('Leider verloren!', 'error');
-                shakeTiles();
-                setTimeout(() => revealAll(), 600);
-            } else if (oneAway) {
-                showMessage('Knapp daneben! Nur 1 falsch.', 'error');
-                shakeTiles();
+    function startMemory() {
+        document.getElementById('subtitleText').textContent = 'Memory – Finde die Paare!';
+        showView('memoryView');
+        clearInterval(memTimerInterval);
+        // Pick 2 random puzzles to get 8 groups = 12 pairs (word→group name)
+        const p1 = pickRandom();
+        let p2 = pickRandom();
+        while (p2 === p1) p2 = pickRandom();
+        // Take 3 groups from each = 6 groups, use 2 words per group = 12 pairs
+        const groups = [...p1.groups.slice(0, 3), ...p2.groups.slice(0, 3)];
+        memCards = [];
+        groups.forEach(g => {
+            // Pick 2 words from each group, create pairs: word <-> group name
+            const words = g.words.slice(0, 2);
+            words.forEach(w => {
+                memCards.push({ id: memCards.length, text: w, pairKey: g.name, type: 'word' });
+                memCards.push({ id: memCards.length, text: g.name, pairKey: g.name, type: 'group' });
+            });
+        });
+        shuffle(memCards);
+        memFlipped = []; memMatched = 0; memMoves = 0; memLocked = false; memStarted = false;
+        memTimer = 0; memTotalPairs = memCards.length / 2;
+        document.getElementById('memPairsFound').textContent = '0';
+        document.getElementById('memPairsTotal').textContent = memTotalPairs;
+        document.getElementById('memMoves').textContent = '0';
+        document.getElementById('memTimer').textContent = '0:00';
+        memRenderGrid();
+        memShowMsg('', '');
+    }
+    function memStartTimerIfNeeded() {
+        if (memStarted) return;
+        memStarted = true;
+        clearInterval(memTimerInterval);
+        memTimerInterval = setInterval(() => {
+            memTimer++;
+            document.getElementById('memTimer').textContent = fmtTime(memTimer);
+        }, 1000);
+    }
+    function memRenderGrid() {
+        const grid = document.getElementById('memGrid');
+        grid.innerHTML = '';
+        // 24 cards => 6x4 grid
+        const cols = memCards.length <= 16 ? 4 : 6;
+        grid.className = `mem-grid size-${cols}x4`;
+        memCards.forEach((card, i) => {
+            const el = document.createElement('div');
+            el.className = 'mem-card';
+            el.dataset.idx = i;
+            if (card.matched) el.classList.add('matched');
+            el.innerHTML = `
+                <div class="mem-card-inner">
+                    <div class="mem-card-face mem-card-back"></div>
+                    <div class="mem-card-face mem-card-front">${card.text}</div>
+                </div>`;
+            el.onclick = () => memFlip(i, el);
+            grid.appendChild(el);
+        });
+    }
+    function memFlip(idx, el) {
+        if (memLocked) return;
+        const card = memCards[idx];
+        if (card.matched || memFlipped.find(f => f.idx === idx)) return;
+        memStartTimerIfNeeded();
+        el.classList.add('flipped');
+        triggerHaptic('type');
+        memFlipped.push({ idx, el, card });
+        if (memFlipped.length === 2) {
+            memMoves++;
+            document.getElementById('memMoves').textContent = memMoves;
+            const [a, b] = memFlipped;
+            if (a.card.pairKey === b.card.pairKey && a.card.type !== b.card.type) {
+                // Match!
+                memCards[a.idx].matched = true;
+                memCards[b.idx].matched = true;
+                a.el.classList.add('matched');
+                b.el.classList.add('matched');
+                memMatched++;
+                document.getElementById('memPairsFound').textContent = memMatched;
+                playTone(523,'sine',0.15);
+                triggerHaptic('correct');
+                memFlipped = [];
+                if (memMatched >= memTotalPairs) {
+                    clearInterval(memTimerInterval);
+                    memShowMsg(`Geschafft in ${memMoves} Zügen und ${fmtTime(memTimer)}!`, 'success');
+                    playTone(659,'sine',0.15); setTimeout(()=>playTone(784,'sine',0.15),120); setTimeout(()=>playTone(1047,'sine',0.3),240);
+                }
             } else {
-                showMessage('Falsch! Versuch es nochmal.', 'error');
-                shakeTiles();
+                // No match
+                memLocked = true;
+                playTone(220,'sawtooth',0.15,0.1);
+                setTimeout(() => {
+                    a.el.classList.remove('flipped');
+                    b.el.classList.remove('flipped');
+                    memFlipped = [];
+                    memLocked = false;
+                }, 800);
             }
         }
+    }
+    function memShowMsg(text, type) {
+        const m = document.getElementById('memMessage');
+        m.textContent = text; m.className = 'vb-message ' + type;
     }
 
     // ── INIT ──
@@ -857,7 +1255,7 @@
     updateHapticBtn();
     updateLoginHeader();
     lucide.createIcons();
-    init();
+    showModeSelect();
     </script>
 </body>
 </html>
