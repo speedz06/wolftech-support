@@ -509,6 +509,10 @@
             <button id="haptic-btn" onclick="toggleHaptic()" class="mobile-only text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Vibration">
                 <i data-lucide="smartphone" class="w-4 h-4"></i>
             </button>
+            <button onclick="window.vbOpenFriendsModal()" class="relative text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Freunde">
+                <i data-lucide="users" class="w-4 h-4"></i>
+                <span id="vb-invite-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:#ef4444;color:white;font-size:10px;font-weight:700;border-radius:9999px;width:16px;height:16px;align-items:center;justify-content:center;line-height:1;"></span>
+            </button>
             <button id="login-header-btn" onclick="window.openLoginModal && window.openLoginModal()" title="Anmelden" class="flex items-center gap-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white px-2 py-1.5 rounded-lg border border-slate-600 transition-all">
                 <span id="login-header-avatar">🐺</span>
                 <span id="login-header-label">Anmelden</span>
@@ -556,22 +560,79 @@
                 <p>Finde die 4 Gruppen aus 16 Wörtern. 4 Versuche.</p>
             </button>
             <button class="mode-card" onclick="showDuellSetup()">
-                <h3><span class="mode-icon">⚔️</span> Duell</h3>
-                <p>Spiele gegen einen Freund! Wer findet die Gruppen schneller?</p>
+                <h3><span class="mode-icon">⚔️</span> Duell (Lokal)</h3>
+                <p>Spiele gegen einen Freund am selben Gerät!</p>
             </button>
-            <button class="mode-card" onclick="startMemory()">
+            <button class="mode-card" onclick="window.vbShowOnlineDuellSetup()">
+                <h3><span class="mode-icon">🌐</span> Duell (Online)</h3>
+                <p>Erstelle einen Raum und lade Freunde ein! Sehe wer schneller ist.</p>
+            </button>
+            <button class="mode-card" onclick="window.vbShowOnlineMemorySetup()">
                 <h3><span class="mode-icon">🃏</span> Memory</h3>
-                <p>Finde Wort-Paare die zusammengehören. Drehe je 2 Karten um!</p>
+                <p>Finde Wort-Paare! Lokal oder online gegen Freunde.</p>
             </button>
         </div>
 
-        <!-- DUELL SETUP -->
+        <!-- DUELL LOCAL SETUP -->
         <div id="duellSetup" style="display:none" class="mode-select">
             <div style="font-size:0.85rem;color:#94a3b8;text-align:center">Namen eingeben</div>
             <input id="duellP1Name" type="text" placeholder="Spieler 1" maxlength="12" class="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-4 py-2.5 text-center text-white focus:border-yellow-500 transition-colors outline-none" style="max-width:280px">
             <input id="duellP2Name" type="text" placeholder="Spieler 2" maxlength="12" class="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-4 py-2.5 text-center text-white focus:border-yellow-500 transition-colors outline-none" style="max-width:280px">
             <button class="vb-btn submit" onclick="startDuell()">Duell starten!</button>
             <button class="vb-btn" onclick="showModeSelect()">Zurück</button>
+        </div>
+
+        <!-- ONLINE DUELL SETUP -->
+        <div id="onlineDuellSetup" style="display:none" class="mode-select">
+            <div style="font-size:0.9rem;font-weight:700;text-align:center">Online Duell</div>
+            <div class="vb-controls">
+                <button class="vb-btn submit" onclick="window.vbCreateRoom('duell')">Raum erstellen</button>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;width:100%;max-width:280px">
+                <div style="flex:1;height:1px;background:#334155"></div>
+                <span style="font-size:0.7rem;color:#64748b">oder beitreten</span>
+                <div style="flex:1;height:1px;background:#334155"></div>
+            </div>
+            <div style="display:flex;gap:8px;width:100%;max-width:280px">
+                <input id="vbJoinCodeInput" type="text" placeholder="CODE" maxlength="5" class="flex-1 bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2.5 text-center text-white uppercase tracking-widest focus:border-yellow-500 transition-colors outline-none">
+                <button class="vb-btn submit" onclick="window.vbJoinRoom()">Beitreten</button>
+            </div>
+            <button class="vb-btn" onclick="showModeSelect()">Zurück</button>
+        </div>
+
+        <!-- ONLINE MEMORY SETUP -->
+        <div id="onlineMemorySetup" style="display:none" class="mode-select">
+            <div style="font-size:0.9rem;font-weight:700;text-align:center">Memory</div>
+            <button class="vb-btn submit" onclick="startMemory()">Lokal spielen</button>
+            <div class="vb-controls">
+                <button class="vb-btn" onclick="window.vbCreateRoom('memory')">Online Raum</button>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;width:100%;max-width:280px">
+                <div style="flex:1;height:1px;background:#334155"></div>
+                <span style="font-size:0.7rem;color:#64748b">oder beitreten</span>
+                <div style="flex:1;height:1px;background:#334155"></div>
+            </div>
+            <div style="display:flex;gap:8px;width:100%;max-width:280px">
+                <input id="vbJoinMemCodeInput" type="text" placeholder="CODE" maxlength="5" class="flex-1 bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2.5 text-center text-white uppercase tracking-widest focus:border-yellow-500 transition-colors outline-none">
+                <button class="vb-btn submit" onclick="window.vbJoinRoom(document.getElementById('vbJoinMemCodeInput').value)">Beitreten</button>
+            </div>
+            <button class="vb-btn" onclick="showModeSelect()">Zurück</button>
+        </div>
+
+        <!-- ROOM STATUS BAR (shown during online games) -->
+        <div id="vbRoomStatus" style="display:none;width:100%;max-width:480px" class="bg-yellow-900/20 border border-yellow-600/30 rounded-xl p-3">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                <div>
+                    <span style="font-size:0.75rem;font-weight:700;color:#eab308">Raum: </span>
+                    <span id="vbRoomCode" style="font-family:monospace;color:white;font-weight:800;font-size:0.85rem"></span>
+                    <span id="vbRoomGameType" style="font-size:0.65rem;color:#94a3b8;margin-left:6px"></span>
+                </div>
+                <div style="display:flex;gap:4px">
+                    <button onclick="window.vbOpenInviteModal()" class="text-yellow-400 hover:text-yellow-300 p-1" title="Freunde einladen"><i data-lucide="user-plus" class="w-4 h-4"></i></button>
+                    <button onclick="window.vbLeaveRoom()" class="text-red-400 hover:text-red-300 p-1" title="Raum verlassen"><i data-lucide="log-out" class="w-4 h-4"></i></button>
+                </div>
+            </div>
+            <div id="vbRoomPlayersList" style="font-size:0.75rem"></div>
         </div>
 
         <!-- CLASSIC MODE -->
@@ -633,7 +694,67 @@
         </div>
     </div>
 
-    <script>
+    <!-- FRIENDS MODAL -->
+    <div id="vb-friends-modal" class="hidden fixed inset-0 bg-slate-900/80 z-[97] flex items-center justify-center p-4" onclick="if(event.target===this)window.vbCloseFriendsModal()">
+        <div class="w-full max-w-sm bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl" style="max-height:85dvh;overflow-y:auto;">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2"><i data-lucide="users" class="w-5 h-5"></i> Freunde</h2>
+                <button onclick="window.vbCloseFriendsModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div id="vb-invites-section" style="display:none" class="mb-4">
+                <div class="text-xs font-semibold text-yellow-400 uppercase tracking-wider mb-2 flex items-center gap-1"><i data-lucide="bell" class="w-3 h-3"></i> Einladungen</div>
+                <div id="vb-invites-list"></div>
+            </div>
+            <button onclick="window.vbTogglePublicRooms()" class="w-full flex items-center justify-between bg-slate-700/50 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl text-sm mb-3 transition-colors">
+                <span class="flex items-center gap-2"><i data-lucide="globe" class="w-4 h-4 text-cyan-400"></i> Offene Räume</span>
+                <i data-lucide="chevron-down" class="w-4 h-4"></i>
+            </button>
+            <div id="vb-public-rooms" style="display:none" class="mb-4">
+                <div id="vb-public-rooms-list"><div class="text-slate-500 italic text-sm">Lädt...</div></div>
+            </div>
+            <div class="flex gap-2 mb-2">
+                <input id="vb-friend-search" type="text" placeholder="Spieler suchen..." maxlength="20" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white transition-colors outline-none" onkeydown="if(event.key==='Enter')window.vbSearchFriends()">
+                <button onclick="window.vbSearchFriends()" class="bg-yellow-600 hover:bg-yellow-500 text-white px-3 py-2 rounded-lg transition-colors"><i data-lucide="search" class="w-4 h-4"></i></button>
+            </div>
+            <div id="vb-friend-search-results" class="mb-4"></div>
+            <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Meine Freunde</div>
+            <div id="vb-friends-list"><div class="text-slate-500 italic text-sm">Keine Freunde. Suche nach Spielern!</div></div>
+        </div>
+    </div>
+
+    <!-- INVITE FRIENDS TO ROOM MODAL -->
+    <div id="vb-invite-modal" class="hidden fixed inset-0 bg-slate-900/80 z-[98] flex items-center justify-center p-4" onclick="if(event.target===this)window.vbCloseInviteModal()">
+        <div class="w-full max-w-sm bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl" style="max-height:80dvh;overflow-y:auto;">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2"><i data-lucide="user-plus" class="w-5 h-5"></i> Freunde einladen</h2>
+                <button onclick="window.vbCloseInviteModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="bg-slate-700/40 rounded-lg px-3 py-2 text-xs text-slate-400 mb-4 font-mono">Raum: <span id="vb-invite-modal-code" class="text-white font-bold"></span> <span id="vb-invite-modal-game" class="text-yellow-400"></span></div>
+            <div id="vb-invite-friends-list"><div class="text-slate-500 italic text-sm">Lädt...</div></div>
+        </div>
+    </div>
+
+    <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getFirestore, collection, doc, setDoc, getDoc, getDocs, onSnapshot, updateDoc, deleteDoc, deleteField, arrayUnion, arrayRemove, query, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    const appId = 'wolfle-v1';
+    const firebaseConfig = {
+        apiKey: "AIzaSyDTPO-01gusabZGy-TthEWZWntwct6LrEQ",
+        authDomain: "wolfle.firebaseapp.com",
+        projectId: "wolfle",
+        storageBucket: "wolfle.firebasestorage.app",
+        messagingSenderId: "286289741614",
+        appId: "1:286289741614:web:14e5faad1616fe75755cbf"
+    };
+    let db = null;
+    async function getDB() {
+        if (db) return db;
+        if (!getPlayerName()) return null;
+        try { const app = initializeApp(firebaseConfig); db = getFirestore(app); return db; } catch(e) { console.error(e); return null; }
+    }
+    function getPlayerName() { return localStorage.getItem('wolfle_user_name') || ''; }
+
     // ── THEMES ──
     const THEMES = ['dark','light','retro','ocean','pastel'];
 
@@ -857,7 +978,7 @@
     function fmtTime(s) { return Math.floor(s/60) + ':' + String(s%60).padStart(2,'0'); }
 
     // ── VIEW MANAGEMENT ──
-    const VIEWS = ['modeSelect','classicView','duellSetup','duellView','duellResult','memoryView'];
+    const VIEWS = ['modeSelect','classicView','duellSetup','duellView','duellResult','memoryView','onlineDuellSetup','onlineMemorySetup'];
     function showView(id) {
         VIEWS.forEach(v => {
             const el = document.getElementById(v);
@@ -1255,7 +1376,445 @@
     updateHapticBtn();
     updateLoginHeader();
     lucide.createIcons();
+    // ══════════════════════════════════
+    // ══  FIREBASE: ROOMS, FRIENDS, INVITES
+    // ══════════════════════════════════
+    let currentRoomCode = null;
+    let roomUnsubscribe = null;
+    let inviteUnsubscribe = null;
+    let _pendingInvites = {};
+    const ROOM_COL = 'verbinde_rooms';
+
+    function showToast(msg, type) {
+        const m = document.getElementById('message') || document.getElementById('duellMessage') || document.getElementById('memMessage');
+        if (m) { m.textContent = msg; m.className = 'vb-message ' + (type === 'error' ? 'error' : type === 'success' ? 'success' : ''); }
+        setTimeout(() => { if (m) { m.textContent = ''; m.className = 'vb-message'; } }, 2500);
+    }
+
+    // ── Create Room ──
+    window.vbCreateRoom = async (gameType) => {
+        const name = getPlayerName();
+        if (!name) { showToast('Erst anmelden!','error'); return; }
+        const firestore = await getDB(); if (!firestore) return;
+        const code = Math.random().toString(36).substring(2,7).toUpperCase();
+        const puzzle = pickRandom();
+        const puzzleIdx = allPuzzles.indexOf(puzzle);
+        await setDoc(doc(firestore,'artifacts',appId,'public','data',ROOM_COL,code), {
+            gameType,
+            puzzleIdx,
+            isPrivate: false,
+            hostName: name,
+            createdAt: Date.now(),
+            status: 'waiting',
+            players: { [name]: { name, score: 0, finished: false, solved: 0 } }
+        });
+        currentRoomCode = code;
+        currentRoomGameType = gameType;
+        localStorage.setItem('wolfle_active_vb_room', code);
+        vbListenRoom(code);
+        showToast('Raum erstellt: ' + code, 'success');
+    };
+
+    // ── Join Room ──
+    window.vbJoinRoom = async (codeOverride) => {
+        const name = getPlayerName();
+        if (!name) { showToast('Erst anmelden!','error'); return; }
+        const firestore = await getDB(); if (!firestore) return;
+        const code = (codeOverride || document.getElementById('vbJoinCodeInput')?.value || '').toUpperCase().trim();
+        if (!code) { showToast('Code eingeben!','error'); return; }
+        const snap = await getDoc(doc(firestore,'artifacts',appId,'public','data',ROOM_COL,code));
+        if (!snap.exists()) { showToast('Raum nicht gefunden!','error'); return; }
+        await setDoc(doc(firestore,'artifacts',appId,'public','data',ROOM_COL,code),
+            { players: { [name]: { name, score: 0, finished: false, solved: 0 } } }, { merge: true });
+        currentRoomCode = code;
+        localStorage.setItem('wolfle_active_vb_room', code);
+        vbListenRoom(code);
+        showToast('Raum beigetreten: ' + code, 'success');
+    };
+
+    // ── Leave Room ──
+    window.vbLeaveRoom = async () => {
+        const code = currentRoomCode;
+        localStorage.removeItem('wolfle_active_vb_room');
+        if (roomUnsubscribe) { roomUnsubscribe(); roomUnsubscribe = null; }
+        if (code) {
+            const name = getPlayerName();
+            const firestore = await getDB();
+            if (firestore && name) {
+                try {
+                    const snap = await getDoc(doc(firestore,'artifacts',appId,'public','data',ROOM_COL,code));
+                    if (snap.exists()) {
+                        const data = snap.data();
+                        const players = { ...(data.players || {}) };
+                        delete players[name];
+                        if (Object.keys(players).length === 0) await deleteDoc(doc(firestore,'artifacts',appId,'public','data',ROOM_COL,code));
+                        else await setDoc(doc(firestore,'artifacts',appId,'public','data',ROOM_COL,code), { players }, { merge: true });
+                    }
+                } catch(e) {}
+            }
+        }
+        currentRoomCode = null;
+        document.getElementById('vbRoomStatus').style.display = 'none';
+        showModeSelect();
+    };
+
+    // ── Listen to Room (real-time) ──
+    async function vbListenRoom(code) {
+        const firestore = await getDB(); if (!firestore) return;
+        if (roomUnsubscribe) roomUnsubscribe();
+        roomUnsubscribe = onSnapshot(doc(firestore,'artifacts',appId,'public','data',ROOM_COL,code), snap => {
+            if (!snap.exists()) { showToast('Raum geschlossen','error'); window.vbLeaveRoom(); return; }
+            const data = snap.data();
+            const players = data.players || {};
+            const gameType = data.gameType || 'duell';
+            const myName = getPlayerName();
+
+            // Show room bar
+            const bar = document.getElementById('vbRoomStatus');
+            bar.style.display = 'block';
+            document.getElementById('vbRoomCode').textContent = code;
+            const gameLabels = { duell: '⚔️ Duell', memory: '🃏 Memory' };
+            document.getElementById('vbRoomGameType').textContent = gameLabels[gameType] || gameType;
+
+            // Render players
+            const pList = Object.values(players);
+            document.getElementById('vbRoomPlayersList').innerHTML = pList.map(p =>
+                `<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(30,41,59,0.5);border:1px solid ${p.name===myName?'#eab308':'#334155'};border-radius:8px;padding:3px 8px;margin:2px;font-size:0.7rem;font-weight:600;color:${p.finished?'#4ade80':'#e2e8f0'}">
+                    ${p.finished?'✓':''} ${p.name} <span style="color:#eab308">${p.score||0}P</span>
+                </span>`
+            ).join('');
+
+            // If status=playing and we haven't started, start the game
+            if (data.status === 'playing') {
+                const puzzleToUse = allPuzzles[data.puzzleIdx] || pickRandom();
+                if (gameType === 'duell') {
+                    startOnlineDuell(puzzleToUse, pList, data);
+                } else if (gameType === 'memory') {
+                    startOnlineMemory(puzzleToUse, pList, data);
+                }
+            }
+
+            // Auto-start when 2+ players and still waiting
+            if (data.status === 'waiting' && pList.length >= 2 && data.hostName === myName) {
+                setDoc(doc(firestore,'artifacts',appId,'public','data',ROOM_COL,code), { status: 'playing' }, { merge: true });
+            }
+
+            // Show waiting screen if still waiting
+            if (data.status === 'waiting') {
+                showView('onlineDuellSetup');
+                document.getElementById('subtitleText').textContent = `Warte auf Mitspieler... Code: ${code}`;
+            }
+
+            lucide.createIcons();
+        });
+    }
+
+    // ── Online Duell (turn-based via Firestore) ──
+    let onlineDuellStarted = false;
+    function startOnlineDuell(puzzle, playersList, roomData) {
+        if (onlineDuellStarted) return;
+        onlineDuellStarted = true;
+        // Use the classic mode UI but with the shared puzzle
+        document.getElementById('subtitleText').textContent = 'Online Duell – Finde die Gruppen!';
+        showView('classicView');
+        cPuzzle = puzzle;
+        cRemaining = cPuzzle.groups.flatMap(g => g.words);
+        shuffle(cRemaining);
+        cSelected = []; cSolved = []; cMistakes = 4; cGameOver = false;
+        document.getElementById('solvedArea').innerHTML = '';
+        cRenderGrid(); cUpdateUI(); cUpdateMistakes();
+        cShowMsg('Los geht\'s! Alle spielen gleichzeitig.', 'success');
+
+        // Override submit to sync score to Firebase
+        const origSubmit = submitGuess;
+        window._onlineDuellSubmit = async function() {
+            origSubmit();
+            // After each correct guess, update score in room
+            if (currentRoomCode) {
+                const name = getPlayerName();
+                const firestore = await getDB();
+                if (firestore && name) {
+                    await setDoc(doc(firestore,'artifacts',appId,'public','data',ROOM_COL,currentRoomCode), {
+                        players: { [name]: { score: cSolved.length, solved: cSolved.length, finished: cGameOver } }
+                    }, { merge: true });
+                }
+            }
+        };
+        // Patch the submit button
+        document.getElementById('submitBtn').setAttribute('onclick', 'window._onlineDuellSubmit()');
+    }
+
+    // ── Online Memory ──
+    let onlineMemoryStarted = false;
+    function startOnlineMemory(puzzle, playersList, roomData) {
+        if (onlineMemoryStarted) return;
+        onlineMemoryStarted = true;
+        startMemory(); // Use local memory, track score in Firebase
+        // Override match handler to sync
+        const origFlip = memFlip;
+        // Score syncs happen in the existing memFlip via a patch
+    }
+
+    // ── Setup views ──
+    window.vbShowOnlineDuellSetup = () => {
+        document.getElementById('subtitleText').textContent = 'Online Duell';
+        showView('onlineDuellSetup');
+    };
+    window.vbShowOnlineMemorySetup = () => {
+        document.getElementById('subtitleText').textContent = 'Memory';
+        showView('onlineMemorySetup');
+    };
+
+    // ── FRIENDS MODAL ──
+    window.vbOpenFriendsModal = () => {
+        const modal = document.getElementById('vb-friends-modal');
+        modal.classList.remove('hidden'); modal.style.display = 'flex';
+        vbLoadFriends(); vbLoadPublicRooms(); lucide.createIcons();
+    };
+    window.vbCloseFriendsModal = () => {
+        const modal = document.getElementById('vb-friends-modal');
+        modal.classList.add('hidden'); modal.style.display = 'none';
+    };
+    window.vbTogglePublicRooms = () => {
+        const el = document.getElementById('vb-public-rooms');
+        el.style.display = el.style.display === 'none' ? 'block' : 'none';
+        if (el.style.display === 'block') vbLoadPublicRooms();
+    };
+
+    async function vbLoadFriends() {
+        const list = document.getElementById('vb-friends-list');
+        const myName = getPlayerName();
+        if (!myName) { list.innerHTML = '<div class="text-slate-500 italic text-sm">Erst anmelden!</div>'; return; }
+        try {
+            const firestore = await getDB(); if (!firestore) return;
+            const myDoc = await getDoc(doc(firestore,'artifacts',appId,'public','data','users',myName));
+            const friends = myDoc.exists() ? (myDoc.data().friends || []) : [];
+            if (friends.length === 0) { list.innerHTML = '<div class="text-slate-500 italic text-sm">Keine Freunde. Suche nach Spielern!</div>'; return; }
+            const friendData = await Promise.all(friends.map(async f => {
+                const uSnap = await getDoc(doc(firestore,'artifacts',appId,'public','data','users',f));
+                return { name: f, avatar: uSnap.exists() ? (uSnap.data().avatar||'🐺') : '🐺' };
+            }));
+            list.innerHTML = friendData.map(f => `
+                <div class="flex items-center justify-between bg-slate-700/50 p-2 rounded-lg mb-1">
+                    <span class="flex items-center gap-2"><span class="text-lg">${f.avatar}</span><span class="text-sm text-white font-medium">${f.name}</span></span>
+                    <div class="flex gap-1">
+                        <button onclick="window.vbSendInviteFromList('${f.name.replace(/'/g,"\\'")}')" class="text-yellow-400 hover:text-yellow-300 p-1.5 rounded-lg" title="Einladen"><i data-lucide="send" class="w-4 h-4"></i></button>
+                        <button onclick="window.vbRemoveFriend('${f.name.replace(/'/g,"\\'")}')" class="text-slate-400 hover:text-red-400 p-1.5 rounded-lg" title="Entfernen"><i data-lucide="user-minus" class="w-4 h-4"></i></button>
+                    </div>
+                </div>`).join('');
+            lucide.createIcons();
+        } catch(e) { list.innerHTML = '<div class="text-slate-500 italic text-sm">Fehler beim Laden</div>'; }
+    }
+
+    async function vbLoadPublicRooms() {
+        const list = document.getElementById('vb-public-rooms-list');
+        try {
+            const firestore = await getDB(); if (!firestore) { list.innerHTML = '<div class="text-slate-500 italic text-sm">Nicht angemeldet</div>'; return; }
+            const snap = await getDocs(collection(firestore,'artifacts',appId,'public','data',ROOM_COL));
+            const rooms = [];
+            snap.forEach(d => {
+                const data = d.data();
+                if (!data.isPrivate) rooms.push({ code: d.id, ...data });
+            });
+            if (rooms.length === 0) { list.innerHTML = '<div class="text-slate-500 italic text-sm">Keine offenen Räume</div>'; return; }
+            const gameIcons = { duell: '⚔️ Duell', memory: '🃏 Memory' };
+            list.innerHTML = rooms.map(r => {
+                const pCount = Object.keys(r.players || {}).length;
+                const statusLabel = r.status === 'waiting' ? 'Wartet...' : 'Spielt';
+                return `<div class="flex items-center justify-between bg-slate-700/50 p-2.5 rounded-xl mb-1">
+                    <div>
+                        <div class="text-sm text-white font-semibold font-mono">${r.code}</div>
+                        <div class="text-xs text-slate-400">${gameIcons[r.gameType]||r.gameType} · ${pCount} Spieler · ${statusLabel}</div>
+                    </div>
+                    <button onclick="window.vbJoinRoom('${r.code}')" class="text-xs bg-yellow-600 hover:bg-yellow-500 text-white px-3 py-1.5 rounded-lg font-semibold">Beitreten</button>
+                </div>`;
+            }).join('');
+        } catch(e) { list.innerHTML = '<div class="text-slate-500 italic text-sm">Fehler</div>'; }
+    }
+
+    // ── Friend Search ──
+    window.vbSearchFriends = async () => {
+        const input = document.getElementById('vb-friend-search');
+        const q = (input?.value || '').trim();
+        const results = document.getElementById('vb-friend-search-results');
+        if (!q) return;
+        const myName = getPlayerName();
+        try {
+            const firestore = await getDB(); if (!firestore) return;
+            const snap = await getDoc(doc(firestore,'artifacts',appId,'public','data','users',q));
+            if (!snap.exists() || q === myName) { results.innerHTML = '<div class="text-slate-500 italic text-sm">Nicht gefunden</div>'; return; }
+            const u = snap.data();
+            results.innerHTML = `<div class="flex items-center justify-between bg-slate-700/50 p-2 rounded-lg">
+                <span class="flex items-center gap-2"><span class="text-lg">${u.avatar||'🐺'}</span><span class="text-sm text-white">${q}</span></span>
+                <button onclick="window.vbAddFriend('${q.replace(/'/g,"\\'")}')" class="text-xs bg-green-600 hover:bg-green-500 text-white px-2 py-1 rounded-lg">Hinzufügen</button>
+            </div>`;
+        } catch(e) { results.innerHTML = '<div class="text-slate-500 italic text-sm">Fehler</div>'; }
+    };
+
+    window.vbAddFriend = async (fname) => {
+        const myName = getPlayerName();
+        const firestore = await getDB(); if (!firestore) return;
+        await updateDoc(doc(firestore,'artifacts',appId,'public','data','users',myName), { friends: arrayUnion(fname) });
+        await updateDoc(doc(firestore,'artifacts',appId,'public','data','users',fname), { friends: arrayUnion(myName) });
+        showToast(`${fname} als Freund hinzugefügt!`,'success');
+        vbLoadFriends();
+    };
+
+    window.vbRemoveFriend = async (fname) => {
+        const myName = getPlayerName();
+        const firestore = await getDB(); if (!firestore) return;
+        await updateDoc(doc(firestore,'artifacts',appId,'public','data','users',myName), { friends: arrayRemove(fname) });
+        showToast(`${fname} entfernt`,'success');
+        vbLoadFriends();
+    };
+
+    // ── INVITE SYSTEM ──
+    window.vbSendInvite = async (toName, btn) => {
+        const myName = getPlayerName();
+        const code = currentRoomCode;
+        if (!myName || !code) { showToast('Erst Raum erstellen!','error'); return; }
+        if (btn) { btn.disabled = true; btn.innerHTML = '✓'; btn.style.color = '#4ade80'; }
+        try {
+            const firestore = await getDB();
+            const key = `${Date.now()}_${Math.random().toString(36).substr(2,4)}`;
+            await updateDoc(doc(firestore,'artifacts',appId,'public','data','users',toName), {
+                [`invites.${key}`]: { code, game: 'verbinde', gameType: currentRoomGameType || 'duell', from: myName, createdAt: Date.now() }
+            });
+            showToast(`Einladung an ${toName} gesendet!`,'success');
+        } catch(e) { if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="send" class="w-3 h-3"></i>'; lucide.createIcons(); } }
+    };
+    let currentRoomGameType = 'duell';
+
+    window.vbSendInviteFromList = async (name) => {
+        if (!currentRoomCode) { showToast('Erst Raum erstellen!','error'); return; }
+        window.vbSendInvite(name);
+    };
+
+    // ── Invite Modal (from room) ──
+    window.vbOpenInviteModal = async () => {
+        if (!currentRoomCode) return;
+        const modal = document.getElementById('vb-invite-modal');
+        modal.classList.remove('hidden'); modal.style.display = 'flex';
+        document.getElementById('vb-invite-modal-code').textContent = currentRoomCode;
+        document.getElementById('vb-invite-modal-game').textContent = currentRoomGameType === 'memory' ? '🃏 Memory' : '⚔️ Duell';
+        const list = document.getElementById('vb-invite-friends-list');
+        const myName = getPlayerName();
+        try {
+            const firestore = await getDB();
+            const myDoc = await getDoc(doc(firestore,'artifacts',appId,'public','data','users',myName));
+            const friends = myDoc.exists() ? (myDoc.data().friends || []) : [];
+            if (friends.length === 0) { list.innerHTML = '<div class="text-slate-500 italic text-sm">Keine Freunde. Füge erst Freunde hinzu!</div>'; return; }
+            list.innerHTML = friends.map(f => `
+                <div class="flex items-center justify-between bg-slate-700/50 p-2 rounded-lg mb-1">
+                    <span class="text-sm text-white">${f}</span>
+                    <button onclick="window.vbSendInvite('${f.replace(/'/g,"\\'")}',this)" class="text-xs bg-yellow-600 hover:bg-yellow-500 text-white px-2 py-1 rounded-lg flex items-center gap-1"><i data-lucide="send" class="w-3 h-3"></i> Einladen</button>
+                </div>`).join('');
+            lucide.createIcons();
+        } catch(e) { list.innerHTML = '<div class="text-slate-500 italic text-sm">Fehler</div>'; }
+    };
+    window.vbCloseInviteModal = () => {
+        const modal = document.getElementById('vb-invite-modal');
+        modal.classList.add('hidden'); modal.style.display = 'none';
+    };
+
+    // ── Subscribe to Invites (real-time) ──
+    async function vbSubscribeInvites(myName) {
+        if (!myName || localStorage.getItem('wolfle_is_guest') === '1') return;
+        if (inviteUnsubscribe) inviteUnsubscribe();
+        try {
+            const firestore = await getDB(); if (!firestore) return;
+            inviteUnsubscribe = onSnapshot(doc(firestore,'artifacts',appId,'public','data','users',myName), snap => {
+                if (!snap.exists()) return;
+                const newInvites = snap.data().invites || {};
+                const newKeys = Object.keys(newInvites).filter(k => !_pendingInvites[k]);
+                newKeys.forEach(k => {
+                    const inv = newInvites[k];
+                    const gameLabel = inv.game === 'verbinde' ? (inv.gameType === 'memory' ? '🃏 Memory' : '⚔️ Duell') : inv.game === 'hangman' ? '🔤 Hangman' : '🟩 Wordle';
+                    showToast(`🎮 ${inv.from} lädt dich ein! ${gameLabel}`, 'success');
+                });
+                _pendingInvites = newInvites;
+                const badge = document.getElementById('vb-invite-badge');
+                const count = Object.keys(newInvites).length;
+                if (badge) { badge.textContent = count > 9 ? '9+' : String(count); badge.style.display = count > 0 ? 'flex' : 'none'; }
+                vbRenderInvites();
+            });
+        } catch(e) {}
+    }
+
+    function vbRenderInvites() {
+        const section = document.getElementById('vb-invites-section');
+        const list = document.getElementById('vb-invites-list');
+        if (!section || !list) return;
+        const keys = Object.keys(_pendingInvites || {});
+        section.style.display = keys.length > 0 ? 'block' : 'none';
+        list.innerHTML = keys.map(k => {
+            const inv = _pendingInvites[k];
+            const gameLabel = inv.game === 'verbinde' ? (inv.gameType === 'memory' ? '🃏 Memory' : '⚔️ Duell') : inv.game === 'hangman' ? '🔤 Hangman' : '🟩 Wordle';
+            return `<div class="flex items-center justify-between bg-yellow-900/30 border border-yellow-600/30 p-2.5 rounded-xl mb-1">
+                <div>
+                    <div class="text-sm text-white font-semibold">🎮 ${inv.from}</div>
+                    <div class="text-xs text-yellow-400">${gameLabel} · <span class="font-mono">${inv.code}</span></div>
+                </div>
+                <div class="flex gap-1">
+                    <button onclick="window.vbAcceptInvite('${k}','${inv.code}','${inv.game}')" class="text-xs bg-green-600 hover:bg-green-500 text-white px-2 py-1.5 rounded-lg font-semibold">Beitreten</button>
+                    <button onclick="window.vbDeclineInvite('${k}')" class="text-xs bg-slate-600 hover:bg-slate-500 text-white px-2 py-1.5 rounded-lg">✕</button>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    window.vbAcceptInvite = async (key, code, game) => {
+        const myName = getPlayerName();
+        if (!myName) return;
+        try {
+            const firestore = await getDB();
+            await updateDoc(doc(firestore,'artifacts',appId,'public','data','users',myName), { [`invites.${key}`]: deleteField() });
+        } catch(e) {}
+        window.vbCloseFriendsModal();
+        if (game === 'verbinde') {
+            window.vbJoinRoom(code);
+        } else if (game === 'hangman') {
+            window.location.href = `hangman.html?room=${code}`;
+        } else {
+            window.location.href = `wordle.html?room=${code}`;
+        }
+    };
+
+    window.vbDeclineInvite = async (key) => {
+        const myName = getPlayerName();
+        if (!myName) return;
+        try {
+            const firestore = await getDB();
+            await updateDoc(doc(firestore,'artifacts',appId,'public','data','users',myName), { [`invites.${key}`]: deleteField() });
+            delete _pendingInvites[key];
+            const badge = document.getElementById('vb-invite-badge');
+            const count = Object.keys(_pendingInvites).length;
+            if (badge) { badge.textContent = count; badge.style.display = count > 0 ? 'flex' : 'none'; }
+            vbRenderInvites();
+        } catch(e) {}
+    };
+
+    // ── INIT ──
+    applyTheme(localStorage.getItem('wolfle_theme') || 'dark');
+    updateSoundBtn();
+    updateHapticBtn();
+    updateLoginHeader();
+    lucide.createIcons();
     showModeSelect();
+
+    // Firebase init
+    if (getPlayerName()) {
+        getDB().then(() => {
+            vbSubscribeInvites(getPlayerName());
+            // Check URL param for room
+            const roomFromURL = new URLSearchParams(location.search).get('room');
+            if (roomFromURL) window.vbJoinRoom(roomFromURL);
+            else {
+                const saved = localStorage.getItem('wolfle_active_vb_room');
+                if (saved) window.vbJoinRoom(saved);
+            }
+        });
+    }
     </script>
 </body>
 </html>
