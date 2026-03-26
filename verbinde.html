@@ -2,167 +2,204 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verbinde</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Wolfle – Verbinde</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#6366f1">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        * {
+        * { box-sizing: border-box; }
+        html {
+            touch-action: manipulation;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        body {
+            background: radial-gradient(circle at top, #1e293b, #020617);
+            color: #f8fafc;
+            font-family: 'Inter', sans-serif;
+            height: 100dvh;
+            overflow: hidden;
             margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            touch-action: manipulation;
+            overscroll-behavior: none;
         }
 
-        body {
-            background-color: #121213;
-            color: #d7dadc;
-            font-family: 'nyt-karnakcondensed', 'Helvetica Neue', Arial, sans-serif;
+        /* ── HEADER ── */
+        #vb-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: max(10px, env(safe-area-inset-top)) 16px 8px;
+            border-bottom: 1px solid #1e293b;
+            flex-shrink: 0;
+            background: rgba(15,23,42,0.85);
+            backdrop-filter: blur(12px);
+        }
+
+        /* ── GAME TABS ── */
+        #game-tabs {
+            display: flex;
+            background: #0f172a;
+            border-bottom: 1px solid #1e293b;
+            flex-shrink: 0;
+            padding: 0 12px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        #game-tabs::-webkit-scrollbar { display: none; }
+        .tab-link {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 18px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #64748b;
+            text-decoration: none;
+            border-bottom: 2px solid transparent;
+            transition: all 0.15s;
+            white-space: nowrap;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .tab-link.active { color: #eab308; border-bottom-color: #eab308; }
+        .tab-link:hover:not(.active) { color: #94a3b8; }
+
+        /* ── GAME CENTER ── */
+        #vb-game-center {
+            flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-height: 100vh;
-            padding: 24px 16px;
+            overflow-y: auto;
+            min-width: 0;
+            padding: 16px 16px max(16px, env(safe-area-inset-bottom));
+            gap: 10px;
         }
 
-        h1 {
-            font-size: 2.25rem;
+        /* ── GAME TITLE ── */
+        .vb-title {
+            font-size: 1.4rem;
             font-weight: 800;
-            letter-spacing: 0.15em;
-            margin-bottom: 4px;
-            border-bottom: 1px solid #3a3a3c;
-            padding-bottom: 12px;
-            width: 100%;
-            max-width: 480px;
+            text-align: center;
+            background: linear-gradient(135deg, #eab308, #f59e0b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .vb-subtitle {
+            font-size: 0.75rem;
+            color: #64748b;
+            text-align: center;
+        }
+        .vb-selection-count {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            min-height: 1.2em;
             text-align: center;
         }
 
-        .subtitle {
-            color: #818384;
-            font-size: 0.8rem;
-            font-weight: 500;
-            letter-spacing: 0.02em;
-            margin-top: 12px;
-            margin-bottom: 20px;
-        }
-
-        .selection-count {
-            color: #818384;
-            font-size: 0.8rem;
-            font-weight: 500;
-            margin-bottom: 10px;
-            min-height: 1.2em;
-        }
-
-        .solved-area {
+        /* ── SOLVED GROUPS ── */
+        .vb-solved-area {
             width: 100%;
             max-width: 480px;
             display: flex;
             flex-direction: column;
             gap: 6px;
-            margin-bottom: 6px;
         }
-
-        .solved-group {
-            border-radius: 10px;
-            padding: 14px 12px;
+        .vb-solved-group {
+            border-radius: 12px;
+            padding: 12px;
             text-align: center;
-            animation: fadeIn 0.4s ease;
+            animation: vbFadeIn 0.4s ease;
         }
-
-        .solved-group .group-name {
+        .vb-solved-group .group-name {
             font-weight: 800;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             text-transform: uppercase;
             letter-spacing: 0.06em;
             margin-bottom: 2px;
-            color: #121213;
+            color: #0f172a;
         }
-
-        .solved-group .group-words {
-            font-size: 0.9rem;
+        .vb-solved-group .group-words {
+            font-size: 0.85rem;
             font-weight: 600;
-            color: #121213;
+            color: #0f172a;
         }
+        .difficulty-0 { background-color: #84cc16; }
+        .difficulty-1 { background-color: #eab308; }
+        .difficulty-2 { background-color: #38bdf8; }
+        .difficulty-3 { background-color: #c084fc; }
 
-        .difficulty-0 { background-color: #b5e352; }
-        .difficulty-1 { background-color: #f9df6d; }
-        .difficulty-2 { background-color: #6aace0; }
-        .difficulty-3 { background-color: #ba81c5; }
-
-        @keyframes fadeIn {
+        @keyframes vbFadeIn {
             from { opacity: 0; transform: translateY(-8px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .grid {
+        /* ── GRID ── */
+        .vb-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 6px;
             width: 100%;
             max-width: 480px;
-            margin-bottom: 16px;
         }
-
-        .tile {
-            background-color: #3a3a3c;
-            border: 2px solid transparent;
-            border-radius: 6px;
-            color: #d7dadc;
-            font-size: 0.85rem;
-            font-weight: 800;
-            padding: 18px 6px;
+        .vb-tile {
+            background: rgba(30,41,59,0.6);
+            border: 2px solid #334155;
+            border-radius: 10px;
+            color: #f1f5f9;
+            font-size: clamp(0.7rem, 2.5vw, 0.85rem);
+            font-weight: 700;
+            padding: 16px 6px;
             cursor: pointer;
             text-transform: uppercase;
             letter-spacing: 0.03em;
-            transition: background-color 0.12s, border-color 0.12s, transform 0.1s;
+            transition: background-color 0.12s, border-color 0.12s, transform 0.1s, box-shadow 0.12s;
             text-align: center;
             word-break: break-word;
-            user-select: none;
-            -webkit-user-select: none;
             outline: none;
+            -webkit-tap-highlight-color: transparent;
         }
-
-        .tile:hover:not(.selected) {
-            background-color: #48484a;
-            border-color: #565658;
+        .vb-tile:hover:not(.selected) {
+            background: rgba(51,65,85,0.8);
+            border-color: #475569;
         }
-
-        .tile:active:not(.selected) {
-            background-color: #525254;
+        .vb-tile:active:not(.selected) {
+            background: rgba(71,85,105,0.8);
             transform: scale(0.97);
         }
-
-        .tile.selected {
-            background-color: #538d4e;
-            border-color: #6aba64;
-            color: #ffffff;
+        .vb-tile.selected {
+            background: rgba(234,179,8,0.2);
+            border-color: #eab308;
+            color: #fef08a;
             transform: scale(1.02);
-            box-shadow: 0 2px 8px rgba(83, 141, 78, 0.35);
+            box-shadow: 0 0 12px rgba(234,179,8,0.25);
         }
-
-        .tile.selected:hover {
-            background-color: #4a7f46;
-            border-color: #5eaa58;
+        .vb-tile.selected:hover {
+            background: rgba(234,179,8,0.3);
+            border-color: #facc15;
         }
-
-        .tile.selected:active {
-            background-color: #3f6e3b;
+        .vb-tile.selected:active {
+            background: rgba(234,179,8,0.15);
             transform: scale(0.98);
         }
-
-        .tile.bounce {
-            animation: bounce 0.2s ease;
-        }
-
-        @keyframes bounce {
+        .vb-tile.bounce { animation: vbBounce 0.2s ease; }
+        @keyframes vbBounce {
             0% { transform: scale(1); }
             50% { transform: scale(1.08); }
             100% { transform: scale(1.02); }
         }
-
-        .tile.shake {
-            animation: shake 0.4s ease;
-        }
-
-        @keyframes shake {
+        .vb-tile.shake { animation: vbShake 0.4s ease; }
+        @keyframes vbShake {
             0%, 100% { transform: translateX(0); }
             20% { transform: translateX(-6px); }
             40% { transform: translateX(6px); }
@@ -170,195 +207,385 @@
             80% { transform: translateX(4px); }
         }
 
-        .controls {
+        /* ── MESSAGE ── */
+        .vb-message {
+            font-size: 0.8rem;
+            font-weight: 600;
+            min-height: 1.4em;
+            text-align: center;
+        }
+        .vb-message.error { color: #f87171; }
+        .vb-message.success { color: #4ade80; }
+
+        /* ── CONTROLS ── */
+        .vb-controls {
             display: flex;
             gap: 10px;
         }
-
-        button.action {
-            background-color: transparent;
-            color: #d7dadc;
-            border: 1px solid #565658;
-            border-radius: 24px;
+        .vb-btn {
+            border: 1px solid #334155;
+            border-radius: 12px;
             padding: 10px 24px;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             font-weight: 700;
-            letter-spacing: 0.03em;
             cursor: pointer;
-            transition: background-color 0.12s, border-color 0.12s, color 0.12s, transform 0.1s;
+            transition: all 0.12s;
             outline: none;
+            -webkit-tap-highlight-color: transparent;
+            background: rgba(30,41,59,0.5);
+            color: #94a3b8;
         }
-
-        button.action:hover {
-            background-color: #2a2a2c;
-            border-color: #818384;
+        .vb-btn:hover {
+            background: rgba(51,65,85,0.6);
+            border-color: #475569;
+            color: #e2e8f0;
         }
-
-        button.action:active {
-            background-color: #3a3a3c;
+        .vb-btn:active {
             transform: scale(0.96);
         }
-
-        button.action.submit {
-            background-color: #d7dadc;
-            border-color: #d7dadc;
-            color: #121213;
+        .vb-btn.submit {
+            background: linear-gradient(135deg, #ca8a04, #eab308);
+            border-color: transparent;
+            color: #0f172a;
         }
-
-        button.action.submit:hover {
-            background-color: #ffffff;
-            border-color: #ffffff;
+        .vb-btn.submit:hover {
+            background: linear-gradient(135deg, #eab308, #facc15);
         }
-
-        button.action.submit:active {
-            background-color: #b8bbbe;
-            border-color: #b8bbbe;
+        .vb-btn.submit:active {
+            background: linear-gradient(135deg, #a16207, #ca8a04);
             transform: scale(0.96);
         }
-
-        button.action:disabled {
+        .vb-btn:disabled {
             opacity: 0.35;
             cursor: not-allowed;
             transform: none;
         }
-
-        button.action:disabled:hover {
-            background-color: transparent;
-            border-color: #565658;
+        .vb-btn:disabled:hover {
+            background: rgba(30,41,59,0.5);
+            border-color: #334155;
+            color: #94a3b8;
         }
 
-        .message {
-            font-size: 0.85rem;
-            font-weight: 600;
-            min-height: 1.4em;
-            margin-bottom: 14px;
-            text-align: center;
-        }
+        /* ── THEME OVERRIDES ── */
+        html.light body { background: linear-gradient(135deg, #f1f5f9, #e2e8f0); color: #1e293b; }
+        html.light #vb-header { background: rgba(241,245,249,0.95); border-color: #cbd5e1; }
+        html.light #game-tabs { background: #f1f5f9; border-color: #cbd5e1; }
+        html.light .tab-link { color: #94a3b8; }
+        html.light .tab-link.active { color: #a16207; border-bottom-color: #a16207; }
+        html.light .vb-tile { background: rgba(255,255,255,0.8); border-color: #cbd5e1; color: #1e293b; }
+        html.light .vb-tile:hover:not(.selected) { background: rgba(255,255,255,1); border-color: #94a3b8; }
+        html.light .vb-tile.selected { background: rgba(234,179,8,0.15); border-color: #ca8a04; color: #92400e; box-shadow: 0 0 12px rgba(234,179,8,0.2); }
+        html.light .vb-btn { background: rgba(255,255,255,0.8); border-color: #cbd5e1; color: #475569; }
+        html.light .vb-btn:hover { background: white; border-color: #94a3b8; color: #1e293b; }
+        html.light .vb-btn.submit { background: linear-gradient(135deg, #ca8a04, #eab308); border-color: transparent; color: white; }
+        html.light .vb-message.error { color: #dc2626; }
+        html.light .vb-message.success { color: #16a34a; }
+        html.light .vb-subtitle { color: #64748b; }
+        html.light .vb-selection-count { color: #64748b; }
 
-        .message.error { color: #e35b5b; }
-        .message.success { color: #6aba64; }
+        html.retro body { background: #000 !important; color: #00ff41; font-family: 'Courier New', monospace !important; }
+        html.retro * { font-family: 'Courier New', monospace !important; }
+        html.retro #vb-header { background: #000 !important; border-color: #00ff41 !important; }
+        html.retro #game-tabs { background: #000 !important; border-color: #00ff41 !important; }
+        html.retro .tab-link { color: #007a1f; }
+        html.retro .tab-link.active { color: #00ff41; border-bottom-color: #00ff41; }
+        html.retro .vb-title { background: none; -webkit-text-fill-color: #00ff41; }
+        html.retro .vb-subtitle, html.retro .vb-selection-count { color: #007a1f; }
+        html.retro .vb-tile { background: #001a00 !important; border-color: #00ff41 !important; color: #00ff41 !important; }
+        html.retro .vb-tile.selected { background: #003300 !important; box-shadow: 0 0 8px rgba(0,255,65,0.3); color: #00ff41 !important; }
+        html.retro .vb-btn { background: #001a00; border-color: #00ff41; color: #00ff41; }
+        html.retro .vb-btn.submit { background: #00ff41; color: #000; border-color: #00ff41; }
+        html.retro .vb-message.error { color: #ff4141; }
+        html.retro .vb-message.success { color: #00ff41; }
+
+        html.ocean body { background: linear-gradient(180deg, #0a1628, #0c1e3a) !important; }
+        html.ocean #vb-header { background: rgba(5,16,31,0.85) !important; border-color: #1d4e6e !important; }
+        html.ocean #game-tabs { background: #05101f !important; border-color: #1d4e6e !important; }
+        html.ocean .tab-link { color: #4d89ac; }
+        html.ocean .tab-link.active { color: #38bdf8; border-bottom-color: #38bdf8; }
+        html.ocean .vb-tile { background: rgba(5,16,31,0.6); border-color: #1d4e6e; }
+        html.ocean .vb-tile.selected { background: rgba(56,189,248,0.15); border-color: #38bdf8; color: #7dd3fc; box-shadow: 0 0 12px rgba(56,189,248,0.2); }
+        html.ocean .vb-btn { background: rgba(5,16,31,0.5); border-color: #1d4e6e; }
+        html.ocean .vb-btn.submit { background: linear-gradient(135deg, #0369a1, #0ea5e9); border-color: transparent; color: white; }
+
+        html.pastel body { background: linear-gradient(135deg, #fce7f3, #ede9fe) !important; color: #581c87; }
+        html.pastel #vb-header { background: rgba(255,240,250,0.97) !important; border-color: #f0abdb !important; }
+        html.pastel #game-tabs { background: #fce7f3 !important; border-color: #f0abdb !important; }
+        html.pastel .tab-link { color: #c084db; }
+        html.pastel .tab-link.active { color: #9333ea; border-bottom-color: #9333ea; }
+        html.pastel .vb-title { background: linear-gradient(135deg, #9333ea, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        html.pastel .vb-subtitle, html.pastel .vb-selection-count { color: #a855f7; }
+        html.pastel .vb-tile { background: rgba(255,255,255,0.7); border-color: #f0abdb; color: #581c87; }
+        html.pastel .vb-tile.selected { background: rgba(147,51,234,0.15); border-color: #9333ea; color: #581c87; box-shadow: 0 0 12px rgba(147,51,234,0.2); }
+        html.pastel .vb-btn { background: rgba(255,255,255,0.6); border-color: #f0abdb; color: #9333ea; }
+        html.pastel .vb-btn.submit { background: linear-gradient(135deg, #9333ea, #a855f7); border-color: transparent; color: white; }
+        html.pastel .vb-message.error { color: #e11d48; }
+        html.pastel .vb-message.success { color: #059669; }
+
+        .mobile-only { display: none; }
+        @media (pointer: coarse) { .mobile-only { display: inline-flex; } }
     </style>
 </head>
 <body>
-    <h1>VERBINDE</h1>
-    <p class="subtitle">Finde die 4 Gruppen mit je 4 zusammengehörenden Begriffen</p>
+    <!-- HEADER -->
+    <div id="vb-header">
+        <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400 flex items-center gap-1.5">
+            <i data-lucide="paw-print" class="w-5 h-5 text-indigo-400"></i> Wolfle
+        </h1>
+        <div class="flex items-center gap-1.5">
+            <button id="theme-btn" onclick="toggleTheme()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Design wechseln">
+                <i data-lucide="sun" class="w-4 h-4"></i>
+            </button>
+            <button id="sound-btn" onclick="toggleSound()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Ton">
+                <i data-lucide="volume-2" class="w-4 h-4"></i>
+            </button>
+            <button id="haptic-btn" onclick="toggleHaptic()" class="mobile-only text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Vibration">
+                <i data-lucide="smartphone" class="w-4 h-4"></i>
+            </button>
+            <button id="login-header-btn" onclick="window.openLoginModal && window.openLoginModal()" title="Anmelden" class="flex items-center gap-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white px-2 py-1.5 rounded-lg border border-slate-600 transition-all">
+                <span id="login-header-avatar">🐺</span>
+                <span id="login-header-label">Anmelden</span>
+            </button>
+        </div>
+    </div>
 
-    <p class="selection-count" id="selectionCount"></p>
+    <!-- GAME TABS -->
+    <div id="game-tabs">
+        <a href="index.html" class="tab-link">
+            <i data-lucide="home" class="w-4 h-4"></i> Home
+        </a>
+        <a href="wordle.html" class="tab-link">
+            <i data-lucide="grid-2x2" class="w-4 h-4"></i> Wordle
+        </a>
+        <a href="hangman.html" class="tab-link">
+            <i data-lucide="skull" class="w-4 h-4"></i> Hangman
+        </a>
+        <a href="verbinde.html" class="tab-link active">
+            <i data-lucide="link" class="w-4 h-4"></i> Verbinde
+        </a>
+        <a href="stadtlandfuss.html" class="tab-link">
+            <i data-lucide="globe" class="w-4 h-4"></i> SLF
+        </a>
+        <a href="tipprennen.html" class="tab-link">
+            <i data-lucide="keyboard" class="w-4 h-4"></i> Tippen
+        </a>
+        <a href="anagramm.html" class="tab-link">
+            <i data-lucide="shuffle" class="w-4 h-4"></i> Anagramm
+        </a>
+        <a href="quiz.html" class="tab-link">
+            <i data-lucide="help-circle" class="w-4 h-4"></i> Quiz
+        </a>
+    </div>
 
-    <div class="solved-area" id="solvedArea"></div>
-    <div class="grid" id="grid"></div>
+    <!-- GAME CENTER -->
+    <div id="vb-game-center">
+        <div class="vb-title">Verbinde</div>
+        <div class="vb-subtitle">Finde die 4 Gruppen mit je 4 zusammengehörenden Begriffen</div>
 
-    <p class="message" id="message"></p>
+        <div class="vb-selection-count" id="selectionCount"></div>
 
-    <div class="controls">
-        <button class="action" id="deselectBtn" onclick="deselectAll()" disabled>Abwählen</button>
-        <button class="action submit" id="submitBtn" onclick="submitGuess()">Prüfen</button>
+        <div class="vb-solved-area" id="solvedArea"></div>
+        <div class="vb-grid" id="grid"></div>
+
+        <div class="vb-message" id="message"></div>
+
+        <div class="vb-controls">
+            <button class="vb-btn" id="deselectBtn" onclick="deselectAll()" disabled>Abwählen</button>
+            <button class="vb-btn submit" id="submitBtn" onclick="submitGuess()">Prüfen</button>
+        </div>
     </div>
 
     <script>
-        const puzzleData = {
-            groups: [
-                {
-                    name: "Obst",
-                    words: ["Apfel", "Birne", "Kirsche", "Traube"],
-                    difficulty: 0
-                },
-                {
-                    name: "Farben",
-                    words: ["Rot", "Blau", "Grün", "Gelb"],
-                    difficulty: 1
-                },
-                {
-                    name: "Planeten",
-                    words: ["Mars", "Venus", "Saturn", "Jupiter"],
-                    difficulty: 2
-                },
-                {
-                    name: "Musikinstrumente",
-                    words: ["Gitarre", "Klavier", "Geige", "Flöte"],
-                    difficulty: 3
-                }
-            ]
-        };
+    // ── THEMES ──
+    const THEMES = ['dark','light','retro','ocean','pastel'];
 
-        let selected = [];
-        let solvedGroups = [];
-        let remainingWords = [];
-        function init() {
-            remainingWords = puzzleData.groups.flatMap(g => g.words);
-            shuffle(remainingWords);
-            solvedGroups = [];
-            selected = [];
-            document.getElementById('solvedArea').innerHTML = '';
-            renderGrid();
-            updateUI();
+    function applyTheme(theme) {
+        THEMES.forEach(t => document.documentElement.classList.remove(t));
+        if (theme && theme !== 'dark') document.documentElement.classList.add(theme);
+        const icon = (theme === 'light' || theme === 'pastel') ? 'moon' : 'sun';
+        const btn = document.getElementById('theme-btn');
+        if (btn) btn.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4"></i>`;
+        lucide.createIcons();
+    }
+    function toggleTheme() {
+        const current = localStorage.getItem('wolfle_theme') || 'dark';
+        const next = THEMES[(THEMES.indexOf(current) + 1) % THEMES.length];
+        localStorage.setItem('wolfle_theme', next);
+        applyTheme(next);
+    }
+
+    // ── SOUND ──
+    let soundEnabled = localStorage.getItem('wolfle_sound') !== 'false';
+    let audioCtx = null;
+
+    function initAudioCtx() {
+        if (audioCtx) return;
+        try {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        } catch(e) {}
+    }
+    ['pointerdown', 'keydown'].forEach(evt =>
+        document.addEventListener(evt, initAudioCtx, { once: true })
+    );
+    function playTone(freq, type, duration, volume = 0.25) {
+        if (!soundEnabled) return;
+        requestAnimationFrame(() => {
+            try {
+                initAudioCtx();
+                if (!audioCtx) return;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {}
+        });
+    }
+    function updateSoundBtn() {
+        const icon = soundEnabled ? 'volume-2' : 'volume-x';
+        const btn = document.getElementById('sound-btn');
+        if (btn) btn.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4"></i>`;
+        lucide.createIcons();
+    }
+    function toggleSound() {
+        soundEnabled = !soundEnabled;
+        localStorage.setItem('wolfle_sound', soundEnabled);
+        updateSoundBtn();
+        if (soundEnabled) playTone(523, 'sine', 0.15);
+    }
+
+    // ── HAPTIC ──
+    let hapticEnabled = localStorage.getItem('wolfle_haptic') === 'true';
+
+    function triggerHaptic(style) {
+        if (!hapticEnabled) return;
+        const patterns = { type: 10, correct: [20, 30, 20], wrong: 25 };
+        try { navigator.vibrate(patterns[style] || 10); } catch(e) {}
+    }
+    function updateHapticBtn() {
+        const icon = hapticEnabled ? 'vibrate' : 'smartphone';
+        const btn = document.getElementById('haptic-btn');
+        if (btn) btn.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4"></i>`;
+        lucide.createIcons();
+    }
+    function toggleHaptic() {
+        hapticEnabled = !hapticEnabled;
+        localStorage.setItem('wolfle_haptic', hapticEnabled);
+        updateHapticBtn();
+        if (hapticEnabled) try { navigator.vibrate(20); } catch(e) {}
+    }
+
+    // ── LOGIN HEADER (read-only from localStorage) ──
+    function updateLoginHeader() {
+        const name = localStorage.getItem('wolfle_user_name');
+        const avatar = localStorage.getItem('wolfle_avatar') || '🐺';
+        const el = document.getElementById('login-header-avatar');
+        const lbl = document.getElementById('login-header-label');
+        if (name) {
+            if (el) el.textContent = avatar;
+            if (lbl) lbl.textContent = name;
+        }
+    }
+
+    // ── GAME LOGIC ──
+    const puzzleData = {
+        groups: [
+            { name: "Obst", words: ["Apfel", "Birne", "Kirsche", "Traube"], difficulty: 0 },
+            { name: "Farben", words: ["Rot", "Blau", "Grün", "Gelb"], difficulty: 1 },
+            { name: "Planeten", words: ["Mars", "Venus", "Saturn", "Jupiter"], difficulty: 2 },
+            { name: "Musikinstrumente", words: ["Gitarre", "Klavier", "Geige", "Flöte"], difficulty: 3 }
+        ]
+    };
+
+    let selected = [];
+    let solvedGroups = [];
+    let remainingWords = [];
+
+    function init() {
+        remainingWords = puzzleData.groups.flatMap(g => g.words);
+        shuffle(remainingWords);
+        solvedGroups = [];
+        selected = [];
+        document.getElementById('solvedArea').innerHTML = '';
+        renderGrid();
+        updateUI();
+    }
+
+    function shuffle(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+    }
+
+    function renderGrid() {
+        const grid = document.getElementById('grid');
+        grid.innerHTML = '';
+        remainingWords.forEach(word => {
+            const tile = document.createElement('button');
+            tile.className = 'vb-tile';
+            if (selected.includes(word)) tile.classList.add('selected');
+            tile.textContent = word;
+            tile.onclick = () => toggleSelect(word, tile);
+            grid.appendChild(tile);
+        });
+    }
+
+    function toggleSelect(word, tileEl) {
+        if (selected.includes(word)) {
+            selected = selected.filter(w => w !== word);
+            tileEl.classList.remove('selected', 'bounce');
+        } else if (selected.length < 4) {
+            selected.push(word);
+            tileEl.classList.add('selected', 'bounce');
+            tileEl.addEventListener('animationend', () => {
+                tileEl.classList.remove('bounce');
+            }, { once: true });
+            triggerHaptic('type');
+        }
+        updateUI();
+    }
+
+    function deselectAll() {
+        selected = [];
+        renderGrid();
+        updateUI();
+    }
+
+    function updateUI() {
+        const count = selected.length;
+        document.getElementById('selectionCount').textContent =
+            count > 0 ? `${count} / 4 ausgewählt` : '';
+        document.getElementById('deselectBtn').disabled = count === 0;
+    }
+
+    function showMessage(text, type) {
+        const msg = document.getElementById('message');
+        msg.textContent = text;
+        msg.className = `vb-message ${type}`;
+        setTimeout(() => { msg.textContent = ''; msg.className = 'vb-message'; }, 2000);
+    }
+
+    function submitGuess() {
+        if (selected.length !== 4) {
+            showMessage('Wähle genau 4 Wörter aus', 'error');
+            return;
         }
 
-        function shuffle(arr) {
-            for (let i = arr.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [arr[i], arr[j]] = [arr[j], arr[i]];
-            }
-        }
+        console.log('Submitted words:', selected.slice());
+        showMessage('Gruppe eingereicht!', 'success');
+    }
 
-        function renderGrid() {
-            const grid = document.getElementById('grid');
-            grid.innerHTML = '';
-            remainingWords.forEach(word => {
-                const tile = document.createElement('button');
-                tile.className = 'tile';
-                if (selected.includes(word)) tile.classList.add('selected');
-                tile.textContent = word;
-                tile.onclick = () => toggleSelect(word, tile);
-                grid.appendChild(tile);
-            });
-        }
-
-        function toggleSelect(word, tileEl) {
-            if (selected.includes(word)) {
-                selected = selected.filter(w => w !== word);
-                tileEl.classList.remove('selected', 'bounce');
-            } else if (selected.length < 4) {
-                selected.push(word);
-                tileEl.classList.add('selected', 'bounce');
-                tileEl.addEventListener('animationend', () => {
-                    tileEl.classList.remove('bounce');
-                }, { once: true });
-            }
-            updateUI();
-        }
-
-        function deselectAll() {
-            selected = [];
-            renderGrid();
-            updateUI();
-        }
-
-        function updateUI() {
-            const count = selected.length;
-            document.getElementById('selectionCount').textContent =
-                count > 0 ? `${count} / 4 ausgewählt` : '';
-            document.getElementById('deselectBtn').disabled = count === 0;
-        }
-
-        function showMessage(text, type) {
-            const msg = document.getElementById('message');
-            msg.textContent = text;
-            msg.className = `message ${type}`;
-            setTimeout(() => { msg.textContent = ''; msg.className = 'message'; }, 2000);
-        }
-
-        function submitGuess() {
-            if (selected.length !== 4) {
-                showMessage('Wähle genau 4 Wörter aus', 'error');
-                return;
-            }
-
-            console.log('Submitted words:', selected.slice());
-            showMessage('Gruppe eingereicht!', 'success');
-        }
-
-        init();
+    // ── INIT ──
+    applyTheme(localStorage.getItem('wolfle_theme') || 'dark');
+    updateSoundBtn();
+    updateHapticBtn();
+    updateLoginHeader();
+    lucide.createIcons();
+    init();
     </script>
 </body>
 </html>
