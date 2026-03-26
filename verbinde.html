@@ -1794,6 +1794,21 @@
         } catch(e) {}
     };
 
+    // ── Expose functions to global scope (needed for inline onclick in type="module") ──
+    window.toggleTheme = toggleTheme;
+    window.toggleSound = toggleSound;
+    window.toggleHaptic = toggleHaptic;
+    window.startClassic = startClassic;
+    window.showDuellSetup = showDuellSetup;
+    window.startDuell = startDuell;
+    window.showModeSelect = showModeSelect;
+    window.startMemory = startMemory;
+    window.deselectAll = deselectAll;
+    window.submitGuess = submitGuess;
+    window.init = init;
+    window.duellDeselectAll = duellDeselectAll;
+    window.duellSubmitGuess = duellSubmitGuess;
+
     // ── INIT ──
     applyTheme(localStorage.getItem('wolfle_theme') || 'dark');
     updateSoundBtn();
