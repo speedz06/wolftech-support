@@ -491,20 +491,100 @@
     }
 
     // ── GAME LOGIC ──
-    const puzzleData = {
-        groups: [
-            { name: "Obst", words: ["Apfel", "Birne", "Kirsche", "Traube"], difficulty: 0 },
-            { name: "Farben", words: ["Rot", "Blau", "Grün", "Gelb"], difficulty: 1 },
-            { name: "Planeten", words: ["Mars", "Venus", "Saturn", "Jupiter"], difficulty: 2 },
-            { name: "Musikinstrumente", words: ["Gitarre", "Klavier", "Geige", "Flöte"], difficulty: 3 }
-        ]
-    };
+    const allPuzzles = [
+        {
+            groups: [
+                { name: "Obst", words: ["Apfel", "Birne", "Kirsche", "Traube"], difficulty: 0 },
+                { name: "Farben", words: ["Rot", "Blau", "Grün", "Gelb"], difficulty: 1 },
+                { name: "Planeten", words: ["Mars", "Venus", "Saturn", "Jupiter"], difficulty: 2 },
+                { name: "Musikinstrumente", words: ["Gitarre", "Klavier", "Geige", "Flöte"], difficulty: 3 }
+            ]
+        },
+        {
+            groups: [
+                { name: "Tiere im Wald", words: ["Fuchs", "Reh", "Dachs", "Eule"], difficulty: 0 },
+                { name: "Schulfächer", words: ["Mathe", "Deutsch", "Physik", "Kunst"], difficulty: 1 },
+                { name: "Hauptstädte", words: ["Berlin", "Paris", "Tokyo", "London"], difficulty: 2 },
+                { name: "Gewürze", words: ["Salz", "Pfeffer", "Zimt", "Oregano"], difficulty: 3 }
+            ]
+        },
+        {
+            groups: [
+                { name: "Sportarten", words: ["Fußball", "Tennis", "Schwimmen", "Boxen"], difficulty: 0 },
+                { name: "Möbelstücke", words: ["Tisch", "Stuhl", "Regal", "Sofa"], difficulty: 1 },
+                { name: "Elemente", words: ["Feuer", "Wasser", "Erde", "Luft"], difficulty: 2 },
+                { name: "Berufe", words: ["Arzt", "Lehrer", "Koch", "Pilot"], difficulty: 3 }
+            ]
+        },
+        {
+            groups: [
+                { name: "Kleidung", words: ["Hemd", "Hose", "Jacke", "Schal"], difficulty: 0 },
+                { name: "Getränke", words: ["Kaffee", "Tee", "Saft", "Milch"], difficulty: 1 },
+                { name: "Märchenfiguren", words: ["Hexe", "Zwerg", "Riese", "Fee"], difficulty: 2 },
+                { name: "Werkzeuge", words: ["Hammer", "Zange", "Säge", "Bohrer"], difficulty: 3 }
+            ]
+        },
+        {
+            groups: [
+                { name: "Wetter", words: ["Regen", "Schnee", "Hagel", "Sturm"], difficulty: 0 },
+                { name: "Körperteile", words: ["Hand", "Fuß", "Knie", "Kopf"], difficulty: 1 },
+                { name: "Bäume", words: ["Eiche", "Birke", "Tanne", "Buche"], difficulty: 2 },
+                { name: "Gefühle", words: ["Freude", "Angst", "Wut", "Stolz"], difficulty: 3 }
+            ]
+        },
+        {
+            groups: [
+                { name: "Gemüse", words: ["Gurke", "Tomate", "Zwiebel", "Paprika"], difficulty: 0 },
+                { name: "Fahrzeuge", words: ["Auto", "Zug", "Schiff", "Fahrrad"], difficulty: 1 },
+                { name: "Metalle", words: ["Gold", "Silber", "Eisen", "Kupfer"], difficulty: 2 },
+                { name: "Griechische Götter", words: ["Zeus", "Hera", "Ares", "Hermes"], difficulty: 3 }
+            ]
+        },
+        {
+            groups: [
+                { name: "Blumen", words: ["Rose", "Tulpe", "Lilie", "Nelke"], difficulty: 0 },
+                { name: "Süßigkeiten", words: ["Schokolade", "Bonbon", "Keks", "Eis"], difficulty: 1 },
+                { name: "Länder", words: ["Spanien", "Brasilien", "Ägypten", "Norwegen"], difficulty: 2 },
+                { name: "Tanzstile", words: ["Walzer", "Tango", "Salsa", "Ballett"], difficulty: 3 }
+            ]
+        },
+        {
+            groups: [
+                { name: "Meerestiere", words: ["Hai", "Wal", "Qualle", "Krabbe"], difficulty: 0 },
+                { name: "Instrumente", words: ["Trommel", "Harfe", "Orgel", "Cello"], difficulty: 1 },
+                { name: "Sprachen", words: ["Englisch", "Spanisch", "Arabisch", "Chinesisch"], difficulty: 2 },
+                { name: "Astronomie", words: ["Stern", "Komet", "Nebel", "Galaxie"], difficulty: 3 }
+            ]
+        },
+        {
+            groups: [
+                { name: "Obst (tropisch)", words: ["Mango", "Ananas", "Kiwi", "Banane"], difficulty: 0 },
+                { name: "Räume im Haus", words: ["Küche", "Bad", "Keller", "Dachboden"], difficulty: 1 },
+                { name: "Kartenspiele", words: ["Poker", "Skat", "Uno", "Mau-Mau"], difficulty: 2 },
+                { name: "Philosophen", words: ["Platon", "Kant", "Nietzsche", "Sokrates"], difficulty: 3 }
+            ]
+        },
+        {
+            groups: [
+                { name: "Vögel", words: ["Adler", "Spatz", "Rabe", "Storch"], difficulty: 0 },
+                { name: "Backzutaten", words: ["Mehl", "Zucker", "Butter", "Hefe"], difficulty: 1 },
+                { name: "Kontinente", words: ["Europa", "Afrika", "Asien", "Amerika"], difficulty: 2 },
+                { name: "Mythische Wesen", words: ["Drache", "Einhorn", "Phoenix", "Greif"], difficulty: 3 }
+            ]
+        }
+    ];
 
+    let puzzleData = allPuzzles[0];
     let selected = [];
     let solvedGroups = [];
     let remainingWords = [];
 
+    function pickRandomPuzzle() {
+        puzzleData = allPuzzles[Math.floor(Math.random() * allPuzzles.length)];
+    }
+
     function init() {
+        pickRandomPuzzle();
         remainingWords = puzzleData.groups.flatMap(g => g.words);
         shuffle(remainingWords);
         solvedGroups = [];
