@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verbinde</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #121213;
+            color: #d7dadc;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 2rem;
+            letter-spacing: 0.1em;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #818384;
+            font-size: 0.9rem;
+            margin-bottom: 24px;
+        }
+
+        .selection-count {
+            color: #818384;
+            font-size: 0.85rem;
+            margin-bottom: 12px;
+            min-height: 1.2em;
+        }
+
+        .solved-area {
+            width: 100%;
+            max-width: 480px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .solved-group {
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .solved-group .group-name {
+            font-weight: 700;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 4px;
+            color: #121213;
+        }
+
+        .solved-group .group-words {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #121213;
+        }
+
+        .difficulty-0 { background-color: #b5e352; }
+        .difficulty-1 { background-color: #f9df6d; }
+        .difficulty-2 { background-color: #6aace0; }
+        .difficulty-3 { background-color: #ba81c5; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            width: 100%;
+            max-width: 480px;
+            margin-bottom: 20px;
+        }
+
+        .tile {
+            background-color: #3a3a3c;
+            border: none;
+            border-radius: 8px;
+            color: #d7dadc;
+            font-size: 0.95rem;
+            font-weight: 700;
+            padding: 20px 8px;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: background-color 0.15s, transform 0.1s;
+            text-align: center;
+            word-break: break-word;
+        }
+
+        .tile:hover {
+            background-color: #4a4a4c;
+        }
+
+        .tile.selected {
+            background-color: #538d4e;
+            color: #ffffff;
+            transform: scale(1.03);
+        }
+
+        .tile.shake {
+            animation: shake 0.4s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-6px); }
+            40% { transform: translateX(6px); }
+            60% { transform: translateX(-4px); }
+            80% { transform: translateX(4px); }
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+        }
+
+        button.action {
+            background-color: #818384;
+            color: #121213;
+            border: none;
+            border-radius: 24px;
+            padding: 12px 28px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.15s;
+        }
+
+        button.action:hover {
+            background-color: #a0a1a3;
+        }
+
+        button.action.submit {
+            background-color: #d7dadc;
+        }
+
+        button.action.submit:hover {
+            background-color: #ffffff;
+        }
+
+        button.action:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .message {
+            margin-top: 16px;
+            font-size: 1rem;
+            min-height: 1.5em;
+            text-align: center;
+        }
+
+        .message.error { color: #e35b5b; }
+        .message.success { color: #538d4e; }
+
+        .mistakes {
+            margin-top: 12px;
+            color: #818384;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <h1>VERBINDE</h1>
+    <p class="subtitle">Finde die 4 Gruppen mit je 4 zusammengehörenden Begriffen</p>
+
+    <p class="selection-count" id="selectionCount"></p>
+
+    <div class="solved-area" id="solvedArea"></div>
+    <div class="grid" id="grid"></div>
+
+    <div class="controls">
+        <button class="action" id="deselectBtn" onclick="deselectAll()" disabled>Abwählen</button>
+        <button class="action submit" id="submitBtn" onclick="submitGuess()" disabled>Prüfen</button>
+    </div>
+
+    <p class="message" id="message"></p>
+    <p class="mistakes" id="mistakes"></p>
+
+    <script>
+        const puzzleData = {
+            groups: [
+                {
+                    name: "Obst",
+                    words: ["Apfel", "Birne", "Kirsche", "Traube"],
+                    difficulty: 0
+                },
+                {
+                    name: "Farben",
+                    words: ["Rot", "Blau", "Grün", "Gelb"],
+                    difficulty: 1
+                },
+                {
+                    name: "Planeten",
+                    words: ["Mars", "Venus", "Saturn", "Jupiter"],
+                    difficulty: 2
+                },
+                {
+                    name: "Musikinstrumente",
+                    words: ["Gitarre", "Klavier", "Geige", "Flöte"],
+                    difficulty: 3
+                }
+            ]
+        };
+
+        let selected = [];
+        let solvedGroups = [];
+        let remainingWords = [];
+        let mistakesLeft = 4;
+
+        function init() {
+            remainingWords = puzzleData.groups.flatMap(g => g.words);
+            shuffle(remainingWords);
+            solvedGroups = [];
+            selected = [];
+            mistakesLeft = 4;
+            document.getElementById('solvedArea').innerHTML = '';
+            renderGrid();
+            updateUI();
+            updateMistakes();
+        }
+
+        function shuffle(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+        }
+
+        function renderGrid() {
+            const grid = document.getElementById('grid');
+            grid.innerHTML = '';
+            remainingWords.forEach(word => {
+                const tile = document.createElement('button');
+                tile.className = 'tile';
+                if (selected.includes(word)) tile.classList.add('selected');
+                tile.textContent = word;
+                tile.onclick = () => toggleSelect(word);
+                grid.appendChild(tile);
+            });
+        }
+
+        function toggleSelect(word) {
+            if (selected.includes(word)) {
+                selected = selected.filter(w => w !== word);
+            } else if (selected.length < 4) {
+                selected.push(word);
+            }
+            renderGrid();
+            updateUI();
+        }
+
+        function deselectAll() {
+            selected = [];
+            renderGrid();
+            updateUI();
+        }
+
+        function updateUI() {
+            const count = selected.length;
+            document.getElementById('selectionCount').textContent =
+                count > 0 ? `${count} / 4 ausgewählt` : '';
+            document.getElementById('submitBtn').disabled = count !== 4;
+            document.getElementById('deselectBtn').disabled = count === 0;
+        }
+
+        function updateMistakes() {
+            const dots = '● '.repeat(mistakesLeft) + '○ '.repeat(4 - mistakesLeft);
+            document.getElementById('mistakes').textContent =
+                `Verbleibende Versuche: ${dots.trim()}`;
+        }
+
+        function showMessage(text, type) {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.className = `message ${type}`;
+            setTimeout(() => { msg.textContent = ''; msg.className = 'message'; }, 2000);
+        }
+
+        function submitGuess() {
+            if (selected.length !== 4) return;
+
+            const match = puzzleData.groups.find(g =>
+                !solvedGroups.includes(g) &&
+                g.words.every(w => selected.includes(w)) &&
+                selected.every(w => g.words.includes(w))
+            );
+
+            if (match) {
+                solvedGroups.push(match);
+                remainingWords = remainingWords.filter(w => !match.words.includes(w));
+                selected = [];
+
+                const area = document.getElementById('solvedArea');
+                const div = document.createElement('div');
+                div.className = `solved-group difficulty-${match.difficulty}`;
+                div.innerHTML = `
+                    <div class="group-name">${match.name}</div>
+                    <div class="group-words">${match.words.join(', ')}</div>
+                `;
+                area.appendChild(div);
+
+                renderGrid();
+                updateUI();
+
+                if (solvedGroups.length === 4) {
+                    showMessage('Gelöst! Gut gemacht! 🎉', 'success');
+                } else {
+                    showMessage('Richtig!', 'success');
+                }
+            } else {
+                mistakesLeft--;
+                updateMistakes();
+
+                // Check for "one away"
+                const oneAway = puzzleData.groups.some(g =>
+                    !solvedGroups.includes(g) &&
+                    selected.filter(w => g.words.includes(w)).length === 3
+                );
+
+                if (mistakesLeft <= 0) {
+                    showMessage('Leider verloren!', 'error');
+                    revealAll();
+                } else if (oneAway) {
+                    showMessage('Knapp daneben! Nur 1 falsch.', 'error');
+                    shakeTiles();
+                } else {
+                    showMessage('Falsch!', 'error');
+                    shakeTiles();
+                }
+            }
+        }
+
+        function shakeTiles() {
+            document.querySelectorAll('.tile.selected').forEach(tile => {
+                tile.classList.add('shake');
+                setTimeout(() => tile.classList.remove('shake'), 500);
+            });
+        }
+
+        function revealAll() {
+            const grid = document.getElementById('grid');
+            grid.innerHTML = '';
+            const area = document.getElementById('solvedArea');
+
+            puzzleData.groups
+                .filter(g => !solvedGroups.includes(g))
+                .sort((a, b) => a.difficulty - b.difficulty)
+                .forEach(g => {
+                    const div = document.createElement('div');
+                    div.className = `solved-group difficulty-${g.difficulty}`;
+                    div.innerHTML = `
+                        <div class="group-name">${g.name}</div>
+                        <div class="group-words">${g.words.join(', ')}</div>
+                    `;
+                    area.appendChild(div);
+                });
+
+            remainingWords = [];
+            selected = [];
+            document.getElementById('submitBtn').disabled = true;
+            document.getElementById('deselectBtn').disabled = true;
+            document.getElementById('selectionCount').textContent = '';
+        }
+
+        init();
+    </script>
+</body>
+</html>
