@@ -555,6 +555,7 @@
 
         <!-- MODE SELECT -->
         <div class="mode-select" id="modeSelect">
+            <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:#64748b;font-weight:700;width:100%">Verbinde</div>
             <button class="mode-card" onclick="startClassic()">
                 <h3><span class="mode-icon">🧩</span> Klassisch</h3>
                 <p>Finde die 4 Gruppen aus 16 Wörtern. 4 Versuche.</p>
@@ -565,11 +566,20 @@
             </button>
             <button class="mode-card" onclick="window.vbShowOnlineDuellSetup()">
                 <h3><span class="mode-icon">🌐</span> Duell (Online)</h3>
-                <p>Erstelle einen Raum und lade Freunde ein! Sehe wer schneller ist.</p>
+                <p>Erstelle einen Raum und lade Freunde ein!</p>
+            </button>
+            <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:#64748b;font-weight:700;width:100%;margin-top:8px">Memory</div>
+            <button class="mode-card" onclick="startMemory()">
+                <h3><span class="mode-icon">🃏</span> Einzel</h3>
+                <p>Finde alle Wort-Paare alleine. Wenig Züge, schnelle Zeit!</p>
+            </button>
+            <button class="mode-card" onclick="showMemDuellSetup()">
+                <h3><span class="mode-icon">🃏</span> Duell (Lokal)</h3>
+                <p>Spiele Memory gegen einen Freund am selben Gerät!</p>
             </button>
             <button class="mode-card" onclick="window.vbShowOnlineMemorySetup()">
-                <h3><span class="mode-icon">🃏</span> Memory</h3>
-                <p>Finde Wort-Paare! Lokal oder online gegen Freunde.</p>
+                <h3><span class="mode-icon">🌐</span> Duell (Online)</h3>
+                <p>Memory online gegen Freunde! Gleiches Deck, wer findet mehr?</p>
             </button>
         </div>
 
@@ -600,12 +610,20 @@
             <button class="vb-btn" onclick="showModeSelect()">Zurück</button>
         </div>
 
+        <!-- MEMORY DUELL LOCAL SETUP -->
+        <div id="memDuellSetup" style="display:none" class="mode-select">
+            <div style="font-size:0.85rem;color:#94a3b8;text-align:center">Memory Duell – Namen eingeben</div>
+            <input id="memDuellP1Name" type="text" placeholder="Spieler 1" maxlength="12" class="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-4 py-2.5 text-center text-white focus:border-yellow-500 transition-colors outline-none" style="max-width:280px">
+            <input id="memDuellP2Name" type="text" placeholder="Spieler 2" maxlength="12" class="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-4 py-2.5 text-center text-white focus:border-yellow-500 transition-colors outline-none" style="max-width:280px">
+            <button class="vb-btn submit" onclick="startMemDuell()">Duell starten!</button>
+            <button class="vb-btn" onclick="showModeSelect()">Zurück</button>
+        </div>
+
         <!-- ONLINE MEMORY SETUP -->
         <div id="onlineMemorySetup" style="display:none" class="mode-select">
-            <div style="font-size:0.9rem;font-weight:700;text-align:center">Memory</div>
-            <button class="vb-btn submit" onclick="startMemory()">Lokal spielen</button>
+            <div style="font-size:0.9rem;font-weight:700;text-align:center">Memory Online Duell</div>
             <div class="vb-controls">
-                <button class="vb-btn" onclick="window.vbCreateRoom('memory')">Online Raum</button>
+                <button class="vb-btn submit" onclick="window.vbCreateRoom('memory')">Raum erstellen</button>
             </div>
             <div style="display:flex;align-items:center;gap:8px;width:100%;max-width:280px">
                 <div style="flex:1;height:1px;background:#334155"></div>
@@ -676,7 +694,7 @@
         <div id="duellResult" style="display:none;width:100%;display:none;flex-direction:column;align-items:center;gap:14px;text-align:center">
         </div>
 
-        <!-- MEMORY MODE -->
+        <!-- MEMORY SOLO MODE -->
         <div id="memoryView" style="display:none;width:100%;display:none;flex-direction:column;align-items:center;gap:10px">
             <div class="mem-stats">
                 Paare: <span id="memPairsFound">0</span> / <span id="memPairsTotal">0</span>
@@ -689,6 +707,31 @@
                 <button class="vb-btn" onclick="startMemory()">Neu</button>
                 <button class="vb-btn" onclick="showModeSelect()">Modi</button>
             </div>
+        </div>
+
+        <!-- MEMORY DUELL MODE -->
+        <div id="memDuellView" style="display:none;width:100%;flex-direction:column;align-items:center;gap:10px">
+            <div class="vb-player-bar">
+                <div class="vb-player-chip" id="mdChip1">
+                    <div id="mdName1">Spieler 1</div>
+                    <span class="score" id="mdScore1">0</span>
+                </div>
+                <div class="vb-vs">VS</div>
+                <div class="vb-player-chip" id="mdChip2">
+                    <div id="mdName2">Spieler 2</div>
+                    <span class="score" id="mdScore2">0</span>
+                </div>
+            </div>
+            <div class="mem-grid" id="mdGrid"></div>
+            <div class="vb-message" id="mdMessage"></div>
+            <div class="vb-controls">
+                <button class="vb-btn" onclick="startMemDuell()">Neu</button>
+                <button class="vb-btn" onclick="showModeSelect()">Modi</button>
+            </div>
+        </div>
+
+        <!-- MEMORY DUELL RESULT -->
+        <div id="memDuellResult" style="display:none;width:100%;flex-direction:column;align-items:center;gap:14px;text-align:center">
         </div>
     </div>
 
@@ -976,7 +1019,7 @@
     function fmtTime(s) { return Math.floor(s/60) + ':' + String(s%60).padStart(2,'0'); }
 
     // ── VIEW MANAGEMENT ──
-    const VIEWS = ['modeSelect','classicView','duellSetup','duellView','duellResult','memoryView','onlineDuellSetup','onlineMemorySetup'];
+    const VIEWS = ['modeSelect','classicView','duellSetup','duellView','duellResult','memoryView','memDuellSetup','memDuellView','memDuellResult','onlineDuellSetup','onlineMemorySetup'];
     function showView(id) {
         VIEWS.forEach(v => {
             const el = document.getElementById(v);
@@ -1370,6 +1413,153 @@
         m.textContent = text; m.className = 'vb-message ' + type;
     }
 
+    // ══════════════════════════════════
+    // ══  MEMORY DUELL MODE (LOCAL)
+    // ══════════════════════════════════
+    let mdCards = [], mdFlipped = [], mdScores = [0, 0], mdCurrentPlayer = 0;
+    let mdNames = ['Spieler 1', 'Spieler 2'], mdLocked = false, mdGameOver = false, mdTotalPairs = 0;
+
+    function showMemDuellSetup() {
+        document.getElementById('subtitleText').textContent = 'Memory Duell – Spieler eingeben';
+        showView('memDuellSetup');
+        document.getElementById('memDuellP1Name').value = localStorage.getItem('wolfle_user_name') || '';
+        document.getElementById('memDuellP2Name').value = '';
+        document.getElementById('memDuellP1Name').focus();
+    }
+
+    function buildMemDeck() {
+        const p1 = pickRandom();
+        let p2 = pickRandom();
+        while (p2 === p1) p2 = pickRandom();
+        const groups = [...p1.groups.slice(0, 3), ...p2.groups.slice(0, 3)];
+        const cards = [];
+        groups.forEach(g => {
+            const words = g.words.slice(0, 2);
+            words.forEach(w => {
+                cards.push({ id: cards.length, text: w, pairKey: g.name, type: 'word', matched: false });
+                cards.push({ id: cards.length, text: g.name, pairKey: g.name, type: 'group', matched: false });
+            });
+        });
+        shuffle(cards);
+        return cards;
+    }
+
+    function startMemDuell() {
+        mdNames[0] = (document.getElementById('memDuellP1Name') && document.getElementById('memDuellP1Name').value.trim()) || 'Spieler 1';
+        mdNames[1] = (document.getElementById('memDuellP2Name') && document.getElementById('memDuellP2Name').value.trim()) || 'Spieler 2';
+        mdCards = buildMemDeck();
+        mdFlipped = []; mdScores = [0, 0]; mdCurrentPlayer = 0; mdLocked = false; mdGameOver = false;
+        mdTotalPairs = mdCards.length / 2;
+        document.getElementById('subtitleText').textContent = 'Memory Duell';
+        showView('memDuellView');
+        mdUpdatePlayerBar(); mdRenderGrid(); mdShowMsg(`${mdNames[0]} beginnt!`, 'success');
+    }
+
+    function mdUpdatePlayerBar() {
+        document.getElementById('mdName1').textContent = mdNames[0];
+        document.getElementById('mdName2').textContent = mdNames[1];
+        document.getElementById('mdScore1').textContent = mdScores[0];
+        document.getElementById('mdScore2').textContent = mdScores[1];
+        document.getElementById('mdChip1').classList.toggle('active', mdCurrentPlayer === 0);
+        document.getElementById('mdChip2').classList.toggle('active', mdCurrentPlayer === 1);
+    }
+
+    function mdRenderGrid() {
+        const grid = document.getElementById('mdGrid');
+        grid.innerHTML = '';
+        const cols = mdCards.length <= 16 ? 4 : 6;
+        grid.className = `mem-grid size-${cols}x4`;
+        mdCards.forEach((card, i) => {
+            const el = document.createElement('div');
+            el.className = 'mem-card';
+            el.dataset.idx = i;
+            if (card.matched) el.classList.add('matched');
+            el.innerHTML = `
+                <div class="mem-card-inner">
+                    <div class="mem-card-face mem-card-back"></div>
+                    <div class="mem-card-face mem-card-front">${card.text}</div>
+                </div>`;
+            el.onclick = () => mdFlip(i, el);
+            grid.appendChild(el);
+        });
+    }
+
+    function mdFlip(idx, el) {
+        if (mdLocked || mdGameOver) return;
+        const card = mdCards[idx];
+        if (card.matched || mdFlipped.find(f => f.idx === idx)) return;
+        el.classList.add('flipped');
+        triggerHaptic('type');
+        mdFlipped.push({ idx, el, card });
+        if (mdFlipped.length === 2) {
+            const [a, b] = mdFlipped;
+            if (a.card.pairKey === b.card.pairKey && a.card.type !== b.card.type) {
+                // Match! Current player scores and goes again
+                mdCards[a.idx].matched = true;
+                mdCards[b.idx].matched = true;
+                a.el.classList.add('matched');
+                b.el.classList.add('matched');
+                mdScores[mdCurrentPlayer]++;
+                mdUpdatePlayerBar();
+                playTone(523, 'sine', 0.15);
+                triggerHaptic('correct');
+                mdFlipped = [];
+                if (mdScores[0] + mdScores[1] >= mdTotalPairs) {
+                    mdGameOver = true;
+                    setTimeout(mdEndGame, 600);
+                } else {
+                    mdShowMsg(`Treffer! ${mdNames[mdCurrentPlayer]} nochmal!`, 'success');
+                }
+            } else {
+                // No match – switch player
+                mdLocked = true;
+                playTone(220, 'sawtooth', 0.15, 0.1);
+                setTimeout(() => {
+                    a.el.classList.remove('flipped');
+                    b.el.classList.remove('flipped');
+                    mdFlipped = [];
+                    mdLocked = false;
+                    mdCurrentPlayer = 1 - mdCurrentPlayer;
+                    mdUpdatePlayerBar();
+                    mdShowMsg(`${mdNames[mdCurrentPlayer]} ist dran!`, 'success');
+                }, 700);
+            }
+        }
+    }
+
+    function mdShowMsg(text, type) {
+        const m = document.getElementById('mdMessage');
+        m.textContent = text; m.className = 'vb-message ' + type;
+    }
+
+    function mdEndGame() {
+        showView('memDuellResult');
+        document.getElementById('subtitleText').textContent = 'Memory Duell – Ergebnis';
+        const res = document.getElementById('memDuellResult');
+        let winner;
+        if (mdScores[0] > mdScores[1]) winner = mdNames[0];
+        else if (mdScores[1] > mdScores[0]) winner = mdNames[1];
+        else winner = null;
+        res.innerHTML = `
+            <div style="font-size:3rem;margin-bottom:4px">${winner ? '🏆' : '🤝'}</div>
+            <div style="font-size:1.3rem;font-weight:800">${winner ? winner + ' gewinnt!' : 'Unentschieden!'}</div>
+            <div style="font-size:0.85rem;color:#94a3b8;margin-top:4px">${mdScores[0] + mdScores[1]} Paare gefunden</div>
+            <div class="vb-player-bar" style="max-width:320px">
+                <div class="vb-player-chip ${mdScores[0] >= mdScores[1] ? 'active' : ''}">
+                    <div>${mdNames[0]}</div><span class="score">${mdScores[0]}</span>
+                </div>
+                <div class="vb-vs">VS</div>
+                <div class="vb-player-chip ${mdScores[1] >= mdScores[0] ? 'active' : ''}">
+                    <div>${mdNames[1]}</div><span class="score">${mdScores[1]}</span>
+                </div>
+            </div>
+            <div class="vb-controls" style="margin-top:8px">
+                <button class="vb-btn submit" onclick="startMemDuell()">Nochmal!</button>
+                <button class="vb-btn" onclick="showModeSelect()">Modi</button>
+            </div>
+        `;
+    }
+
     // ── INIT ──
     applyTheme(localStorage.getItem('wolfle_theme') || 'dark');
     updateSoundBtn();
@@ -1399,7 +1589,7 @@
         const code = Math.random().toString(36).substring(2,7).toUpperCase();
         const puzzle = pickRandom();
         const puzzleIdx = allPuzzles.indexOf(puzzle);
-        await setDoc(doc(firestore,'artifacts',appId,'public','data',ROOM_COL,code), {
+        const roomData = {
             gameType,
             puzzleIdx,
             isPrivate: false,
@@ -1407,7 +1597,16 @@
             createdAt: Date.now(),
             status: 'waiting',
             players: { [name]: { name, score: 0, finished: false, solved: 0 } }
-        });
+        };
+        // For memory, store the card deck so both players see the same layout
+        if (gameType === 'memory') {
+            const deck = buildMemDeck();
+            roomData.memDeck = deck.map(c => ({ text: c.text, pairKey: c.pairKey, type: c.type }));
+            roomData.memMatched = [];
+            roomData.memCurrentTurn = name;
+            roomData.memFlipped = [];
+        }
+        await setDoc(doc(firestore,'artifacts',appId,'public','data',ROOM_COL,code), roomData);
         currentRoomCode = code;
         currentRoomGameType = gameType;
         localStorage.setItem('wolfle_active_vb_room', code);
@@ -1454,6 +1653,8 @@
             }
         }
         currentRoomCode = null;
+        onlineDuellStarted = false;
+        onlineMemoryStarted = false;
         document.getElementById('vbRoomStatus').style.display = 'none';
         showModeSelect();
     };
@@ -1491,6 +1692,8 @@
                     startOnlineDuell(puzzleToUse, pList, data);
                 } else if (gameType === 'memory') {
                     startOnlineMemory(puzzleToUse, pList, data);
+                    // Update UI on every snapshot for real-time sync
+                    omUpdateFromRoom(data);
                 }
             }
 
@@ -1501,7 +1704,7 @@
 
             // Show waiting screen if still waiting
             if (data.status === 'waiting') {
-                showView('onlineDuellSetup');
+                showView(gameType === 'memory' ? 'onlineMemorySetup' : 'onlineDuellSetup');
                 document.getElementById('subtitleText').textContent = `Warte auf Mitspieler... Code: ${code}`;
             }
 
@@ -1544,15 +1747,165 @@
         document.getElementById('submitBtn').setAttribute('onclick', 'window._onlineDuellSubmit()');
     }
 
-    // ── Online Memory ──
+    // ── Online Memory (Duell via Firestore) ──
     let onlineMemoryStarted = false;
+    let omCards = [], omLocked = false, omMyName = '';
+
     function startOnlineMemory(puzzle, playersList, roomData) {
         if (onlineMemoryStarted) return;
         onlineMemoryStarted = true;
-        startMemory(); // Use local memory, track score in Firebase
-        // Override match handler to sync
-        const origFlip = memFlip;
-        // Score syncs happen in the existing memFlip via a patch
+        omMyName = getPlayerName();
+
+        // Build deck from room data or fallback to local
+        if (roomData.memDeck && roomData.memDeck.length > 0) {
+            omCards = roomData.memDeck.map((c, i) => ({ id: i, text: c.text, pairKey: c.pairKey, type: c.type, matched: false }));
+        } else {
+            omCards = buildMemDeck();
+        }
+
+        // Apply already matched cards
+        if (roomData.memMatched) {
+            roomData.memMatched.forEach(idx => { if (omCards[idx]) omCards[idx].matched = true; });
+        }
+
+        // Set up player names for the duell view
+        const pNames = playersList.map(p => p.name);
+        mdNames[0] = pNames[0] || 'Spieler 1';
+        mdNames[1] = pNames[1] || 'Spieler 2';
+        mdScores = [0, 0];
+        playersList.forEach((p, i) => { if (i < 2) mdScores[i] = p.score || 0; });
+        mdCurrentPlayer = pNames.indexOf(roomData.memCurrentTurn) >= 0 ? pNames.indexOf(roomData.memCurrentTurn) : 0;
+        mdTotalPairs = omCards.length / 2;
+        mdGameOver = false;
+        omLocked = false;
+
+        document.getElementById('subtitleText').textContent = 'Memory Online Duell';
+        showView('memDuellView');
+        mdUpdatePlayerBar();
+        omRenderGrid();
+
+        const isMyTurn = roomData.memCurrentTurn === omMyName;
+        mdShowMsg(isMyTurn ? 'Du bist dran!' : `${roomData.memCurrentTurn} ist dran...`, 'success');
+    }
+
+    function omRenderGrid() {
+        const grid = document.getElementById('mdGrid');
+        grid.innerHTML = '';
+        const cols = omCards.length <= 16 ? 4 : 6;
+        grid.className = `mem-grid size-${cols}x4`;
+        omCards.forEach((card, i) => {
+            const el = document.createElement('div');
+            el.className = 'mem-card';
+            el.dataset.idx = i;
+            if (card.matched) el.classList.add('matched');
+            el.innerHTML = `
+                <div class="mem-card-inner">
+                    <div class="mem-card-face mem-card-back"></div>
+                    <div class="mem-card-face mem-card-front">${card.text}</div>
+                </div>`;
+            el.onclick = () => omFlip(i, el);
+            grid.appendChild(el);
+        });
+    }
+
+    async function omFlip(idx, el) {
+        if (omLocked || mdGameOver) return;
+        const card = omCards[idx];
+        if (card.matched) return;
+
+        // Check if it's my turn
+        if (!currentRoomCode) return;
+        const firestore = await getDB(); if (!firestore) return;
+        const snap = await getDoc(doc(firestore,'artifacts',appId,'public','data',ROOM_COL,currentRoomCode));
+        if (!snap.exists()) return;
+        const data = snap.data();
+        if (data.memCurrentTurn !== omMyName) { mdShowMsg('Warte auf deinen Zug!','error'); return; }
+
+        const currentFlipped = data.memFlipped || [];
+        if (currentFlipped.includes(idx)) return;
+        if (currentFlipped.length >= 2) return;
+
+        el.classList.add('flipped');
+        triggerHaptic('type');
+        const newFlipped = [...currentFlipped, idx];
+
+        if (newFlipped.length === 1) {
+            // First card flipped – save to Firebase
+            await setDoc(doc(firestore,'artifacts',appId,'public','data',ROOM_COL,currentRoomCode),
+                { memFlipped: newFlipped }, { merge: true });
+        } else if (newFlipped.length === 2) {
+            omLocked = true;
+            const a = omCards[newFlipped[0]];
+            const b = omCards[newFlipped[1]];
+            const pNames = Object.keys(data.players);
+            const myIdx = pNames.indexOf(omMyName);
+
+            if (a.pairKey === b.pairKey && a.type !== b.type) {
+                // Match!
+                const newMatched = [...(data.memMatched || []), newFlipped[0], newFlipped[1]];
+                const newScore = (data.players[omMyName]?.score || 0) + 1;
+                playTone(523, 'sine', 0.15); triggerHaptic('correct');
+                const totalPairs = omCards.length / 2;
+                const allDone = newMatched.length / 2 >= totalPairs;
+                await setDoc(doc(firestore,'artifacts',appId,'public','data',ROOM_COL,currentRoomCode), {
+                    memFlipped: [],
+                    memMatched: newMatched,
+                    memCurrentTurn: omMyName, // keep turn on match
+                    players: { [omMyName]: { score: newScore, finished: allDone } }
+                }, { merge: true });
+                omLocked = false;
+            } else {
+                // No match – switch turn
+                playTone(220, 'sawtooth', 0.15, 0.1);
+                const otherPlayer = pNames.find(n => n !== omMyName) || pNames[0];
+                setTimeout(async () => {
+                    await setDoc(doc(firestore,'artifacts',appId,'public','data',ROOM_COL,currentRoomCode), {
+                        memFlipped: [],
+                        memCurrentTurn: otherPlayer
+                    }, { merge: true });
+                    omLocked = false;
+                }, 800);
+            }
+        }
+    }
+
+    // Update online memory UI when room data changes (called from onSnapshot)
+    function omUpdateFromRoom(data) {
+        if (!onlineMemoryStarted || !data.memDeck) return;
+        const pNames = Object.keys(data.players || {});
+        const playersList = Object.values(data.players || {});
+
+        // Update scores
+        mdNames[0] = pNames[0] || 'Spieler 1';
+        mdNames[1] = pNames[1] || 'Spieler 2';
+        mdScores = [playersList[0]?.score || 0, playersList[1]?.score || 0];
+        mdCurrentPlayer = pNames.indexOf(data.memCurrentTurn) >= 0 ? pNames.indexOf(data.memCurrentTurn) : 0;
+        mdUpdatePlayerBar();
+
+        // Update matched cards
+        const matched = data.memMatched || [];
+        omCards.forEach((c, i) => { c.matched = matched.includes(i); });
+
+        // Show flipped cards from Firebase
+        const flipped = data.memFlipped || [];
+        omRenderGrid();
+        flipped.forEach(idx => {
+            const el = document.querySelector(`#mdGrid .mem-card[data-idx="${idx}"]`);
+            if (el) el.classList.add('flipped');
+        });
+
+        // Turn indicator
+        const isMyTurn = data.memCurrentTurn === omMyName;
+        if (!mdGameOver) {
+            mdShowMsg(isMyTurn ? 'Du bist dran!' : `${data.memCurrentTurn} ist dran...`, 'success');
+        }
+
+        // Check if game is done
+        const totalPairs = omCards.length / 2;
+        if (matched.length / 2 >= totalPairs && !mdGameOver) {
+            mdGameOver = true;
+            setTimeout(mdEndGame, 600);
+        }
     }
 
     // ── Setup views ──
@@ -1808,6 +2161,8 @@
     window.init = init;
     window.duellDeselectAll = duellDeselectAll;
     window.duellSubmitGuess = duellSubmitGuess;
+    window.showMemDuellSetup = showMemDuellSetup;
+    window.startMemDuell = startMemDuell;
 
     // ── INIT ──
     applyTheme(localStorage.getItem('wolfle_theme') || 'dark');
