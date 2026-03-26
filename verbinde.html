@@ -207,6 +207,16 @@
             80% { transform: translateX(4px); }
         }
 
+        /* ── MISTAKES ── */
+        .vb-mistakes {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            text-align: center;
+            min-height: 1.2em;
+        }
+        .vb-dot.filled { color: #eab308; }
+        .vb-dot.empty { color: #334155; }
+
         /* ── MESSAGE ── */
         .vb-message {
             font-size: 0.8rem;
@@ -387,11 +397,16 @@
         <div class="vb-solved-area" id="solvedArea"></div>
         <div class="vb-grid" id="grid"></div>
 
+        <div class="vb-mistakes" id="mistakesDisplay"></div>
+
         <div class="vb-message" id="message"></div>
 
         <div class="vb-controls">
             <button class="vb-btn" id="deselectBtn" onclick="deselectAll()" disabled>Abwählen</button>
             <button class="vb-btn submit" id="submitBtn" onclick="submitGuess()">Prüfen</button>
+            <button class="vb-btn" id="newGameBtn" onclick="init()">
+                <i data-lucide="refresh-cw" class="w-3.5 h-3.5" style="display:inline;vertical-align:middle;margin-right:4px"></i>Neu
+            </button>
         </div>
     </div>
 
@@ -491,27 +506,187 @@
     }
 
     // ── GAME LOGIC ──
-    const puzzleData = {
-        groups: [
-            { name: "Obst", words: ["Apfel", "Birne", "Kirsche", "Traube"], difficulty: 0 },
-            { name: "Farben", words: ["Rot", "Blau", "Grün", "Gelb"], difficulty: 1 },
-            { name: "Planeten", words: ["Mars", "Venus", "Saturn", "Jupiter"], difficulty: 2 },
-            { name: "Musikinstrumente", words: ["Gitarre", "Klavier", "Geige", "Flöte"], difficulty: 3 }
-        ]
-    };
+    const allPuzzles = [
+        {
+            groups: [
+                { name: "Obst", words: ["Apfel", "Birne", "Kirsche", "Traube"], difficulty: 0 },
+                { name: "Farben", words: ["Rot", "Blau", "Grün", "Gelb"], difficulty: 1 },
+                { name: "Planeten", words: ["Mars", "Venus", "Saturn", "Jupiter"], difficulty: 2 },
+                { name: "Musikinstrumente", words: ["Gitarre", "Klavier", "Geige", "Flöte"], difficulty: 3 }
+            ]
+        },
+        {
+            groups: [
+                { name: "Tiere im Wald", words: ["Fuchs", "Reh", "Dachs", "Eule"], difficulty: 0 },
+                { name: "Schulfächer", words: ["Mathe", "Deutsch", "Physik", "Kunst"], difficulty: 1 },
+                { name: "Hauptstädte", words: ["Berlin", "Paris", "Tokyo", "London"], difficulty: 2 },
+                { name: "Gewürze", words: ["Salz", "Pfeffer", "Zimt", "Oregano"], difficulty: 3 }
+            ]
+        },
+        {
+            groups: [
+                { name: "Sportarten", words: ["Fußball", "Tennis", "Schwimmen", "Boxen"], difficulty: 0 },
+                { name: "Möbelstücke", words: ["Tisch", "Stuhl", "Regal", "Sofa"], difficulty: 1 },
+                { name: "Elemente", words: ["Feuer", "Wasser", "Erde", "Luft"], difficulty: 2 },
+                { name: "Berufe", words: ["Arzt", "Lehrer", "Koch", "Pilot"], difficulty: 3 }
+            ]
+        },
+        {
+            groups: [
+                { name: "Kleidung", words: ["Hemd", "Hose", "Jacke", "Schal"], difficulty: 0 },
+                { name: "Getränke", words: ["Kaffee", "Tee", "Saft", "Milch"], difficulty: 1 },
+                { name: "Märchenfiguren", words: ["Hexe", "Zwerg", "Riese", "Fee"], difficulty: 2 },
+                { name: "Werkzeuge", words: ["Hammer", "Zange", "Säge", "Bohrer"], difficulty: 3 }
+            ]
+        },
+        {
+            groups: [
+                { name: "Wetter", words: ["Regen", "Schnee", "Hagel", "Sturm"], difficulty: 0 },
+                { name: "Körperteile", words: ["Hand", "Fuß", "Knie", "Kopf"], difficulty: 1 },
+                { name: "Bäume", words: ["Eiche", "Birke", "Tanne", "Buche"], difficulty: 2 },
+                { name: "Gefühle", words: ["Freude", "Angst", "Wut", "Stolz"], difficulty: 3 }
+            ]
+        },
+        {
+            groups: [
+                { name: "Gemüse", words: ["Gurke", "Tomate", "Zwiebel", "Paprika"], difficulty: 0 },
+                { name: "Fahrzeuge", words: ["Auto", "Zug", "Schiff", "Fahrrad"], difficulty: 1 },
+                { name: "Metalle", words: ["Gold", "Silber", "Eisen", "Kupfer"], difficulty: 2 },
+                { name: "Griechische Götter", words: ["Zeus", "Hera", "Ares", "Hermes"], difficulty: 3 }
+            ]
+        },
+        {
+            groups: [
+                { name: "Blumen", words: ["Rose", "Tulpe", "Lilie", "Nelke"], difficulty: 0 },
+                { name: "Süßigkeiten", words: ["Schokolade", "Bonbon", "Keks", "Eis"], difficulty: 1 },
+                { name: "Länder", words: ["Spanien", "Brasilien", "Ägypten", "Norwegen"], difficulty: 2 },
+                { name: "Tanzstile", words: ["Walzer", "Tango", "Salsa", "Ballett"], difficulty: 3 }
+            ]
+        },
+        {
+            groups: [
+                { name: "Meerestiere", words: ["Hai", "Wal", "Qualle", "Krabbe"], difficulty: 0 },
+                { name: "Instrumente", words: ["Trommel", "Harfe", "Orgel", "Cello"], difficulty: 1 },
+                { name: "Sprachen", words: ["Englisch", "Spanisch", "Arabisch", "Chinesisch"], difficulty: 2 },
+                { name: "Astronomie", words: ["Stern", "Komet", "Nebel", "Galaxie"], difficulty: 3 }
+            ]
+        },
+        {
+            groups: [
+                { name: "Obst (tropisch)", words: ["Mango", "Ananas", "Kiwi", "Banane"], difficulty: 0 },
+                { name: "Räume im Haus", words: ["Küche", "Bad", "Keller", "Dachboden"], difficulty: 1 },
+                { name: "Kartenspiele", words: ["Poker", "Skat", "Uno", "Mau-Mau"], difficulty: 2 },
+                { name: "Philosophen", words: ["Platon", "Kant", "Nietzsche", "Sokrates"], difficulty: 3 }
+            ]
+        },
+        {
+            groups: [
+                { name: "Vögel", words: ["Adler", "Spatz", "Rabe", "Storch"], difficulty: 0 },
+                { name: "Backzutaten", words: ["Mehl", "Zucker", "Butter", "Hefe"], difficulty: 1 },
+                { name: "Kontinente", words: ["Europa", "Afrika", "Asien", "Amerika"], difficulty: 2 },
+                { name: "Mythische Wesen", words: ["Drache", "Einhorn", "Phoenix", "Greif"], difficulty: 3 }
+            ]
+        },
+        {
+            groups: [
+                { name: "Jahreszeiten-Wörter", words: ["Ernte", "Frost", "Blüte", "Hitze"], difficulty: 0 },
+                { name: "Schreibwaren", words: ["Stift", "Lineal", "Radierer", "Schere"], difficulty: 1 },
+                { name: "Flüsse", words: ["Donau", "Rhein", "Elbe", "Isar"], difficulty: 2 },
+                { name: "Opern", words: ["Carmen", "Aida", "Fidelio", "Otello"], difficulty: 3 }
+            ]
+        },
+        {
+            groups: [
+                { name: "Insekten", words: ["Biene", "Ameise", "Käfer", "Libelle"], difficulty: 0 },
+                { name: "Stoffe", words: ["Seide", "Wolle", "Leinen", "Baumwolle"], difficulty: 1 },
+                { name: "Gebirge", words: ["Alpen", "Anden", "Ural", "Himalaya"], difficulty: 2 },
+                { name: "Erfinder", words: ["Edison", "Tesla", "Nobel", "Diesel"], difficulty: 3 }
+            ]
+        },
+        {
+            groups: [
+                { name: "Frühstück", words: ["Brötchen", "Müsli", "Marmelade", "Ei"], difficulty: 0 },
+                { name: "Edelsteine", words: ["Rubin", "Saphir", "Smaragd", "Diamant"], difficulty: 1 },
+                { name: "Filmgenres", words: ["Krimi", "Horror", "Komödie", "Western"], difficulty: 2 },
+                { name: "Schachfiguren", words: ["König", "Dame", "Turm", "Springer"], difficulty: 3 }
+            ]
+        },
+        {
+            groups: [
+                { name: "Haustiere", words: ["Hund", "Katze", "Hamster", "Papagei"], difficulty: 0 },
+                { name: "Währungen", words: ["Euro", "Dollar", "Yen", "Pfund"], difficulty: 1 },
+                { name: "Zauberworte", words: ["Abrakadabra", "Simsalabim", "Hokuspokus", "Hex"], difficulty: 2 },
+                { name: "Komponisten", words: ["Bach", "Mozart", "Beethoven", "Brahms"], difficulty: 3 }
+            ]
+        },
+        {
+            groups: [
+                { name: "Brotsorten", words: ["Roggen", "Dinkel", "Vollkorn", "Pumpernickel"], difficulty: 0 },
+                { name: "Sportgeräte", words: ["Ball", "Schläger", "Netz", "Tor"], difficulty: 1 },
+                { name: "Sternzeichen", words: ["Widder", "Löwe", "Waage", "Fische"], difficulty: 2 },
+                { name: "Physik-Begriffe", words: ["Kraft", "Masse", "Energie", "Impuls"], difficulty: 3 }
+            ]
+        },
+        {
+            groups: [
+                { name: "Gemüse (grün)", words: ["Spinat", "Brokkoli", "Erbse", "Lauch"], difficulty: 0 },
+                { name: "Musikrichtungen", words: ["Rock", "Jazz", "Klassik", "Techno"], difficulty: 1 },
+                { name: "Kartenfarben", words: ["Herz", "Karo", "Pik", "Kreuz"], difficulty: 2 },
+                { name: "Planeten (äußere)", words: ["Uranus", "Neptun", "Pluto", "Merkur"], difficulty: 3 }
+            ]
+        },
+        {
+            groups: [
+                { name: "Wintersport", words: ["Ski", "Rodeln", "Eislauf", "Biathlon"], difficulty: 0 },
+                { name: "Küchengeräte", words: ["Mixer", "Ofen", "Herd", "Toaster"], difficulty: 1 },
+                { name: "Meere", words: ["Atlantik", "Pazifik", "Arktis", "Indik"], difficulty: 2 },
+                { name: "Dichter", words: ["Goethe", "Schiller", "Heine", "Rilke"], difficulty: 3 }
+            ]
+        },
+        {
+            groups: [
+                { name: "Nüsse", words: ["Walnuss", "Mandel", "Cashew", "Pistazie"], difficulty: 0 },
+                { name: "Bauwerke", words: ["Turm", "Brücke", "Dom", "Palast"], difficulty: 1 },
+                { name: "Märchen", words: ["Rapunzel", "Aschenputtel", "Schneewittchen", "Rotkäppchen"], difficulty: 2 },
+                { name: "Mathematik", words: ["Integral", "Vektor", "Matrix", "Funktion"], difficulty: 3 }
+            ]
+        },
+        {
+            groups: [
+                { name: "Käsesorten", words: ["Gouda", "Brie", "Emmentaler", "Mozzarella"], difficulty: 0 },
+                { name: "Himmelsrichtungen", words: ["Norden", "Süden", "Osten", "Westen"], difficulty: 1 },
+                { name: "Brettspiels", words: ["Schach", "Risiko", "Monopoly", "Cluedo"], difficulty: 2 },
+                { name: "Maler", words: ["Monet", "Picasso", "Rembrandt", "Vermeer"], difficulty: 3 }
+            ]
+        }
+    ];
 
+    let puzzleData = allPuzzles[0];
     let selected = [];
     let solvedGroups = [];
     let remainingWords = [];
+    let mistakesLeft = 4;
+    let gameOver = false;
+
+    function pickRandomPuzzle() {
+        puzzleData = allPuzzles[Math.floor(Math.random() * allPuzzles.length)];
+    }
 
     function init() {
+        pickRandomPuzzle();
         remainingWords = puzzleData.groups.flatMap(g => g.words);
         shuffle(remainingWords);
         solvedGroups = [];
         selected = [];
+        mistakesLeft = 4;
+        gameOver = false;
         document.getElementById('solvedArea').innerHTML = '';
+        document.getElementById('message').textContent = '';
+        document.getElementById('message').className = 'vb-message';
+        updateMistakes();
         renderGrid();
         updateUI();
+        lucide.createIcons();
     }
 
     function shuffle(arr) {
@@ -535,6 +710,7 @@
     }
 
     function toggleSelect(word, tileEl) {
+        if (gameOver) return;
         if (selected.includes(word)) {
             selected = selected.filter(w => w !== word);
             tileEl.classList.remove('selected', 'bounce');
@@ -569,14 +745,110 @@
         setTimeout(() => { msg.textContent = ''; msg.className = 'vb-message'; }, 2000);
     }
 
+    function updateMistakes() {
+        const el = document.getElementById('mistakesDisplay');
+        if (!el) return;
+        el.innerHTML = 'Versuche übrig: ' + '<span class="vb-dot filled">●</span> '.repeat(mistakesLeft) + '<span class="vb-dot empty">●</span> '.repeat(4 - mistakesLeft);
+    }
+
+    function shakeTiles() {
+        document.querySelectorAll('.vb-tile.selected').forEach(tile => {
+            tile.classList.add('shake');
+            setTimeout(() => tile.classList.remove('shake'), 500);
+        });
+    }
+
+    function revealAll() {
+        gameOver = true;
+        const grid = document.getElementById('grid');
+        grid.innerHTML = '';
+        const area = document.getElementById('solvedArea');
+
+        puzzleData.groups
+            .filter(g => !solvedGroups.includes(g))
+            .sort((a, b) => a.difficulty - b.difficulty)
+            .forEach(g => {
+                const div = document.createElement('div');
+                div.className = `vb-solved-group difficulty-${g.difficulty}`;
+                div.innerHTML = `
+                    <div class="group-name">${g.name}</div>
+                    <div class="group-words">${g.words.join(', ')}</div>
+                `;
+                area.appendChild(div);
+            });
+
+        remainingWords = [];
+        selected = [];
+        updateUI();
+    }
+
     function submitGuess() {
+        if (gameOver) return;
         if (selected.length !== 4) {
             showMessage('Wähle genau 4 Wörter aus', 'error');
             return;
         }
 
-        console.log('Submitted words:', selected.slice());
-        showMessage('Gruppe eingereicht!', 'success');
+        // Check for exact match
+        const match = puzzleData.groups.find(g =>
+            !solvedGroups.includes(g) &&
+            g.words.every(w => selected.includes(w)) &&
+            selected.every(w => g.words.includes(w))
+        );
+
+        if (match) {
+            // Correct group found
+            solvedGroups.push(match);
+            remainingWords = remainingWords.filter(w => !match.words.includes(w));
+            selected = [];
+
+            const area = document.getElementById('solvedArea');
+            const div = document.createElement('div');
+            div.className = `vb-solved-group difficulty-${match.difficulty}`;
+            div.innerHTML = `
+                <div class="group-name">${match.name}</div>
+                <div class="group-words">${match.words.join(', ')}</div>
+            `;
+            area.appendChild(div);
+
+            renderGrid();
+            updateUI();
+            triggerHaptic('correct');
+            playTone(523, 'sine', 0.2);
+
+            if (solvedGroups.length === 4) {
+                gameOver = true;
+                showMessage('Gelöst! Gut gemacht!', 'success');
+                playTone(659, 'sine', 0.15);
+                setTimeout(() => playTone(784, 'sine', 0.15), 120);
+                setTimeout(() => playTone(1047, 'sine', 0.3), 240);
+            } else {
+                showMessage('Richtig!', 'success');
+            }
+        } else {
+            // Wrong guess
+            mistakesLeft--;
+            updateMistakes();
+            triggerHaptic('wrong');
+            playTone(220, 'sawtooth', 0.2, 0.15);
+
+            const oneAway = puzzleData.groups.some(g =>
+                !solvedGroups.includes(g) &&
+                selected.filter(w => g.words.includes(w)).length === 3
+            );
+
+            if (mistakesLeft <= 0) {
+                showMessage('Leider verloren!', 'error');
+                shakeTiles();
+                setTimeout(() => revealAll(), 600);
+            } else if (oneAway) {
+                showMessage('Knapp daneben! Nur 1 falsch.', 'error');
+                shakeTiles();
+            } else {
+                showMessage('Falsch! Versuch es nochmal.', 'error');
+                shakeTiles();
+            }
+        }
     }
 
     // ── INIT ──
