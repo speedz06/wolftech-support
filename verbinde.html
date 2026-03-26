@@ -644,7 +644,6 @@
             <div class="vb-message" id="message"></div>
             <div class="vb-controls">
                 <button class="vb-btn" id="deselectBtn" onclick="deselectAll()" disabled>Abwählen</button>
-                <button class="vb-btn submit" id="submitBtn" onclick="submitGuess()">Prüfen</button>
                 <button class="vb-btn" onclick="init()">Neu</button>
                 <button class="vb-btn" onclick="showModeSelect()">Modi</button>
             </div>
@@ -670,7 +669,6 @@
             <div class="vb-message" id="duellMessage"></div>
             <div class="vb-controls">
                 <button class="vb-btn" id="duellDeselectBtn" onclick="duellDeselectAll()" disabled>Abwählen</button>
-                <button class="vb-btn submit" id="duellSubmitBtn" onclick="duellSubmitGuess()">Prüfen</button>
             </div>
         </div>
 
@@ -1034,6 +1032,7 @@
             triggerHaptic('type');
         }
         cUpdateUI();
+        if (cSelected.length === 4) setTimeout(() => submitGuess(), 250);
     }
     function deselectAll() { cSelected = []; cRenderGrid(); cUpdateUI(); }
     function cUpdateUI() {
@@ -1138,7 +1137,7 @@
                 clearInterval(duellTimerInterval);
                 // Time's up for current player, switch
                 dShowMsg(`Zeit abgelaufen für ${dNames[dCurrentPlayer]}!`, 'error');
-                setTimeout(() => dSwitchPlayer(), 1000);
+                setTimeout(() => dSwitchPlayer(), 500);
             }
         }, 1000);
     }
@@ -1179,6 +1178,7 @@
             triggerHaptic('type');
         }
         dUpdateUI();
+        if (dSelected.length === 4) setTimeout(() => duellSubmitGuess(), 250);
     }
     function duellDeselectAll() { dSelected = []; dRenderGrid(); dUpdateUI(); }
     function dUpdateUI() {
@@ -1246,17 +1246,17 @@
             area.appendChild(d);
             dUpdatePlayerBar(); dRenderGrid(); dUpdateUI();
             triggerHaptic('correct'); playTone(523,'sine',0.2);
-            if (dSolved.length >= 4) { dShowMsg('Alle Gruppen gefunden!','success'); setTimeout(dEndGame, 800); }
-            else { dShowMsg('Richtig! +' + (1 + match.difficulty) + ' Punkte','success'); setTimeout(dSwitchPlayer, 1200); }
+            if (dSolved.length >= 4) { dShowMsg('Alle Gruppen gefunden!','success'); setTimeout(dEndGame, 600); }
+            else { dShowMsg('Richtig! +' + (1 + match.difficulty) + ' Punkte','success'); setTimeout(dSwitchPlayer, 400); }
         } else {
             triggerHaptic('wrong'); playTone(220,'sawtooth',0.2,0.15);
             const oneAway = dPuzzle.groups.some(g => !dSolved.includes(g) && dSelected.filter(w => g.words.includes(w)).length === 3);
-            if (oneAway) dShowMsg('Knapp daneben! Spieler wechselt...','error');
-            else dShowMsg('Falsch! Spieler wechselt...','error');
+            if (oneAway) dShowMsg('Knapp daneben!','error');
+            else dShowMsg('Falsch!','error');
             document.querySelectorAll('#duellGrid .vb-tile.selected').forEach(t => {
-                t.classList.add('shake'); setTimeout(() => t.classList.remove('shake'), 500);
+                t.classList.add('shake'); setTimeout(() => t.classList.remove('shake'), 400);
             });
-            setTimeout(dSwitchPlayer, 1200);
+            setTimeout(dSwitchPlayer, 500);
         }
     }
 
