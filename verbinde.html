@@ -106,14 +106,29 @@
             word-break: break-word;
         }
 
-        .tile:hover {
+        .tile:hover:not(.selected) {
             background-color: #4a4a4c;
         }
 
         .tile.selected {
             background-color: #538d4e;
             color: #ffffff;
-            transform: scale(1.03);
+            transform: scale(1.04);
+            box-shadow: 0 0 0 2px #6aba64, 0 4px 12px rgba(83, 141, 78, 0.4);
+        }
+
+        .tile.selected:hover {
+            background-color: #45793f;
+        }
+
+        .tile.bounce {
+            animation: bounce 0.2s ease;
+        }
+
+        @keyframes bounce {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1.04); }
         }
 
         .tile.shake {
@@ -254,18 +269,22 @@
                 tile.className = 'tile';
                 if (selected.includes(word)) tile.classList.add('selected');
                 tile.textContent = word;
-                tile.onclick = () => toggleSelect(word);
+                tile.onclick = () => toggleSelect(word, tile);
                 grid.appendChild(tile);
             });
         }
 
-        function toggleSelect(word) {
+        function toggleSelect(word, tileEl) {
             if (selected.includes(word)) {
                 selected = selected.filter(w => w !== word);
+                tileEl.classList.remove('selected', 'bounce');
             } else if (selected.length < 4) {
                 selected.push(word);
+                tileEl.classList.add('selected', 'bounce');
+                tileEl.addEventListener('animationend', () => {
+                    tileEl.classList.remove('bounce');
+                }, { once: true });
             }
-            renderGrid();
             updateUI();
         }
 
