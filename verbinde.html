@@ -14,30 +14,40 @@
         body {
             background-color: #121213;
             color: #d7dadc;
-            font-family: 'Helvetica Neue', Arial, sans-serif;
+            font-family: 'nyt-karnakcondensed', 'Helvetica Neue', Arial, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            padding: 20px;
+            padding: 24px 16px;
         }
 
         h1 {
-            font-size: 2rem;
-            letter-spacing: 0.1em;
-            margin-bottom: 8px;
+            font-size: 2.25rem;
+            font-weight: 800;
+            letter-spacing: 0.15em;
+            margin-bottom: 4px;
+            border-bottom: 1px solid #3a3a3c;
+            padding-bottom: 12px;
+            width: 100%;
+            max-width: 480px;
+            text-align: center;
         }
 
         .subtitle {
             color: #818384;
-            font-size: 0.9rem;
-            margin-bottom: 24px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+            margin-top: 12px;
+            margin-bottom: 20px;
         }
 
         .selection-count {
             color: #818384;
-            font-size: 0.85rem;
-            margin-bottom: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-bottom: 10px;
             min-height: 1.2em;
         }
 
@@ -46,28 +56,28 @@
             max-width: 480px;
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            margin-bottom: 8px;
+            gap: 6px;
+            margin-bottom: 6px;
         }
 
         .solved-group {
-            border-radius: 8px;
-            padding: 16px;
+            border-radius: 10px;
+            padding: 14px 12px;
             text-align: center;
             animation: fadeIn 0.4s ease;
         }
 
         .solved-group .group-name {
-            font-weight: 700;
-            font-size: 0.85rem;
+            font-weight: 800;
+            font-size: 0.8rem;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 4px;
+            letter-spacing: 0.06em;
+            margin-bottom: 2px;
             color: #121213;
         }
 
         .solved-group .group-words {
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             font-weight: 600;
             color: #121213;
         }
@@ -85,40 +95,57 @@
         .grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
+            gap: 6px;
             width: 100%;
             max-width: 480px;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
         }
 
         .tile {
             background-color: #3a3a3c;
-            border: none;
-            border-radius: 8px;
+            border: 2px solid transparent;
+            border-radius: 6px;
             color: #d7dadc;
-            font-size: 0.95rem;
-            font-weight: 700;
-            padding: 20px 8px;
+            font-size: 0.85rem;
+            font-weight: 800;
+            padding: 18px 6px;
             cursor: pointer;
             text-transform: uppercase;
-            transition: background-color 0.15s, transform 0.1s;
+            letter-spacing: 0.03em;
+            transition: background-color 0.12s, border-color 0.12s, transform 0.1s;
             text-align: center;
             word-break: break-word;
+            user-select: none;
+            -webkit-user-select: none;
+            outline: none;
         }
 
         .tile:hover:not(.selected) {
-            background-color: #4a4a4c;
+            background-color: #48484a;
+            border-color: #565658;
+        }
+
+        .tile:active:not(.selected) {
+            background-color: #525254;
+            transform: scale(0.97);
         }
 
         .tile.selected {
             background-color: #538d4e;
+            border-color: #6aba64;
             color: #ffffff;
-            transform: scale(1.04);
-            box-shadow: 0 0 0 2px #6aba64, 0 4px 12px rgba(83, 141, 78, 0.4);
+            transform: scale(1.02);
+            box-shadow: 0 2px 8px rgba(83, 141, 78, 0.35);
         }
 
         .tile.selected:hover {
-            background-color: #45793f;
+            background-color: #4a7f46;
+            border-color: #5eaa58;
+        }
+
+        .tile.selected:active {
+            background-color: #3f6e3b;
+            transform: scale(0.98);
         }
 
         .tile.bounce {
@@ -127,8 +154,8 @@
 
         @keyframes bounce {
             0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1.04); }
+            50% { transform: scale(1.08); }
+            100% { transform: scale(1.02); }
         }
 
         .tile.shake {
@@ -145,53 +172,71 @@
 
         .controls {
             display: flex;
-            gap: 12px;
+            gap: 10px;
         }
 
         button.action {
-            background-color: #818384;
-            color: #121213;
-            border: none;
+            background-color: transparent;
+            color: #d7dadc;
+            border: 1px solid #565658;
             border-radius: 24px;
-            padding: 12px 28px;
-            font-size: 1rem;
+            padding: 10px 24px;
+            font-size: 0.85rem;
             font-weight: 700;
+            letter-spacing: 0.03em;
             cursor: pointer;
-            transition: background-color 0.15s;
+            transition: background-color 0.12s, border-color 0.12s, color 0.12s, transform 0.1s;
+            outline: none;
         }
 
         button.action:hover {
-            background-color: #a0a1a3;
+            background-color: #2a2a2c;
+            border-color: #818384;
+        }
+
+        button.action:active {
+            background-color: #3a3a3c;
+            transform: scale(0.96);
         }
 
         button.action.submit {
             background-color: #d7dadc;
+            border-color: #d7dadc;
+            color: #121213;
         }
 
         button.action.submit:hover {
             background-color: #ffffff;
+            border-color: #ffffff;
+        }
+
+        button.action.submit:active {
+            background-color: #b8bbbe;
+            border-color: #b8bbbe;
+            transform: scale(0.96);
         }
 
         button.action:disabled {
-            opacity: 0.4;
+            opacity: 0.35;
             cursor: not-allowed;
+            transform: none;
+        }
+
+        button.action:disabled:hover {
+            background-color: transparent;
+            border-color: #565658;
         }
 
         .message {
-            margin-top: 16px;
-            font-size: 1rem;
-            min-height: 1.5em;
+            font-size: 0.85rem;
+            font-weight: 600;
+            min-height: 1.4em;
+            margin-bottom: 14px;
             text-align: center;
         }
 
         .message.error { color: #e35b5b; }
-        .message.success { color: #538d4e; }
-
-        .mistakes {
-            margin-top: 12px;
-            color: #818384;
-            font-size: 0.85rem;
-        }
+        .message.success { color: #6aba64; }
     </style>
 </head>
 <body>
@@ -203,13 +248,12 @@
     <div class="solved-area" id="solvedArea"></div>
     <div class="grid" id="grid"></div>
 
+    <p class="message" id="message"></p>
+
     <div class="controls">
         <button class="action" id="deselectBtn" onclick="deselectAll()" disabled>Abwählen</button>
-        <button class="action submit" id="submitBtn" onclick="submitGuess()" disabled>Prüfen</button>
+        <button class="action submit" id="submitBtn" onclick="submitGuess()">Prüfen</button>
     </div>
-
-    <p class="message" id="message"></p>
-    <p class="mistakes" id="mistakes"></p>
 
     <script>
         const puzzleData = {
@@ -240,18 +284,14 @@
         let selected = [];
         let solvedGroups = [];
         let remainingWords = [];
-        let mistakesLeft = 4;
-
         function init() {
             remainingWords = puzzleData.groups.flatMap(g => g.words);
             shuffle(remainingWords);
             solvedGroups = [];
             selected = [];
-            mistakesLeft = 4;
             document.getElementById('solvedArea').innerHTML = '';
             renderGrid();
             updateUI();
-            updateMistakes();
         }
 
         function shuffle(arr) {
@@ -298,14 +338,7 @@
             const count = selected.length;
             document.getElementById('selectionCount').textContent =
                 count > 0 ? `${count} / 4 ausgewählt` : '';
-            document.getElementById('submitBtn').disabled = count !== 4;
             document.getElementById('deselectBtn').disabled = count === 0;
-        }
-
-        function updateMistakes() {
-            const dots = '● '.repeat(mistakesLeft) + '○ '.repeat(4 - mistakesLeft);
-            document.getElementById('mistakes').textContent =
-                `Verbleibende Versuche: ${dots.trim()}`;
         }
 
         function showMessage(text, type) {
@@ -316,89 +349,13 @@
         }
 
         function submitGuess() {
-            if (selected.length !== 4) return;
-
-            const match = puzzleData.groups.find(g =>
-                !solvedGroups.includes(g) &&
-                g.words.every(w => selected.includes(w)) &&
-                selected.every(w => g.words.includes(w))
-            );
-
-            if (match) {
-                solvedGroups.push(match);
-                remainingWords = remainingWords.filter(w => !match.words.includes(w));
-                selected = [];
-
-                const area = document.getElementById('solvedArea');
-                const div = document.createElement('div');
-                div.className = `solved-group difficulty-${match.difficulty}`;
-                div.innerHTML = `
-                    <div class="group-name">${match.name}</div>
-                    <div class="group-words">${match.words.join(', ')}</div>
-                `;
-                area.appendChild(div);
-
-                renderGrid();
-                updateUI();
-
-                if (solvedGroups.length === 4) {
-                    showMessage('Gelöst! Gut gemacht! 🎉', 'success');
-                } else {
-                    showMessage('Richtig!', 'success');
-                }
-            } else {
-                mistakesLeft--;
-                updateMistakes();
-
-                // Check for "one away"
-                const oneAway = puzzleData.groups.some(g =>
-                    !solvedGroups.includes(g) &&
-                    selected.filter(w => g.words.includes(w)).length === 3
-                );
-
-                if (mistakesLeft <= 0) {
-                    showMessage('Leider verloren!', 'error');
-                    revealAll();
-                } else if (oneAway) {
-                    showMessage('Knapp daneben! Nur 1 falsch.', 'error');
-                    shakeTiles();
-                } else {
-                    showMessage('Falsch!', 'error');
-                    shakeTiles();
-                }
+            if (selected.length !== 4) {
+                showMessage('Wähle genau 4 Wörter aus', 'error');
+                return;
             }
-        }
 
-        function shakeTiles() {
-            document.querySelectorAll('.tile.selected').forEach(tile => {
-                tile.classList.add('shake');
-                setTimeout(() => tile.classList.remove('shake'), 500);
-            });
-        }
-
-        function revealAll() {
-            const grid = document.getElementById('grid');
-            grid.innerHTML = '';
-            const area = document.getElementById('solvedArea');
-
-            puzzleData.groups
-                .filter(g => !solvedGroups.includes(g))
-                .sort((a, b) => a.difficulty - b.difficulty)
-                .forEach(g => {
-                    const div = document.createElement('div');
-                    div.className = `solved-group difficulty-${g.difficulty}`;
-                    div.innerHTML = `
-                        <div class="group-name">${g.name}</div>
-                        <div class="group-words">${g.words.join(', ')}</div>
-                    `;
-                    area.appendChild(div);
-                });
-
-            remainingWords = [];
-            selected = [];
-            document.getElementById('submitBtn').disabled = true;
-            document.getElementById('deselectBtn').disabled = true;
-            document.getElementById('selectionCount').textContent = '';
+            console.log('Submitted words:', selected.slice());
+            showMessage('Gruppe eingereicht!', 'success');
         }
 
         init();
