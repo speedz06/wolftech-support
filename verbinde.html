@@ -518,7 +518,7 @@
         html.pastel .vb-message.success { color: #059669; }
 
         .mobile-only { display: none; }
-        @media (pointer: coarse) { .mobile-only { display: inline-flex; } }
+        @media (max-width: 900px) { .mobile-only { display: inline-flex; } }
 
         /* ── LEADERBOARD SHARED ── */
         .vb-lb-entry {
@@ -569,6 +569,14 @@
         html.ocean #vb-drawer { background: #05101f; border-color: #1d4e6e; }
         html.pastel #vb-sidebar { background: #fce7f3; border-color: #f0abdb; }
         html.pastel #vb-drawer { background: #fce7f3; border-color: #f0abdb; }
+
+        .avatar-grid { display: grid; grid-template-columns: repeat(6,1fr); gap: 6px; }
+        .avatar-btn { font-size: 1.5rem; padding: 6px; border-radius: 10px; border: 2px solid transparent; background: rgba(30,41,59,0.5); cursor: pointer; transition: all 0.15s; }
+        .avatar-btn:hover { background: rgba(51,65,85,0.7); }
+        .avatar-btn.selected { border-color: #6366f1; background: rgba(99,102,241,0.15); }
+        .stat-box { text-align: center; }
+        .stat-num { font-size: 1.3rem; font-weight: 800; color: white; }
+        .stat-lbl { font-size: 0.65rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
     </style>
 </head>
 <body>
@@ -594,7 +602,7 @@
                 <i data-lucide="users" class="w-4 h-4"></i>
                 <span id="vb-invite-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:#ef4444;color:white;font-size:10px;font-weight:700;border-radius:9999px;width:16px;height:16px;align-items:center;justify-content:center;line-height:1;"></span>
             </button>
-            <button id="login-header-btn" onclick="window.openLoginModal && window.openLoginModal()" title="Anmelden" class="flex items-center gap-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white px-2 py-1.5 rounded-lg border border-slate-600 transition-all">
+            <button id="login-header-btn" onclick="window.openLoginModal()" title="Anmelden" class="flex items-center gap-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white px-2 py-1.5 rounded-lg border border-slate-600 transition-all">
                 <span id="login-header-avatar">🐺</span>
                 <span id="login-header-label">Anmelden</span>
             </button>
@@ -891,6 +899,83 @@
         </div>
     </div>
 
+    <!-- LOGIN MODAL -->
+    <div id="login-modal" class="hidden fixed inset-0 bg-slate-900/80 z-[100] flex items-center justify-center p-4" onclick="if(event.target===this)window.closeLoginModal()">
+        <div class="w-full max-w-sm bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-5">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">🔑 Anmelden</h2>
+                <button onclick="window.closeLoginModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div id="login-form-section">
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Nutzername</label>
+                <input id="login-name-input" type="text" maxlength="15" placeholder="Name eingeben..."
+                    class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white mb-3 transition-colors">
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">PIN (optional)</label>
+                <input id="login-pin-input" type="password" maxlength="8" placeholder="PIN (optional)..."
+                    class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white mb-4 transition-colors">
+                <div id="login-error" class="hidden text-red-400 text-xs mb-3 text-center"></div>
+                <button id="login-submit-btn" onclick="window.doLogin()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors mb-2">Anmelden / Registrieren</button>
+                <button onclick="window.openGuestFlow()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 py-2 rounded-xl text-sm transition-colors">👤 Als Gast spielen</button>
+            </div>
+            <div id="login-loggedin-section" class="hidden text-center">
+                <div id="login-welcome-avatar" class="text-5xl mb-1 cursor-pointer" onclick="window.toggleLoginAvatarGrid()" title="Avatar ändern">🐺</div>
+                <div class="text-xs text-slate-500 mb-2">Tippe zum Ändern</div>
+                <div id="login-avatar-grid" class="avatar-grid hidden mb-3"></div>
+                <button id="login-avatar-save-btn" onclick="window.saveLoginAvatar()" class="hidden w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-xl text-sm font-semibold transition-colors mb-3">Avatar speichern</button>
+                <div class="text-lg font-bold text-white mb-1" id="login-welcome-name"></div>
+                <div class="text-xs text-slate-400 mb-4">Erfolgreich angemeldet</div>
+                <button onclick="window.closeLoginModal();window.openStatsModal()" class="w-full bg-slate-700 hover:bg-slate-600 text-white py-2.5 rounded-xl text-sm transition-colors mb-2">📊 Statistiken</button>
+                <button onclick="window.doLogout()" class="w-full bg-red-900/40 hover:bg-red-900/60 border border-red-800/40 text-red-400 py-2 rounded-xl text-sm transition-colors">Abmelden</button>
+                <button onclick="window.closeLoginModal()" class="w-full mt-2 bg-slate-700 hover:bg-slate-600 text-slate-300 py-2 rounded-xl text-sm transition-colors">Schließen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ONBOARDING MODAL -->
+    <div id="onboarding-modal" class="hidden fixed inset-0 bg-slate-900/95 z-[110] flex items-center justify-center p-4">
+        <div class="w-full max-w-sm bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl">
+            <div id="onboard-choice">
+                <div class="text-center mb-6">
+                    <div class="text-5xl mb-3">🐺</div>
+                    <h2 class="text-2xl font-bold text-white mb-1">Willkommen bei Wolfle!</h2>
+                    <p class="text-sm text-slate-400">Wie möchtest du spielen?</p>
+                </div>
+                <button onclick="window.onboardChooseLogin()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl text-sm font-semibold transition-colors mb-3">🔑 Anmelden / Registrieren</button>
+                <button onclick="window.onboardChooseGuest()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white py-3 rounded-xl text-sm font-semibold transition-colors">👤 Als Gast spielen</button>
+            </div>
+            <div id="onboard-guest" class="hidden">
+                <div class="flex items-center gap-2 mb-5">
+                    <button onclick="window.onboardBack()" class="text-slate-400 hover:text-white"><i data-lucide="arrow-left" class="w-4 h-4"></i></button>
+                    <h2 class="text-lg font-bold text-white">Als Gast spielen</h2>
+                </div>
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Dein Name</label>
+                <input id="onboard-name-input" type="text" maxlength="15" placeholder="Name eingeben..."
+                    class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white mb-4 transition-colors">
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Dein Avatar</label>
+                <div class="text-center mb-3">
+                    <div id="onboard-preview-avatar" class="text-5xl">🐺</div>
+                </div>
+                <div id="onboard-avatar-grid" class="avatar-grid mb-4"></div>
+                <div id="onboard-error" class="hidden text-red-400 text-xs mb-3 text-center"></div>
+                <button id="onboard-confirm-btn" onclick="window.onboardConfirmGuest()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors">Weiter spielen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- STATS MODAL -->
+    <div id="stats-modal" class="hidden fixed inset-0 bg-slate-900/80 z-[95] flex items-center justify-center p-4" onclick="if(event.target===this)window.closeStatsModal()">
+        <div class="w-full max-w-sm bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-5">
+                <h2 class="text-xl font-bold text-white">📊 Verbinde Statistiken</h2>
+                <button onclick="window.closeStatsModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="grid grid-cols-4 gap-2 mb-3" id="stats-overview"></div>
+            <div class="grid grid-cols-3 gap-2 mb-5" id="stats-extra"></div>
+            <div class="mb-1 text-xs font-semibold text-slate-400 uppercase tracking-wider">Fehlerverteilung (Klassisch)</div>
+            <div id="stats-distribution" class="mb-4"></div>
+        </div>
+    </div>
+
     <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getFirestore, collection, doc, setDoc, getDoc, getDocs, onSnapshot, updateDoc, deleteDoc, deleteField, arrayUnion, arrayRemove, query, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -994,17 +1079,334 @@
         if (hapticEnabled) try { navigator.vibrate(20); } catch(e) {}
     }
 
-    // ── LOGIN HEADER (read-only from localStorage) ──
+    // ── AVATARS & PROFILE ──
+    const AVATARS = ['🐺','🦊','🐻','🦁','🐯','🐸','🐧','🦅','🦋','🐙','🦄','🐬','🌟','🔥','💎','🌈','🍀','⚡'];
+    let selectedAvatar = localStorage.getItem('wolfle_avatar') || '🐺';
+
+    function hashPin(pin) {
+        let h = 0;
+        for (let i = 0; i < pin.length; i++) { h = (Math.imul(31, h) + pin.charCodeAt(i)) | 0; }
+        return h.toString(36);
+    }
+
     function updateLoginHeader() {
-        const name = localStorage.getItem('wolfle_user_name');
+        const loggedIn = localStorage.getItem('wolfle_logged_in') === '1';
+        const name = localStorage.getItem('wolfle_user_name') || '';
         const avatar = localStorage.getItem('wolfle_avatar') || '🐺';
-        const el = document.getElementById('login-header-avatar');
-        const lbl = document.getElementById('login-header-label');
-        if (name) {
-            if (el) el.textContent = avatar;
-            if (lbl) lbl.textContent = name;
+        const btn = document.getElementById('login-header-btn');
+        const labelEl = document.getElementById('login-header-label');
+        const avatarEl = document.getElementById('login-header-avatar');
+        if (!btn) return;
+        if (loggedIn && name) {
+            labelEl.textContent = name;
+            avatarEl.textContent = avatar;
+            btn.classList.remove('border-slate-600');
+            btn.classList.add('border-indigo-500/50');
+        } else {
+            labelEl.textContent = 'Anmelden';
+            avatarEl.textContent = '🐺';
+            btn.classList.remove('border-indigo-500/50');
+            btn.classList.add('border-slate-600');
         }
     }
+
+    function updateAvatarUI() {
+        const preview = document.getElementById('login-welcome-avatar');
+        if (preview) preview.textContent = selectedAvatar;
+    }
+
+    // ── LOGIN MODAL ──
+    window.openLoginModal = () => {
+        const loggedIn = localStorage.getItem('wolfle_logged_in') === '1';
+        const form = document.getElementById('login-form-section');
+        const loggedInSection = document.getElementById('login-loggedin-section');
+        const errorEl = document.getElementById('login-error');
+        if (loggedIn) {
+            const name = localStorage.getItem('wolfle_user_name') || '';
+            const avatar = localStorage.getItem('wolfle_avatar') || '🐺';
+            _loginSelectedAvatar = avatar;
+            document.getElementById('login-welcome-name').textContent = name;
+            document.getElementById('login-welcome-avatar').textContent = avatar;
+            document.getElementById('login-avatar-grid').classList.add('hidden');
+            document.getElementById('login-avatar-save-btn').classList.add('hidden');
+            form.classList.add('hidden');
+            loggedInSection.classList.remove('hidden');
+        } else {
+            document.getElementById('login-name-input').value = '';
+            document.getElementById('login-pin-input').value = '';
+            if (errorEl) errorEl.classList.add('hidden');
+            form.classList.remove('hidden');
+            loggedInSection.classList.add('hidden');
+        }
+        const modal = document.getElementById('login-modal');
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        lucide.createIcons();
+    };
+    window.closeLoginModal = () => {
+        const modal = document.getElementById('login-modal');
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+    };
+    window.openGuestFlow = () => {
+        window.closeLoginModal();
+        document.getElementById('onboarding-modal').classList.remove('hidden');
+        window.onboardChooseGuest();
+    };
+
+    let _loginSelectedAvatar = localStorage.getItem('wolfle_avatar') || '🐺';
+    window.toggleLoginAvatarGrid = () => {
+        const grid = document.getElementById('login-avatar-grid');
+        const saveBtn = document.getElementById('login-avatar-save-btn');
+        const open = grid.classList.toggle('hidden');
+        saveBtn.classList.toggle('hidden', open);
+        if (!open) {
+            grid.innerHTML = AVATARS.map(a =>
+                `<button class="avatar-btn${a===_loginSelectedAvatar?' selected':''}" onclick="window.selectLoginAvatar('${a}')">${a}</button>`
+            ).join('');
+        }
+    };
+    window.selectLoginAvatar = (a) => {
+        _loginSelectedAvatar = a;
+        document.getElementById('login-welcome-avatar').textContent = a;
+        document.querySelectorAll('#login-avatar-grid .avatar-btn').forEach(b => b.classList.toggle('selected', b.textContent === a));
+    };
+    window.saveLoginAvatar = async () => {
+        const name = localStorage.getItem('wolfle_user_name') || '';
+        localStorage.setItem('wolfle_avatar', _loginSelectedAvatar);
+        selectedAvatar = _loginSelectedAvatar;
+        updateAvatarUI();
+        updateLoginHeader();
+        try {
+            const firestore = await getDB();
+            if (firestore && name) {
+                await setDoc(doc(firestore,'artifacts',appId,'public','data','users',name),
+                    { avatar: _loginSelectedAvatar }, { merge: true });
+            }
+        } catch(e) {}
+        showToast('Avatar gespeichert! ✓', 'success');
+    };
+    window.doLogin = async () => {
+        const nameInput = document.getElementById('login-name-input');
+        const pinInput = document.getElementById('login-pin-input');
+        const errorEl = document.getElementById('login-error');
+        const submitBtn = document.getElementById('login-submit-btn');
+        const name = nameInput.value.trim();
+        if (!name) { errorEl.textContent = 'Bitte einen Namen eingeben.'; errorEl.classList.remove('hidden'); return; }
+        const pin = pinInput.value;
+        errorEl.classList.add('hidden');
+        const resetBtn = () => { if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Anmelden / Registrieren'; } };
+        if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Laden...'; }
+        let loginOk = false;
+        try {
+            const firestore = await getDB();
+            if (firestore) {
+                const snap = await getDoc(doc(firestore,'artifacts',appId,'public','data','users',name));
+                if (snap.exists()) {
+                    const ud = snap.data();
+                    if (ud.pinHash) {
+                        if (!pin) { errorEl.textContent = 'Bitte PIN eingeben.'; errorEl.classList.remove('hidden'); resetBtn(); return; }
+                        if (hashPin(pin) !== ud.pinHash) { errorEl.textContent = 'Falscher PIN.'; errorEl.classList.remove('hidden'); resetBtn(); return; }
+                    }
+                    if (ud.avatar) { selectedAvatar = ud.avatar; localStorage.setItem('wolfle_avatar', ud.avatar); }
+                    if (ud.pinHash) localStorage.setItem('wolfle_account_pin_' + name, ud.pinHash);
+                } else {
+                    const pinHash = pin ? hashPin(pin) : null;
+                    await setDoc(doc(firestore,'artifacts',appId,'public','data','users',name),
+                        { name, avatar: selectedAvatar || '🐺', pinHash: pinHash || null, createdAt: Date.now() });
+                    if (pin) localStorage.setItem('wolfle_account_pin_' + name, hashPin(pin));
+                }
+                loginOk = true;
+            } else { throw new Error('no db'); }
+        } catch(e) {
+            const existingPin = localStorage.getItem('wolfle_account_pin_' + name);
+            if (existingPin && pin && hashPin(pin) !== existingPin) { errorEl.textContent = 'Falscher PIN.'; errorEl.classList.remove('hidden'); resetBtn(); return; }
+            if (!existingPin && pin) localStorage.setItem('wolfle_account_pin_' + name, hashPin(pin));
+            loginOk = true;
+        }
+        if (!loginOk) { resetBtn(); return; }
+        localStorage.setItem('wolfle_user_name', name);
+        localStorage.setItem('wolfle_logged_in', '1');
+        localStorage.setItem('wolfle_onboarded', '1');
+        localStorage.removeItem('wolfle_is_guest');
+        updateAvatarUI();
+        updateLoginHeader();
+        window.closeLoginModal();
+        showToast(`Willkommen, ${name}! 👋`, 'success');
+        vbSubscribeInvites(name);
+        loadVbLeaderboard();
+    };
+    window.doLogout = () => {
+        localStorage.removeItem('wolfle_logged_in');
+        localStorage.removeItem('wolfle_user_name');
+        localStorage.removeItem('wolfle_avatar');
+        localStorage.removeItem('wolfle_profile');
+        localStorage.setItem('wolfle_is_guest', '1');
+        selectedAvatar = '🐺';
+        updateAvatarUI();
+        updateLoginHeader();
+        window.closeLoginModal();
+        showToast('Abgemeldet', 'info');
+    };
+
+    // ── ONBOARDING ──
+    let onboardAvatar = '🐺';
+    function buildOnboardAvatarGrid() {
+        const grid = document.getElementById('onboard-avatar-grid');
+        if (!grid) return;
+        grid.innerHTML = AVATARS.map(a =>
+            `<button class="avatar-btn${a===onboardAvatar?' selected':''}" onclick="window.selectOnboardAvatar('${a}')">${a}</button>`
+        ).join('');
+    }
+    window.selectOnboardAvatar = (a) => {
+        onboardAvatar = a;
+        document.getElementById('onboard-preview-avatar').textContent = a;
+        document.querySelectorAll('#onboard-avatar-grid .avatar-btn').forEach(b => b.classList.toggle('selected', b.textContent === a));
+    };
+    window.onboardBack = () => {
+        document.getElementById('onboard-choice').classList.remove('hidden');
+        document.getElementById('onboard-guest').classList.add('hidden');
+    };
+    window.onboardChooseGuest = () => {
+        document.getElementById('onboard-choice').classList.add('hidden');
+        document.getElementById('onboard-guest').classList.remove('hidden');
+        buildOnboardAvatarGrid();
+        document.getElementById('onboard-name-input').focus();
+    };
+    window.onboardChooseLogin = () => {
+        document.getElementById('onboarding-modal').classList.add('hidden');
+        window.openLoginModal();
+    };
+    window.onboardConfirmGuest = async () => {
+        const name = document.getElementById('onboard-name-input').value.trim();
+        const errEl = document.getElementById('onboard-error');
+        const btn = document.getElementById('onboard-confirm-btn');
+        if (!name) { errEl.textContent = 'Bitte einen Namen eingeben.'; errEl.classList.remove('hidden'); return; }
+        errEl.classList.add('hidden');
+        if (btn) { btn.disabled = true; btn.textContent = 'Prüfen...'; }
+        try {
+            const firestore = await getDB();
+            if (firestore) {
+                const snap = await getDoc(doc(firestore,'artifacts',appId,'public','data','users',name));
+                if (snap.exists()) {
+                    errEl.textContent = 'Name bereits vergeben – bitte melde dich an oder wähle einen anderen Namen.';
+                    errEl.classList.remove('hidden');
+                    if (btn) { btn.disabled = false; btn.textContent = 'Weiter spielen'; }
+                    return;
+                }
+            }
+        } catch(e) {}
+        if (btn) { btn.disabled = false; btn.textContent = 'Weiter spielen'; }
+        selectedAvatar = onboardAvatar;
+        localStorage.setItem('wolfle_user_name', name);
+        localStorage.setItem('wolfle_profile', JSON.stringify({ name, avatar: onboardAvatar }));
+        localStorage.setItem('wolfle_onboarded', '1');
+        localStorage.setItem('wolfle_logged_in', '1');
+        localStorage.setItem('wolfle_is_guest', '1');
+        updateAvatarUI();
+        updateLoginHeader();
+        document.getElementById('onboarding-modal').classList.add('hidden');
+        showToast(`Willkommen, ${name}!`, 'success');
+        getDB().then(() => loadVbLeaderboard());
+    };
+
+    // ── STATS (Verbinde Classic) ──
+    function getVbStats() {
+        try {
+            return JSON.parse(localStorage.getItem('wolfle_vb_stats')) || defaultVbStats();
+        } catch(e) { return defaultVbStats(); }
+    }
+    function defaultVbStats() {
+        return { totalGames:0, totalWins:0, currentStreak:0, bestStreak:0, distribution:{0:0,1:0,2:0,3:0,4:0} };
+    }
+    function saveVbStats(s) {
+        localStorage.setItem('wolfle_vb_stats', JSON.stringify(s));
+    }
+    function updateVbStats(win, mistakes) {
+        if (localStorage.getItem('wolfle_is_guest') === '1') return;
+        const s = getVbStats();
+        s.totalGames++;
+        if (win) {
+            s.totalWins++;
+            s.currentStreak++;
+            if (s.currentStreak > s.bestStreak) s.bestStreak = s.currentStreak;
+            const key = String(mistakes);
+            s.distribution[key] = (s.distribution[key] || 0) + 1;
+        } else {
+            s.currentStreak = 0;
+        }
+        saveVbStats(s);
+    }
+
+    window.openStatsModal = async () => {
+        document.getElementById('stats-modal').style.display = 'flex';
+        document.getElementById('stats-modal').classList.remove('hidden');
+        if (localStorage.getItem('wolfle_is_guest') === '1') {
+            document.getElementById('stats-overview').innerHTML = `<div class="col-span-4" style="text-align:center;color:#94a3b8;font-size:0.85rem;padding:12px 0;">Statistiken nur für registrierte Accounts.<br><br><button onclick="window.closeStatsModal();window.openLoginModal();" style="background:#6366f1;color:white;border:none;padding:8px 20px;border-radius:10px;cursor:pointer;font-weight:600;">Konto erstellen</button></div>`;
+            document.getElementById('stats-extra').innerHTML = '';
+            document.getElementById('stats-distribution').innerHTML = '';
+            lucide.createIcons();
+            return;
+        }
+        const s = getVbStats();
+        const rate = s.totalGames > 0 ? Math.round(s.totalWins / s.totalGames * 100) : 0;
+        document.getElementById('stats-overview').innerHTML = [
+            [s.totalGames, 'Gespielt'],
+            [rate + '%', 'Gewonnen'],
+            [s.currentStreak, 'Streak'],
+            [s.bestStreak, 'Bester'],
+        ].map(([val,lbl]) =>
+            `<div class="stat-box bg-slate-700/50 rounded-xl py-3"><div class="stat-num">${val}</div><div class="stat-lbl">${lbl}</div></div>`
+        ).join('');
+        document.getElementById('stats-extra').innerHTML = [
+            ['…', 'Punkte Ges.'],
+            ['…', 'Punkte Wo.'],
+            ['–', 'Ø Fehler'],
+        ].map(([val,lbl]) =>
+            `<div class="stat-box bg-indigo-900/30 border border-indigo-800/30 rounded-xl py-3"><div class="stat-num text-indigo-300">${val}</div><div class="stat-lbl">${lbl}</div></div>`
+        ).join('');
+        // Distribution: mistakes 0-4
+        const labels = ['0 Fehler','1 Fehler','2 Fehler','3 Fehler','4 Fehler'];
+        const maxVal = Math.max(1, ...Object.values(s.distribution));
+        document.getElementById('stats-distribution').innerHTML = [0,1,2,3,4].map(n => {
+            const count = s.distribution[n] || 0;
+            const pct = Math.max(8, Math.round(count / maxVal * 100));
+            return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+                <span style="font-size:0.75rem;color:#94a3b8;min-width:55px">${labels[n]}</span>
+                <div style="flex:1;background:rgba(30,41,59,0.5);border-radius:4px;overflow:hidden;height:20px">
+                    <div style="width:${pct}%;background:${count>0?'#6366f1':'#334155'};height:100%;border-radius:4px;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;font-size:0.7rem;color:white;font-weight:600;min-width:20px">${count > 0 ? count : ''}</div>
+                </div>
+            </div>`;
+        }).join('');
+        lucide.createIcons();
+        // Fetch Firestore points
+        try {
+            const firestore = await getDB();
+            const name = getPlayerName();
+            if (firestore && name) {
+                const snap = await getDoc(doc(firestore,'artifacts',appId,'public','data','vb_scores',name.toLowerCase()));
+                const scoreData = snap.exists() ? snap.data() : {};
+                const totalPts = scoreData.score || 0;
+                const weekKey = getWeekKey();
+                const weekPts = scoreData.weekKey === weekKey ? (scoreData.weekScore || 0) : 0;
+                // Compute avg mistakes
+                let totalMistakes = 0, totalWinGames = 0;
+                for (let n = 0; n <= 4; n++) { const cnt = s.distribution[n] || 0; totalMistakes += n * cnt; totalWinGames += cnt; }
+                const avgMistakes = totalWinGames > 0 ? (totalMistakes / totalWinGames).toFixed(1) : '–';
+                document.getElementById('stats-extra').innerHTML = [
+                    [totalPts, 'Punkte Ges.'],
+                    [weekPts, 'Punkte Wo.'],
+                    [avgMistakes, 'Ø Fehler'],
+                ].map(([val,lbl]) =>
+                    `<div class="stat-box bg-indigo-900/30 border border-indigo-800/30 rounded-xl py-3"><div class="stat-num text-indigo-300">${val}</div><div class="stat-lbl">${lbl}</div></div>`
+                ).join('');
+            }
+        } catch(e) {}
+    };
+    window.closeStatsModal = () => {
+        document.getElementById('stats-modal').classList.add('hidden');
+        document.getElementById('stats-modal').style.display = 'none';
+    };
 
     // ── PUZZLE DATA ──
     const allPuzzles = [
@@ -1249,12 +1651,13 @@
                 const pts = (cMistakes + 1) * 10; // 10-50 points based on remaining mistakes
                 cShowMsg(`Gelöst! +${pts} Punkte`, 'success');
                 submitVbScore(pts);
+                updateVbStats(true, 4 - cMistakes);
                 playTone(659,'sine',0.15); setTimeout(()=>playTone(784,'sine',0.15),120); setTimeout(()=>playTone(1047,'sine',0.3),240);
             } else cShowMsg('Richtig!', 'success');
         } else {
             cMistakes--; cUpdateMistakes(); triggerHaptic('wrong'); playTone(220,'sawtooth',0.2,0.15);
             const oneAway = cPuzzle.groups.some(g => !cSolved.includes(g) && cSelected.filter(w => g.words.includes(w)).length === 3);
-            if (cMistakes <= 0) { cShowMsg('Leider verloren!','error'); cShake(); setTimeout(cRevealAll, 600); }
+            if (cMistakes <= 0) { updateVbStats(false, 4); cShowMsg('Leider verloren!','error'); cShake(); setTimeout(cRevealAll, 600); }
             else if (oneAway) { cShowMsg('Knapp daneben! Nur 1 falsch.','error'); cShake(); }
             else { cShowMsg('Falsch! Versuch es nochmal.','error'); cShake(); }
         }
