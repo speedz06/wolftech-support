@@ -491,6 +491,49 @@
 
         .mobile-only { display: none; }
         @media (pointer: coarse) { .mobile-only { display: inline-flex; } }
+
+        /* ── LEADERBOARD DRAWER ── */
+        #vb-drawer-overlay {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(2,6,23,0.75);
+            z-index: 92;
+            backdrop-filter: blur(4px);
+        }
+        #vb-drawer-overlay.open { display: block; }
+        #vb-drawer {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            background: #0f172a;
+            border-top: 1px solid #1e293b;
+            border-radius: 20px 20px 0 0;
+            padding: 20px 20px max(20px, env(safe-area-inset-bottom));
+            z-index: 93;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.32,0.72,0,1);
+            max-height: 80dvh;
+            overflow-y: auto;
+        }
+        #vb-drawer.open { transform: translateY(0); }
+        .vb-lb-entry {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 10px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            transition: background 0.15s;
+        }
+        .vb-lb-entry:hover { background: rgba(51,65,85,0.5); }
+        .vb-lb-entry.me { background: rgba(234,179,8,0.15); border: 1px solid rgba(234,179,8,0.3); }
+        .vb-lb-score { color: #eab308; font-weight: 700; }
+
+        /* Theme overrides for drawer */
+        html.light #vb-drawer { background: #f1f5f9; border-color: #cbd5e1; }
+        html.light .vb-lb-entry:hover { background: rgba(203,213,225,0.5); }
+        html.retro #vb-drawer { background: #000; border-color: #00ff41; }
+        html.ocean #vb-drawer { background: #05101f; border-color: #1d4e6e; }
+        html.pastel #vb-drawer { background: #fce7f3; border-color: #f0abdb; }
     </style>
 </head>
 <body>
@@ -508,6 +551,9 @@
             </button>
             <button id="haptic-btn" onclick="toggleHaptic()" class="mobile-only text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Vibration">
                 <i data-lucide="smartphone" class="w-4 h-4"></i>
+            </button>
+            <button onclick="window.vbOpenDrawer()" class="text-yellow-500 hover:text-yellow-300 p-1.5 rounded-lg transition-colors" title="Top Liste">
+                <i data-lucide="trophy" class="w-4 h-4"></i>
             </button>
             <button onclick="window.vbOpenFriendsModal()" class="relative text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Freunde">
                 <i data-lucide="users" class="w-4 h-4"></i>
@@ -774,6 +820,24 @@
             </div>
             <div class="bg-slate-700/40 rounded-lg px-3 py-2 text-xs text-slate-400 mb-4 font-mono">Raum: <span id="vb-invite-modal-code" class="text-white font-bold"></span> <span id="vb-invite-modal-game" class="text-yellow-400"></span></div>
             <div id="vb-invite-friends-list"><div class="text-slate-500 italic text-sm">Lädt...</div></div>
+        </div>
+    </div>
+
+    <!-- LEADERBOARD DRAWER -->
+    <div id="vb-drawer-overlay" onclick="window.vbCloseDrawer()"></div>
+    <div id="vb-drawer">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <h2 style="font-size:1.1rem;font-weight:800;display:flex;align-items:center;gap:8px">
+                <i data-lucide="trophy" class="w-5 h-5" style="color:#eab308"></i> Top Liste
+            </h2>
+            <button onclick="window.vbCloseDrawer()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div style="display:flex;gap:4px;margin-bottom:12px;background:rgba(30,41,59,0.5);padding:3px;border-radius:8px">
+            <button id="vb-lb-tab-total" onclick="window.vbSetLbTab('total')" style="flex:1;font-size:0.75rem;padding:6px;border-radius:6px;border:none;cursor:pointer;font-weight:600;background:#eab308;color:#000;transition:all 0.15s">Gesamt</button>
+            <button id="vb-lb-tab-week" onclick="window.vbSetLbTab('week')" style="flex:1;font-size:0.75rem;padding:6px;border-radius:6px;border:none;cursor:pointer;font-weight:600;background:transparent;color:#64748b;transition:all 0.15s">Woche</button>
+        </div>
+        <div id="vb-lb-list" style="display:flex;flex-direction:column;gap:4px">
+            <div style="color:#64748b;font-size:0.85rem;font-style:italic">Lädt...</div>
         </div>
     </div>
 
@@ -1131,7 +1195,10 @@
             cRenderGrid(); cUpdateUI();
             triggerHaptic('correct'); playTone(523,'sine',0.2);
             if (cSolved.length === 4) {
-                cGameOver = true; cShowMsg('Gelöst! Gut gemacht!', 'success');
+                cGameOver = true;
+                const pts = (cMistakes + 1) * 10; // 10-50 points based on remaining mistakes
+                cShowMsg(`Gelöst! +${pts} Punkte`, 'success');
+                submitVbScore(pts);
                 playTone(659,'sine',0.15); setTimeout(()=>playTone(784,'sine',0.15),120); setTimeout(()=>playTone(1047,'sine',0.3),240);
             } else cShowMsg('Richtig!', 'success');
         } else {
@@ -1255,6 +1322,11 @@
         if (dScores[0] > dScores[1]) winner = dNames[0];
         else if (dScores[1] > dScores[0]) winner = dNames[1];
         else winner = null;
+        // Award points to winner if they are the logged-in player
+        if (winner) {
+            const myName = getPlayerName();
+            if (myName && (winner === myName)) submitVbScore(30);
+        }
         res.innerHTML = `
             <div style="font-size:3rem;margin-bottom:4px">${winner ? '🏆' : '🤝'}</div>
             <div style="font-size:1.3rem;font-weight:800">${winner ? winner + ' gewinnt!' : 'Unentschieden!'}</div>
@@ -1394,7 +1466,9 @@
                 memFlipped = [];
                 if (memMatched >= memTotalPairs) {
                     clearInterval(memTimerInterval);
-                    memShowMsg(`Geschafft in ${memMoves} Zügen und ${fmtTime(memTimer)}!`, 'success');
+                    const pts = Math.max(10, 60 - memMoves);
+                    memShowMsg(`Geschafft! +${pts} Punkte (${memMoves} Züge, ${fmtTime(memTimer)})`, 'success');
+                    submitVbScore(pts);
                     playTone(659,'sine',0.15); setTimeout(()=>playTone(784,'sine',0.15),120); setTimeout(()=>playTone(1047,'sine',0.3),240);
                 }
             } else {
@@ -1542,6 +1616,11 @@
         if (mdScores[0] > mdScores[1]) winner = mdNames[0];
         else if (mdScores[1] > mdScores[0]) winner = mdNames[1];
         else winner = null;
+        // Award points to winner if they are the logged-in player
+        if (winner) {
+            const myName = getPlayerName();
+            if (myName && (winner === myName)) submitVbScore(30);
+        }
         res.innerHTML = `
             <div style="font-size:3rem;margin-bottom:4px">${winner ? '🏆' : '🤝'}</div>
             <div style="font-size:1.3rem;font-weight:800">${winner ? winner + ' gewinnt!' : 'Unentschieden!'}</div>
@@ -1561,6 +1640,89 @@
             </div>
         `;
     }
+
+    // ══════════════════════════════════
+    // ══  SCORING & LEADERBOARD
+    // ══════════════════════════════════
+    const VB_SCORE_COL = 'vb_scores';
+    let vbLeaderboardTab = 'total';
+
+    function getWeekKey() {
+        const d = new Date();
+        const start = new Date(d.getFullYear(), 0, 1);
+        const week = Math.ceil(((d - start) / 86400000 + start.getDay() + 1) / 7);
+        return `${d.getFullYear()}-W${String(week).padStart(2, '0')}`;
+    }
+
+    async function submitVbScore(points) {
+        if (points <= 0) return;
+        const name = getPlayerName();
+        if (!name) return;
+        if (localStorage.getItem('wolfle_is_guest') === '1') return;
+        try {
+            const firestore = await getDB(); if (!firestore) return;
+            const ref = doc(firestore, 'artifacts', appId, 'public', 'data', VB_SCORE_COL, name.toLowerCase());
+            const snap = await getDoc(ref);
+            const existing = snap.exists() ? snap.data() : {};
+            const weekKey = getWeekKey();
+            const total = (existing.score || 0) + points;
+            const weekScore = (existing.weekKey === weekKey ? (existing.weekScore || 0) : 0) + points;
+            await setDoc(ref, { name, score: total, weekScore, weekKey }, { merge: true });
+            loadVbLeaderboard();
+        } catch(e) { console.error('Score submit error:', e); }
+    }
+
+    async function loadVbLeaderboard() {
+        const list = document.getElementById('vb-lb-list');
+        if (!list) return;
+        try {
+            const firestore = await getDB();
+            if (!firestore) { list.innerHTML = '<div style="color:#64748b;font-size:0.85rem;font-style:italic">Nicht angemeldet</div>'; return; }
+            const snap = await getDocs(collection(firestore, 'artifacts', appId, 'public', 'data', VB_SCORE_COL));
+            let entries = [];
+            const weekKey = getWeekKey();
+            snap.forEach(d => entries.push(d.data()));
+            if (vbLeaderboardTab === 'week') {
+                entries = entries.filter(s => s.weekKey === weekKey && (s.weekScore || 0) > 0);
+                entries.sort((a, b) => (b.weekScore || 0) - (a.weekScore || 0));
+            } else {
+                entries.sort((a, b) => (b.score || 0) - (a.score || 0));
+            }
+            const me = (getPlayerName() || '').toLowerCase();
+            if (entries.length === 0) {
+                list.innerHTML = '<div style="color:#64748b;font-size:0.85rem;font-style:italic">Noch keine Einträge</div>';
+                return;
+            }
+            list.innerHTML = entries.slice(0, 15).map((s, i) => {
+                const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
+                const isMe = s.name.toLowerCase() === me;
+                const pts = vbLeaderboardTab === 'week' ? (s.weekScore || 0) : (s.score || 0);
+                return `<div class="vb-lb-entry${isMe ? ' me' : ''}">
+                    <span>${medal} ${s.name}</span>
+                    <span class="vb-lb-score">${pts}</span>
+                </div>`;
+            }).join('');
+        } catch(e) { list.innerHTML = '<div style="color:#64748b;font-size:0.85rem;font-style:italic">Fehler</div>'; }
+    }
+
+    window.vbOpenDrawer = () => {
+        document.getElementById('vb-drawer').classList.add('open');
+        document.getElementById('vb-drawer-overlay').classList.add('open');
+        loadVbLeaderboard();
+        lucide.createIcons();
+    };
+    window.vbCloseDrawer = () => {
+        document.getElementById('vb-drawer').classList.remove('open');
+        document.getElementById('vb-drawer-overlay').classList.remove('open');
+    };
+    window.vbSetLbTab = (tab) => {
+        vbLeaderboardTab = tab;
+        document.getElementById('vb-lb-tab-total').style.background = tab === 'total' ? '#eab308' : 'transparent';
+        document.getElementById('vb-lb-tab-total').style.color = tab === 'total' ? '#000' : '#64748b';
+        document.getElementById('vb-lb-tab-week').style.background = tab === 'week' ? '#eab308' : 'transparent';
+        document.getElementById('vb-lb-tab-week').style.color = tab === 'week' ? '#000' : '#64748b';
+        loadVbLeaderboard();
+    };
 
     // ── INIT ──
     applyTheme(localStorage.getItem('wolfle_theme') || 'dark');
