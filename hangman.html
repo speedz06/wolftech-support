@@ -2436,6 +2436,15 @@
             }
         });
     }
+
+    // Fix bottom nav not showing after bfcache restore (back/forward navigation)
+    window.addEventListener('pageshow', (e) => {
+        if (e.persisted) {
+            document.body.offsetHeight;
+            const nav = document.getElementById('hm-bottom-nav');
+            if (nav && window.innerWidth <= 900) nav.style.display = 'flex';
+        }
+    });
 </script>
 </body>
 </html>

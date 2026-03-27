@@ -4196,6 +4196,16 @@
             } catch (error) {}
         });
 
+        // Fix bottom nav not showing after bfcache restore (back/forward navigation)
+        window.addEventListener('pageshow', (e) => {
+            if (e.persisted) {
+                // Force style recalculation after bfcache restore
+                document.body.offsetHeight;
+                const nav = document.getElementById('bottom-nav');
+                if (nav && window.innerWidth <= 900) nav.style.display = 'flex';
+            }
+        });
+
         // Automatically switch to mobile layout when sidebars would overlap the game field
         (function () {
             const SIDEBAR_LEFT_W  = 280;
