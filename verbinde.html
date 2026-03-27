@@ -1972,8 +1972,16 @@
             const firestore = await getDB(); if (!firestore) { list.innerHTML = '<div class="text-slate-500 italic text-sm">Nicht angemeldet</div>'; return; }
             const snap = await getDocs(collection(firestore,'artifacts',appId,'public','data',ROOM_COL));
             const rooms = [];
+            const now = Date.now();
+            const STALE_MS = 2 * 60 * 60 * 1000; // 2 hours
             snap.forEach(d => {
                 const data = d.data();
+                const playerCount = Object.keys(data.players || {}).length;
+                // Auto-delete stale or empty rooms
+                if (playerCount === 0 || (data.createdAt && now - data.createdAt > STALE_MS)) {
+                    deleteDoc(doc(firestore,'artifacts',appId,'public','data',ROOM_COL,d.id)).catch(() => {});
+                    return;
+                }
                 if (!data.isPrivate) rooms.push({ code: d.id, ...data });
             });
             if (rooms.length === 0) { list.innerHTML = '<div class="text-slate-500 italic text-sm">Keine offenen Räume</div>'; return; }
@@ -2178,6 +2186,10 @@
     updateLoginHeader();
     lucide.createIcons();
     showModeSelect();
+
+    // ── Auto-leave room on page close ──
+    window.addEventListener('pagehide', () => { if (currentRoomCode) window.vbLeaveRoom(); });
+    window.addEventListener('beforeunload', () => { if (currentRoomCode) window.vbLeaveRoom(); });
 
     // Firebase init
     if (getPlayerName()) {
