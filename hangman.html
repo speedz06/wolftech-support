@@ -110,13 +110,16 @@
             padding: 14px;
         }
         #hm-bottom-nav {
-            display: none;
+            display: flex;
             justify-content: space-around;
             align-items: center;
             border-top: 1px solid #1e293b;
             background: #0f172a;
             padding: 4px 0 max(4px, env(safe-area-inset-bottom));
             flex-shrink: 0;
+        }
+        @media (min-width: 901px) {
+            #hm-bottom-nav { display: none; }
         }
         .hm-nav-btn {
             flex: 1;
@@ -430,7 +433,6 @@
                 transition: transform 0.3s cubic-bezier(0.32,0.72,0,1);
             }
             #hm-sidebar-right { display: none !important; }
-            #hm-bottom-nav { display: flex; }
             #hm-game-center { overflow: hidden; min-height: 0; padding-bottom: 0; }
             /* nav handles safe-area-inset-bottom */
             #hm-keyboard { padding-bottom: 4px; }
@@ -2437,14 +2439,6 @@
         });
     }
 
-    // Fix bottom nav not showing after bfcache restore (back/forward navigation)
-    window.addEventListener('pageshow', (e) => {
-        if (e.persisted) {
-            document.body.offsetHeight;
-            const nav = document.getElementById('hm-bottom-nav');
-            if (nav && window.innerWidth <= 900) nav.style.display = 'flex';
-        }
-    });
 </script>
 </body>
 </html>

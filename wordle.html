@@ -234,13 +234,16 @@
 
         /* Bottom nav */
         #bottom-nav {
-            display: none;
+            display: flex;
             justify-content: space-around;
             align-items: center;
             border-top: 1px solid #1e293b;
             background: #0f172a;
             padding: 4px 0 max(4px, env(safe-area-inset-bottom));
             flex-shrink: 0;
+        }
+        @media (min-width: 901px) {
+            #bottom-nav { display: none; }
         }
         .nav-btn {
             flex: 1;
@@ -563,7 +566,6 @@
         @media (max-width: 900px) {
             #app { flex-direction: column; }
             #sidebar-left, #sidebar-right { display: none !important; }
-            #bottom-nav { display: flex; }
             #game-center { overflow: hidden; min-height: 0; }
             #grid-wrapper { width: 100%; padding: 4px 8px; overflow: hidden; }
             #grid {
@@ -4194,16 +4196,6 @@
                 const registration = await navigator.serviceWorker.register('/sw.js');
                 await registration.update();
             } catch (error) {}
-        });
-
-        // Fix bottom nav not showing after bfcache restore (back/forward navigation)
-        window.addEventListener('pageshow', (e) => {
-            if (e.persisted) {
-                // Force style recalculation after bfcache restore
-                document.body.offsetHeight;
-                const nav = document.getElementById('bottom-nav');
-                if (nav && window.innerWidth <= 900) nav.style.display = 'flex';
-            }
         });
 
         // Automatically switch to mobile layout when sidebars would overlap the game field
