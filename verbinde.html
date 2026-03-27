@@ -1796,6 +1796,20 @@
     };
 
     // ── Leave Room ──
+    // Quick fire-and-forget version for page close (no awaits, no reads)
+    function vbLeaveRoomQuick() {
+        const code = currentRoomCode;
+        if (!code) return;
+        const name = getPlayerName();
+        if (!name || !db) return;
+        // Single updateDoc to remove player field — no read required
+        updateDoc(doc(db, 'artifacts', appId, 'public', 'data', ROOM_COL, code), {
+            [`players.${name}`]: deleteField()
+        }).catch(() => {});
+        localStorage.removeItem('wolfle_active_vb_room');
+        currentRoomCode = null;
+    }
+
     window.vbLeaveRoom = async () => {
         const code = currentRoomCode;
         localStorage.removeItem('wolfle_active_vb_room');
@@ -1833,6 +1847,19 @@
             const players = data.players || {};
             const gameType = data.gameType || 'duell';
             const myName = getPlayerName();
+
+            // If room is empty, delete it and leave
+            if (Object.keys(players).length === 0) {
+                deleteDoc(doc(firestore,'artifacts',appId,'public','data',ROOM_COL,code)).catch(() => {});
+                window.vbLeaveRoom();
+                return;
+            }
+            // If I'm no longer in the room (kicked or removed), leave
+            if (myName && !players[myName]) {
+                showToast('Du wurdest aus dem Raum entfernt','error');
+                window.vbLeaveRoom();
+                return;
+            }
 
             // Show room bar
             const bar = document.getElementById('vbRoomStatus');
@@ -2135,7 +2162,7 @@
             const snap = await getDocs(collection(firestore,'artifacts',appId,'public','data',ROOM_COL));
             const rooms = [];
             const now = Date.now();
-            const STALE_MS = 2 * 60 * 60 * 1000; // 2 hours
+            const STALE_MS = 30 * 60 * 1000; // 30 minutes
             snap.forEach(d => {
                 const data = d.data();
                 const playerCount = Object.keys(data.players || {}).length;
@@ -2350,8 +2377,9 @@
     showModeSelect();
 
     // ── Auto-leave room on page close ──
-    window.addEventListener('pagehide', () => { if (currentRoomCode) window.vbLeaveRoom(); });
-    window.addEventListener('beforeunload', () => { if (currentRoomCode) window.vbLeaveRoom(); });
+    // Use quick (non-async) leave on page close so it actually fires before browser kills the page
+    window.addEventListener('pagehide', () => vbLeaveRoomQuick());
+    window.addEventListener('beforeunload', () => vbLeaveRoomQuick());
 
     // Firebase init
     if (getPlayerName()) {
