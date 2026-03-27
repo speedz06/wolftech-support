@@ -607,6 +607,7 @@
                 <input id="vbJoinCodeInput" type="text" placeholder="CODE" maxlength="5" class="flex-1 bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2.5 text-center text-white uppercase tracking-widest focus:border-yellow-500 transition-colors outline-none">
                 <button class="vb-btn submit" onclick="window.vbJoinRoom()">Beitreten</button>
             </div>
+            <button class="vb-btn submit vb-start-game-btn" onclick="window.vbStartGame()" style="display:none;margin-top:8px">Spiel starten!</button>
             <button class="vb-btn" onclick="showModeSelect()">Zurück</button>
         </div>
 
@@ -634,6 +635,7 @@
                 <input id="vbJoinMemCodeInput" type="text" placeholder="CODE" maxlength="5" class="flex-1 bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2.5 text-center text-white uppercase tracking-widest focus:border-yellow-500 transition-colors outline-none">
                 <button class="vb-btn submit" onclick="window.vbJoinRoom(document.getElementById('vbJoinMemCodeInput').value)">Beitreten</button>
             </div>
+            <button class="vb-btn submit vb-start-game-btn" onclick="window.vbStartGame()" style="display:none;margin-top:8px">Spiel starten!</button>
             <button class="vb-btn" onclick="showModeSelect()">Zurück</button>
         </div>
 
@@ -1697,15 +1699,14 @@
                 }
             }
 
-            // Auto-start when 2+ players and still waiting
-            if (data.status === 'waiting' && pList.length >= 2 && data.hostName === myName) {
-                setDoc(doc(firestore,'artifacts',appId,'public','data',ROOM_COL,code), { status: 'playing' }, { merge: true });
-            }
-
             // Show waiting screen if still waiting
             if (data.status === 'waiting') {
                 showView(gameType === 'memory' ? 'onlineMemorySetup' : 'onlineDuellSetup');
                 document.getElementById('subtitleText').textContent = `Warte auf Mitspieler... Code: ${code}`;
+                // Show start button for host when 2+ players
+                document.querySelectorAll('.vb-start-game-btn').forEach(btn => {
+                    btn.style.display = (pList.length >= 2 && data.hostName === myName) ? 'inline-flex' : 'none';
+                });
             }
 
             lucide.createIcons();
@@ -1916,6 +1917,12 @@
     window.vbShowOnlineMemorySetup = () => {
         document.getElementById('subtitleText').textContent = 'Memory';
         showView('onlineMemorySetup');
+    };
+
+    window.vbStartGame = async () => {
+        if (!currentRoomCode) return;
+        const firestore = await getDB(); if (!firestore) return;
+        await setDoc(doc(firestore,'artifacts',appId,'public','data',ROOM_COL,currentRoomCode), { status: 'playing' }, { merge: true });
     };
 
     // ── FRIENDS MODAL ──
