@@ -110,13 +110,17 @@
             padding: 14px;
         }
         #hm-bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
             display: flex;
             justify-content: space-around;
             align-items: center;
             border-top: 1px solid #1e293b;
             background: #0f172a;
             padding: 4px 0 max(4px, env(safe-area-inset-bottom));
-            flex-shrink: 0;
+            z-index: 60;
         }
         @media (min-width: 901px) {
             #hm-bottom-nav { display: none; }
@@ -434,8 +438,8 @@
             }
             #hm-sidebar-right { display: none !important; }
             #hm-game-center { overflow: hidden; min-height: 0; padding-bottom: 0; }
-            /* nav handles safe-area-inset-bottom */
-            #hm-keyboard { padding-bottom: 4px; }
+            /* fixed nav sits on top, so give keyboard bottom clearance */
+            #hm-keyboard { padding-bottom: calc(44px + env(safe-area-inset-bottom)); }
         }
         @media (max-width: 480px) {
             .hm-key { height: clamp(30px, 4.5vh, 40px); }
