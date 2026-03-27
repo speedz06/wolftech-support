@@ -2137,7 +2137,25 @@
     // ═══════════════════════════════════════════════════════════
     // LEADERBOARD
     // ═══════════════════════════════════════════════════════════
+    async function cleanupStaleRooms() {
+        try {
+            const firestore = await getDB(); if (!firestore) return;
+            const STALE_MS = 30 * 60 * 1000;
+            const now = Date.now();
+            const snap = await getDocs(collection(firestore,'artifacts',appId,'public','data','rooms'));
+            snap.forEach(d => {
+                const data = d.data();
+                const playerCount = data.players ? Object.keys(data.players).length : 0;
+                const isStale = data.createdAt && (now - data.createdAt > STALE_MS);
+                if (playerCount === 0 || isStale) {
+                    deleteDoc(doc(firestore,'artifacts',appId,'public','data','rooms',d.id)).catch(()=>{});
+                }
+            });
+        } catch(e) {}
+    }
+
     async function loadLeaderboard() {
+        cleanupStaleRooms();
         const firestore = await getDB(); if (!firestore) return;
         document.querySelectorAll('.lb-tab-total').forEach(b => {
             b.classList.toggle('bg-indigo-600', leaderboardTab === 'total');
@@ -2563,7 +2581,7 @@
         hostRoundTime = hostSettings.timeLimit;
 
         await setDoc(doc(firestore,'artifacts',appId,'public','data','rooms',code),
-            { word, round: 1, maxRounds: hostSettings.maxRounds, timeLimit: hostSettings.timeLimit, maxAttempts: hostSettings.maxAttempts, isPrivate: window._roomIsPrivate || false, players: { [name]: { name, guesses:0, finished:false, won:false, totalScore:0, roundsWon:0 } } });
+            { word, round: 1, maxRounds: hostSettings.maxRounds, timeLimit: hostSettings.timeLimit, maxAttempts: hostSettings.maxAttempts, isPrivate: window._roomIsPrivate || false, createdAt: Date.now(), players: { [name]: { name, guesses:0, finished:false, won:false, totalScore:0, roundsWon:0 } } });
         window.closeCreateRoomModal();
         joinInternal(code, word, 1, hostSettings.maxRounds, hostSettings.timeLimit, hostSettings.maxAttempts);
         document.querySelectorAll('.share-btn').forEach(b => b.classList.remove('hidden'));
@@ -2823,6 +2841,21 @@
         document.querySelectorAll('.round-display').forEach(el => el.classList.add('hidden'));
         stopTimer();
     };
+
+    // Quick room leave for page close (fire-and-forget, no awaits)
+    function leaveRoomQuick() {
+        const code = currentRoomCode;
+        if (!code) return;
+        const name = getPlayerName();
+        if (!name || !db) return;
+        updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', code), {
+            [`players.${name}`]: deleteField()
+        }).catch(() => {});
+        localStorage.removeItem('wolfle_active_room');
+        currentRoomCode = null;
+    }
+    window.addEventListener('pagehide', () => leaveRoomQuick());
+    window.addEventListener('beforeunload', () => leaveRoomQuick());
 
     window.nextRound = async () => {
         if (!currentRoomCode) return;
