@@ -2196,22 +2196,24 @@
             const userSnap = await getDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'users', name));
             if (!userSnap.exists()) { showToast('Kein Profil gefunden', 'info'); return; }
             const ud = userSnap.data();
-            const [scoreSnap, hmScoreSnap, myDoc] = await Promise.all([
+            const [scoreSnap, hmScoreSnap, vbScoreSnap, myDoc] = await Promise.all([
                 getDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'scores', name.toLowerCase())),
                 getDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'hm_scores', name.toLowerCase())),
+                getDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'vb_scores', name.toLowerCase())),
                 getPlayerName() ? getDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'users', getPlayerName())) : Promise.resolve(null),
             ]);
             const sd = scoreSnap.exists() ? scoreSnap.data() : {};
             const hsd = hmScoreSnap.exists() ? hmScoreSnap.data() : {};
+            const vbd = vbScoreSnap.exists() ? vbScoreSnap.data() : {};
             const weekKey = getWeekKey();
             const weekScore = sd.weekKey === weekKey ? (sd.weekScore || 0) : 0;
             const friendsCount = ud.friends ? ud.friends.length : 0;
             document.getElementById('pp-avatar').textContent = ud.avatar || '🐺';
             document.getElementById('pp-name').textContent = ud.name || name;
             document.getElementById('pp-stats').innerHTML = [
-                [sd.score || 0, 'Wordle Pts'],
-                [weekScore, 'Diese Woche'],
-                [hsd.score || 0, 'Hangman Pts'],
+                [sd.score || 0, 'Wordle'],
+                [hsd.score || 0, 'Hangman'],
+                [vbd.score || 0, 'Verbinde'],
                 [friendsCount, 'Freunde'],
             ].map(([val, lbl]) => `<div class="stat-box flex-1 bg-slate-700/50 rounded-xl py-3"><div class="stat-num">${val}</div><div class="stat-lbl">${lbl}</div></div>`).join('');
             // Friend button
