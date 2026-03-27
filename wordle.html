@@ -241,6 +241,11 @@
             background: #0f172a;
             padding: 4px 0 max(4px, env(safe-area-inset-bottom));
             flex-shrink: 0;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 90;
         }
         .nav-btn {
             flex: 1;
@@ -564,6 +569,7 @@
             #app { flex-direction: column; }
             #sidebar-left, #sidebar-right { display: none !important; }
             #bottom-nav { display: flex; }
+            body { padding-bottom: 48px; }
             #game-center { overflow: hidden; min-height: 0; }
             #grid-wrapper { width: 100%; padding: 4px 8px; overflow: hidden; }
             #grid {
