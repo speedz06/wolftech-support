@@ -73,7 +73,14 @@
         .tab-link.active { color: #eab308; border-bottom-color: #eab308; }
         .tab-link:hover:not(.active) { color: #94a3b8; }
 
-        /* ── GAME CENTER ── */
+        /* ── APP LAYOUT ── */
+        #vb-app {
+            display: flex;
+            flex-direction: row;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
         #vb-game-center {
             flex: 1;
             display: flex;
@@ -83,6 +90,27 @@
             min-width: 0;
             padding: 16px 16px max(16px, env(safe-area-inset-bottom));
             gap: 10px;
+        }
+        #vb-sidebar {
+            width: 220px;
+            min-width: 220px;
+            background: rgba(15,23,42,0.5);
+            border-left: 1px solid #1e293b;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+        #vb-sidebar h2 {
+            font-size: 0.95rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        @media (max-width: 900px) {
+            #vb-sidebar { display: none !important; }
         }
 
         /* ── GAME TITLE ── */
@@ -492,7 +520,23 @@
         .mobile-only { display: none; }
         @media (pointer: coarse) { .mobile-only { display: inline-flex; } }
 
-        /* ── LEADERBOARD DRAWER ── */
+        /* ── LEADERBOARD SHARED ── */
+        .vb-lb-entry {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 8px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            transition: background 0.15s;
+        }
+        .vb-lb-entry:hover { background: rgba(51,65,85,0.5); }
+        .vb-lb-entry.me { background: rgba(234,179,8,0.15); border: 1px solid rgba(234,179,8,0.3); }
+        .vb-lb-score { color: #eab308; font-weight: 700; }
+
+        /* ── MOBILE DRAWER (hidden on desktop) ── */
+        .vb-mobile-lb-btn { display: none; }
+        @media (max-width: 900px) { .vb-mobile-lb-btn { display: inline-flex; } }
         #vb-drawer-overlay {
             display: none;
             position: fixed; inset: 0;
@@ -515,24 +559,15 @@
             overflow-y: auto;
         }
         #vb-drawer.open { transform: translateY(0); }
-        .vb-lb-entry {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 10px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            transition: background 0.15s;
-        }
-        .vb-lb-entry:hover { background: rgba(51,65,85,0.5); }
-        .vb-lb-entry.me { background: rgba(234,179,8,0.15); border: 1px solid rgba(234,179,8,0.3); }
-        .vb-lb-score { color: #eab308; font-weight: 700; }
 
-        /* Theme overrides for drawer */
+        /* Theme overrides for sidebar + drawer */
+        html.light #vb-sidebar { background: rgba(241,245,249,0.5); border-color: #cbd5e1; }
         html.light #vb-drawer { background: #f1f5f9; border-color: #cbd5e1; }
-        html.light .vb-lb-entry:hover { background: rgba(203,213,225,0.5); }
+        html.retro #vb-sidebar { background: #000; border-color: #00ff41; }
         html.retro #vb-drawer { background: #000; border-color: #00ff41; }
+        html.ocean #vb-sidebar { background: #05101f; border-color: #1d4e6e; }
         html.ocean #vb-drawer { background: #05101f; border-color: #1d4e6e; }
+        html.pastel #vb-sidebar { background: #fce7f3; border-color: #f0abdb; }
         html.pastel #vb-drawer { background: #fce7f3; border-color: #f0abdb; }
     </style>
 </head>
@@ -552,7 +587,7 @@
             <button id="haptic-btn" onclick="toggleHaptic()" class="mobile-only text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Vibration">
                 <i data-lucide="smartphone" class="w-4 h-4"></i>
             </button>
-            <button onclick="window.vbOpenDrawer()" class="text-yellow-500 hover:text-yellow-300 p-1.5 rounded-lg transition-colors" title="Top Liste">
+            <button onclick="window.vbOpenDrawer()" class="vb-mobile-lb-btn text-yellow-500 hover:text-yellow-300 p-1.5 rounded-lg transition-colors" title="Top Liste">
                 <i data-lucide="trophy" class="w-4 h-4"></i>
             </button>
             <button onclick="window.vbOpenFriendsModal()" class="relative text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Freunde">
@@ -594,6 +629,8 @@
         </a>
     </div>
 
+    <!-- APP LAYOUT -->
+    <div id="vb-app">
     <!-- GAME CENTER -->
     <div id="vb-game-center">
         <div class="vb-title">Verbinde</div>
@@ -782,6 +819,19 @@
         <div id="memDuellResult" style="display:none;width:100%;flex-direction:column;align-items:center;gap:14px;text-align:center">
         </div>
     </div>
+
+    <!-- SIDEBAR: LEADERBOARD -->
+    <div id="vb-sidebar">
+        <h2><i data-lucide="trophy" class="w-5 h-5" style="color:#eab308"></i> Top Liste</h2>
+        <div style="display:flex;gap:4px;margin-bottom:10px;background:rgba(30,41,59,0.5);padding:3px;border-radius:8px">
+            <button id="vb-sb-tab-total" onclick="window.vbSetLbTab('total')" style="flex:1;font-size:0.7rem;padding:5px;border-radius:6px;border:none;cursor:pointer;font-weight:600;background:#eab308;color:#000;transition:all 0.15s">Gesamt</button>
+            <button id="vb-sb-tab-week" onclick="window.vbSetLbTab('week')" style="flex:1;font-size:0.7rem;padding:5px;border-radius:6px;border:none;cursor:pointer;font-weight:600;background:transparent;color:#64748b;transition:all 0.15s">Woche</button>
+        </div>
+        <div id="vb-sb-list" style="display:flex;flex-direction:column;gap:3px;flex:1">
+            <div style="color:#64748b;font-size:0.8rem;font-style:italic">Lädt...</div>
+        </div>
+    </div>
+    </div><!-- /vb-app -->
 
     <!-- FRIENDS MODAL -->
     <div id="vb-friends-modal" class="hidden fixed inset-0 bg-slate-900/80 z-[97] flex items-center justify-center p-4" onclick="if(event.target===this)window.vbCloseFriendsModal()">
@@ -1673,11 +1723,12 @@
     }
 
     async function loadVbLeaderboard() {
-        const list = document.getElementById('vb-lb-list');
-        if (!list) return;
+        // Update both sidebar list and drawer list
+        const targets = [document.getElementById('vb-sb-list'), document.getElementById('vb-lb-list')].filter(Boolean);
+        if (targets.length === 0) return;
         try {
             const firestore = await getDB();
-            if (!firestore) { list.innerHTML = '<div style="color:#64748b;font-size:0.85rem;font-style:italic">Nicht angemeldet</div>'; return; }
+            if (!firestore) { targets.forEach(t => t.innerHTML = '<div style="color:#64748b;font-size:0.8rem;font-style:italic">Nicht angemeldet</div>'); return; }
             const snap = await getDocs(collection(firestore, 'artifacts', appId, 'public', 'data', VB_SCORE_COL));
             let entries = [];
             const weekKey = getWeekKey();
@@ -1689,20 +1740,31 @@
                 entries.sort((a, b) => (b.score || 0) - (a.score || 0));
             }
             const me = (getPlayerName() || '').toLowerCase();
-            if (entries.length === 0) {
-                list.innerHTML = '<div style="color:#64748b;font-size:0.85rem;font-style:italic">Noch keine Einträge</div>';
-                return;
-            }
-            list.innerHTML = entries.slice(0, 15).map((s, i) => {
-                const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
-                const isMe = s.name.toLowerCase() === me;
-                const pts = vbLeaderboardTab === 'week' ? (s.weekScore || 0) : (s.score || 0);
-                return `<div class="vb-lb-entry${isMe ? ' me' : ''}">
-                    <span>${medal} ${s.name}</span>
-                    <span class="vb-lb-score">${pts}</span>
-                </div>`;
-            }).join('');
-        } catch(e) { list.innerHTML = '<div style="color:#64748b;font-size:0.85rem;font-style:italic">Fehler</div>'; }
+            const html = entries.length === 0
+                ? '<div style="color:#64748b;font-size:0.8rem;font-style:italic">Noch keine Einträge</div>'
+                : entries.slice(0, 15).map((s, i) => {
+                    const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
+                    const isMe = s.name.toLowerCase() === me;
+                    const pts = vbLeaderboardTab === 'week' ? (s.weekScore || 0) : (s.score || 0);
+                    return `<div class="vb-lb-entry${isMe ? ' me' : ''}">
+                        <span>${medal} ${s.name}</span>
+                        <span class="vb-lb-score">${pts}</span>
+                    </div>`;
+                }).join('');
+            targets.forEach(t => t.innerHTML = html);
+        } catch(e) { targets.forEach(t => t.innerHTML = '<div style="color:#64748b;font-size:0.8rem;font-style:italic">Fehler</div>'); }
+    }
+
+    function vbUpdateTabButtons(tab) {
+        // Update all tab buttons (sidebar + drawer)
+        ['vb-sb-tab-total','vb-lb-tab-total'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) { el.style.background = tab === 'total' ? '#eab308' : 'transparent'; el.style.color = tab === 'total' ? '#000' : '#64748b'; }
+        });
+        ['vb-sb-tab-week','vb-lb-tab-week'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) { el.style.background = tab === 'week' ? '#eab308' : 'transparent'; el.style.color = tab === 'week' ? '#000' : '#64748b'; }
+        });
     }
 
     window.vbOpenDrawer = () => {
@@ -1717,10 +1779,7 @@
     };
     window.vbSetLbTab = (tab) => {
         vbLeaderboardTab = tab;
-        document.getElementById('vb-lb-tab-total').style.background = tab === 'total' ? '#eab308' : 'transparent';
-        document.getElementById('vb-lb-tab-total').style.color = tab === 'total' ? '#000' : '#64748b';
-        document.getElementById('vb-lb-tab-week').style.background = tab === 'week' ? '#eab308' : 'transparent';
-        document.getElementById('vb-lb-tab-week').style.color = tab === 'week' ? '#000' : '#64748b';
+        vbUpdateTabButtons(tab);
         loadVbLeaderboard();
     };
 
@@ -2385,6 +2444,7 @@
     if (getPlayerName()) {
         getDB().then(() => {
             vbSubscribeInvites(getPlayerName());
+            loadVbLeaderboard();
             // Check URL param for room
             const roomFromURL = new URLSearchParams(location.search).get('room');
             if (roomFromURL) window.vbJoinRoom(roomFromURL);
