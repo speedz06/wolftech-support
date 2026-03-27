@@ -1165,7 +1165,25 @@
             loadHmLeaderboard();
         } catch(e) {}
     }
+    async function cleanupStaleHmRooms() {
+        try {
+            const firestore = await ensureDB(); if (!firestore) return;
+            const STALE_MS = 30 * 60 * 1000;
+            const now = Date.now();
+            const snap = await firebaseFns.getDocs(firebaseFns.collection(firestore,'artifacts',appId,'public','data','hangman_rooms'));
+            snap.forEach(d => {
+                const data = d.data();
+                const playerCount = data.players ? Object.keys(data.players).length : 0;
+                const isStale = data.createdAt && (now - data.createdAt > STALE_MS);
+                if (playerCount === 0 || isStale) {
+                    firebaseFns.deleteDoc(roomDocRef(d.id)).catch(()=>{});
+                }
+            });
+        } catch(e) {}
+    }
+
     async function loadHmLeaderboard() {
+        cleanupStaleHmRooms();
         const listEl = document.getElementById('hm-leaderboard-list');
         if (!listEl) return;
         document.querySelectorAll('.hm-lb-tab-total').forEach(b => {
@@ -1651,7 +1669,8 @@
             wordSource: settings.wordSource,
             wordLanguage: null,
             isPrivate: window._hmRoomIsPrivate || false,
-            roomStatus: 'Raum erstellt – warte auf Mitspieler oder starte direkt die erste Runde.'
+            roomStatus: 'Raum erstellt – warte auf Mitspieler oder starte direkt die erste Runde.',
+            createdAt: Date.now()
         };
         await firebaseFns.setDoc(roomDocRef(code), payload);
         document.getElementById('hm-room-code-input').value = code;
@@ -1701,6 +1720,22 @@
         resetRoundState();
         renderAll();
     }
+
+    // Quick room leave for page close (fire-and-forget, no awaits)
+    function hmLeaveRoomQuick() {
+        const code = gameState.roomCode;
+        if (!code) return;
+        const name = getPlayerName();
+        if (!name || !db) return;
+        firebaseFns.updateDoc(roomDocRef(code), {
+            [`players.${name}`]: firebaseFns.deleteField()
+        }).catch(() => {});
+        localStorage.removeItem('wolfle_active_hm_room');
+        gameState.roomCode = null;
+    }
+    window.addEventListener('pagehide', () => hmLeaveRoomQuick());
+    window.addEventListener('beforeunload', () => hmLeaveRoomQuick());
+
     async function hmShareRoom() {
         if (!gameState.roomCode) return showToast('Erst einen Raum erstellen oder beitreten.');
         const url = `${location.origin}${location.pathname}?room=${gameState.roomCode}`;
