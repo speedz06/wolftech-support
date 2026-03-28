@@ -579,7 +579,7 @@
                 width: min(calc(100vw - 24px), calc((100dvh - 280px) * 5 / 6));
             }
             /* fixed nav sits on top, so give keyboard bottom clearance */
-            #keyboard { padding: 2px 4px calc(44px + env(safe-area-inset-bottom)); gap: 4px; }
+            #keyboard { padding: 2px 4px calc(56px + env(safe-area-inset-bottom)); gap: 4px; }
             .kb-key { height: clamp(34px, 5vh, 46px); font-size: clamp(10px, 2vw, 13px); border-radius: 4px; }
         }
         @media (max-width: 480px) {
@@ -591,7 +591,7 @@
         html.mobile-forced #sidebar-left,
         html.mobile-forced #sidebar-right { display: none !important; }
         html.mobile-forced #bottom-nav { display: flex; }
-        html.mobile-forced #keyboard { padding-bottom: calc(44px + env(safe-area-inset-bottom)); }
+        html.mobile-forced #keyboard { padding-bottom: calc(56px + env(safe-area-inset-bottom)); }
 
         /* ── ENHANCED ANIMATIONS ── */
         .letter-pop { animation: letter-pop 0.1s ease-out forwards; }
