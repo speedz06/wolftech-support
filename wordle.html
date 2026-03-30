@@ -3,12 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Wolfle – Wordle</title>
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#6366f1">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="words.js"></script>
@@ -4236,21 +4231,7 @@
 </script>
 
 <script>
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', async () => {
-            let refreshing = false;
-            navigator.serviceWorker.addEventListener('controllerchange', () => {
-                if (refreshing) return;
-                refreshing = true;
-                window.location.reload();
-            });
-
-            try {
-                const registration = await navigator.serviceWorker.register('/sw.js');
-                await registration.update();
-            } catch (error) {}
-        });
-
+    {
         // Automatically switch to mobile layout when sidebars would overlap the game field
         (function () {
             const SIDEBAR_LEFT_W  = 280;
