@@ -149,6 +149,85 @@
         .swipe-hint-left { left: 2px; background: #4ade80; }
         @media (max-width: 900px) { .swipe-hint { display: block; } }
 
+        /* Game view */
+        #slf-letter-display {
+            font-size: clamp(3rem, 12vw, 6rem);
+            font-weight: 900;
+            color: #4ade80;
+            text-align: center;
+            line-height: 1;
+            text-shadow: 0 0 32px rgba(74,222,128,0.3);
+        }
+        #slf-timer {
+            font-size: 1.1rem; font-weight: 700; color: #94a3b8;
+            text-align: center;
+        }
+        #slf-timer.urgent { color: #ef4444; animation: pulse-urgent 0.5s ease-in-out infinite; }
+        @keyframes pulse-urgent { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+        .slf-input-grid {
+            display: flex; flex-direction: column; gap: 8px;
+            width: 100%; max-width: 500px;
+        }
+        .slf-input-row {
+            display: flex; align-items: center; gap: 8px;
+        }
+        .slf-input-row label {
+            width: 80px; font-size: 13px; font-weight: 600; color: #94a3b8;
+            flex-shrink: 0; text-align: right;
+        }
+        .slf-input-row input {
+            flex: 1; background: #1e293b; border: 1px solid #334155;
+            border-radius: 10px; padding: 10px 12px; color: white; font-size: 14px;
+        }
+        .slf-input-row input:focus { border-color: #4ade80; outline: none; }
+        .slf-input-row input:disabled { opacity: 0.5; }
+        #slf-stop-btn {
+            padding: 14px 48px; border-radius: 16px;
+            background: #ef4444; color: white;
+            font-size: 18px; font-weight: 900;
+            border: none; cursor: pointer;
+            transition: transform 0.1s, background 0.15s;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        #slf-stop-btn:active { transform: scale(0.95); }
+        #slf-stop-btn:disabled { background: #334155; color: #64748b; cursor: default; }
+        #slf-start-btn {
+            padding: 14px 48px; border-radius: 16px;
+            background: #16a34a; color: white;
+            font-size: 16px; font-weight: 800;
+            border: none; cursor: pointer;
+        }
+        #slf-start-btn:disabled { background: #334155; color: #64748b; cursor: default; }
+
+        /* Results table */
+        .slf-results-table {
+            width: 100%; max-width: 600px;
+            border-collapse: collapse; font-size: 13px;
+        }
+        .slf-results-table th {
+            background: #1e293b; color: #94a3b8;
+            padding: 8px 10px; text-align: left;
+            font-weight: 600; position: sticky; top: 0;
+        }
+        .slf-results-table td {
+            padding: 6px 10px; border-bottom: 1px solid #1e293b;
+        }
+        .slf-results-table tr:nth-child(even) { background: rgba(30,41,59,0.3); }
+        .slf-score-unique { color: #4ade80; font-weight: 700; }
+        .slf-score-duplicate { color: #fbbf24; font-weight: 700; }
+        .slf-score-empty { color: #64748b; }
+        .slf-round-scores {
+            display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;
+        }
+        .slf-score-card {
+            background: rgba(30,41,59,0.6); border: 1px solid #334155;
+            border-radius: 12px; padding: 10px 16px; text-align: center;
+            min-width: 80px;
+        }
+        .slf-score-card .name { font-size: 12px; color: #94a3b8; }
+        .slf-score-card .pts { font-size: 20px; font-weight: 800; color: #4ade80; }
+
         /* Scrollbar */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
@@ -274,8 +353,27 @@
                     Erstelle einen Raum oder tritt einem bei, um zu spielen.
                 </p>
             </div>
-            <div id="slf-game-view" style="display:none;">
-                <!-- Game UI will be built here in the next push -->
+            <div id="slf-game-view" style="display:none;width:100%;flex:1;display:flex;flex-direction:column;align-items:center;gap:16px;overflow-y:auto;padding-bottom:16px;">
+                <!-- Start button (host, lobby) -->
+                <button id="slf-start-btn" onclick="slfStartRound()" style="display:none;">Runde starten</button>
+
+                <!-- Active round -->
+                <div id="slf-round-area" style="display:none;width:100%;display:flex;flex-direction:column;align-items:center;gap:16px;">
+                    <div id="slf-letter-display"></div>
+                    <div id="slf-timer"></div>
+                    <div id="slf-inputs" class="slf-input-grid"></div>
+                    <button id="slf-stop-btn" onclick="slfStop()">STOPP!</button>
+                </div>
+
+                <!-- Results -->
+                <div id="slf-results-area" style="display:none;width:100%;display:flex;flex-direction:column;align-items:center;gap:16px;overflow-y:auto;">
+                    <h3 style="font-size:1.1rem;font-weight:800;">Ergebnisse</h3>
+                    <div id="slf-round-scores" class="slf-round-scores"></div>
+                    <div style="overflow-x:auto;width:100%;max-width:600px;">
+                        <table class="slf-results-table" id="slf-results-table"></table>
+                    </div>
+                    <button id="slf-next-btn" onclick="slfStartRound()" style="display:none;" class="slf-btn slf-btn-primary">Nächste Runde</button>
+                </div>
             </div>
         </div>
     </div>
@@ -415,6 +513,97 @@
         });
     };
 
+    // ── Game logic ──
+    let timerInterval = null;
+    let timeLeft = 0;
+    let localAnswers = {};
+    let answersSubmitted = false;
+
+    window.slfStartRound = async () => {
+        if (!roomCode || !roomData) return;
+        const name = getPlayerName();
+        if (name !== roomData.hostName) return;
+
+        // Pick a letter not yet used
+        const used = roomData.usedLetters || [];
+        const available = LETTERS.filter(l => !used.includes(l));
+        if (available.length === 0) {
+            return showToast('Alle Buchstaben wurden bereits verwendet!');
+        }
+        const letter = available[Math.floor(Math.random() * available.length)];
+
+        await updateDoc(roomDocRef(roomCode), {
+            status: 'playing',
+            currentLetter: letter,
+            roundNumber: (roomData.roundNumber || 0) + 1,
+            answers: {},
+            stoppedBy: null,
+            usedLetters: [...used, letter],
+            _scoresUpdated: false
+        });
+    };
+
+    window.slfStop = async () => {
+        if (!roomCode || !roomData || roomData.status !== 'playing') return;
+        const name = getPlayerName();
+        // Submit own answers first
+        await slfSubmitAnswers();
+        await updateDoc(roomDocRef(roomCode), {
+            status: 'scoring',
+            stoppedBy: name
+        });
+    };
+
+    async function slfSubmitAnswers() {
+        if (!roomCode || answersSubmitted) return;
+        const name = getPlayerName();
+        const answers = {};
+        (roomData.categories || []).forEach(cat => {
+            const input = document.getElementById('slf-answer-' + cat);
+            answers[cat] = (input?.value || '').trim();
+        });
+        answersSubmitted = true;
+        await updateDoc(roomDocRef(roomCode), { [`answers.${name}`]: answers });
+    }
+
+    function scoreRound(data) {
+        const players = Object.keys(data.players || {});
+        const categories = data.categories || [];
+        const answers = data.answers || {};
+        const roundScores = {};
+
+        players.forEach(p => { roundScores[p] = 0; });
+
+        categories.forEach(cat => {
+            // Collect all answers for this category, normalized
+            const catAnswers = {};
+            players.forEach(p => {
+                const raw = (answers[p] && answers[p][cat]) || '';
+                catAnswers[p] = raw.trim().toLowerCase();
+            });
+
+            // Check if answer starts with the correct letter
+            const letter = (data.currentLetter || '').toLowerCase();
+
+            players.forEach(p => {
+                const ans = catAnswers[p];
+                if (!ans || !ans.startsWith(letter)) {
+                    // 0 points - empty or wrong letter
+                    return;
+                }
+                // Check if unique among all players
+                const same = players.filter(q => q !== p && catAnswers[q] === ans);
+                if (same.length === 0) {
+                    roundScores[p] += 10; // unique
+                } else {
+                    roundScores[p] += 5; // duplicate
+                }
+            });
+        });
+
+        return roundScores;
+    }
+
     // ── Rendering ──
     function renderRoom() {
         const statusEl = document.getElementById('slf-room-status');
@@ -423,17 +612,22 @@
         const catSection = document.getElementById('slf-categories-section');
         const catList = document.getElementById('slf-category-list');
         const lobbyView = document.getElementById('slf-lobby-view');
+        const gameView = document.getElementById('slf-game-view');
 
         if (!roomCode || !roomData) {
             statusEl.textContent = 'Noch nicht verbunden.';
             codeEl.textContent = '-----';
             playerList.innerHTML = '';
             catSection.style.display = 'none';
+            lobbyView.style.display = '';
+            gameView.style.display = 'none';
             lobbyView.querySelector('p').textContent = 'Erstelle einen Raum oder tritt einem bei, um zu spielen.';
             return;
         }
 
-        statusEl.textContent = roomData.status === 'lobby' ? 'Warte auf Spieler...' : 'Runde ' + roomData.roundNumber;
+        statusEl.textContent = roomData.status === 'lobby' ? 'Warte auf Spieler...' :
+            roomData.status === 'playing' ? 'Runde ' + roomData.roundNumber + ' läuft...' :
+            'Runde ' + roomData.roundNumber + ' — Auswertung';
         codeEl.textContent = roomCode;
 
         // Players
@@ -445,15 +639,140 @@
             </div>`
         ).join('');
 
-        // Categories (host only)
+        // Categories
         const isHost = getPlayerName() === roomData.hostName;
         catSection.style.display = roomCode ? '' : 'none';
         catList.innerHTML = (roomData.categories || []).map(c =>
-            `<span class="slf-category-tag">${c}${isHost ? `<button onclick="slfRemoveCategory('${c}')">&times;</button>` : ''}</span>`
+            `<span class="slf-category-tag">${c}${isHost && roomData.status === 'lobby' ? `<button onclick="slfRemoveCategory('${c}')">&times;</button>` : ''}</span>`
         ).join('');
 
-        // Lobby text
-        lobbyView.querySelector('p').textContent = `Raum ${roomCode} — ${players.length} Spieler`;
+        // Show game view when in room
+        const status = roomData.status || 'lobby';
+
+        if (status === 'lobby') {
+            lobbyView.style.display = '';
+            gameView.style.display = 'none';
+            lobbyView.querySelector('p').textContent = `Raum ${roomCode} — ${players.length} Spieler`;
+
+            // Show start button for host
+            gameView.style.display = 'flex';
+            lobbyView.style.display = 'none';
+            const startBtn = document.getElementById('slf-start-btn');
+            const roundArea = document.getElementById('slf-round-area');
+            const resultsArea = document.getElementById('slf-results-area');
+            startBtn.style.display = isHost ? '' : 'none';
+            startBtn.disabled = players.length < 1;
+            roundArea.style.display = 'none';
+            resultsArea.style.display = 'none';
+
+            if (!isHost) {
+                // Show waiting message for non-host
+                startBtn.style.display = 'none';
+            }
+        } else if (status === 'playing') {
+            lobbyView.style.display = 'none';
+            gameView.style.display = 'flex';
+            answersSubmitted = false;
+
+            const startBtn = document.getElementById('slf-start-btn');
+            const roundArea = document.getElementById('slf-round-area');
+            const resultsArea = document.getElementById('slf-results-area');
+            startBtn.style.display = 'none';
+            roundArea.style.display = 'flex';
+            resultsArea.style.display = 'none';
+
+            // Show letter
+            document.getElementById('slf-letter-display').textContent = roomData.currentLetter;
+
+            // Build input fields (only if not already built for this round)
+            const inputsEl = document.getElementById('slf-inputs');
+            const existingRound = inputsEl.dataset.round;
+            if (existingRound !== String(roomData.roundNumber)) {
+                inputsEl.dataset.round = roomData.roundNumber;
+                inputsEl.innerHTML = (roomData.categories || []).map(cat =>
+                    `<div class="slf-input-row">
+                        <label>${cat}</label>
+                        <input type="text" id="slf-answer-${cat}" placeholder="${roomData.currentLetter}..." autocomplete="off">
+                    </div>`
+                ).join('');
+                // Focus first input
+                inputsEl.querySelector('input')?.focus();
+            }
+
+            document.getElementById('slf-stop-btn').disabled = false;
+        } else if (status === 'scoring') {
+            lobbyView.style.display = 'none';
+            gameView.style.display = 'flex';
+
+            const startBtn = document.getElementById('slf-start-btn');
+            const roundArea = document.getElementById('slf-round-area');
+            const resultsArea = document.getElementById('slf-results-area');
+            startBtn.style.display = 'none';
+            roundArea.style.display = 'none';
+            resultsArea.style.display = 'flex';
+
+            // Auto-submit if we haven't yet
+            if (!answersSubmitted) slfSubmitAnswers();
+
+            // Disable inputs
+            document.querySelectorAll('#slf-inputs input').forEach(i => i.disabled = true);
+            document.getElementById('slf-stop-btn').disabled = true;
+
+            // Score and render results
+            const roundScores = scoreRound(roomData);
+            const categories = roomData.categories || [];
+            const answers = roomData.answers || {};
+
+            // Score cards
+            document.getElementById('slf-round-scores').innerHTML = players.map(p =>
+                `<div class="slf-score-card">
+                    <div class="name">${p}${roomData.stoppedBy === p ? ' 🛑' : ''}</div>
+                    <div class="pts">+${roundScores[p] || 0}</div>
+                </div>`
+            ).join('');
+
+            // Results table
+            const letter = (roomData.currentLetter || '').toLowerCase();
+            let tableHTML = '<thead><tr><th>Kategorie</th>';
+            players.forEach(p => { tableHTML += `<th>${p}</th>`; });
+            tableHTML += '</tr></thead><tbody>';
+
+            categories.forEach(cat => {
+                tableHTML += '<tr><td style="font-weight:600;">' + cat + '</td>';
+                const catAnswers = {};
+                players.forEach(p => {
+                    catAnswers[p] = ((answers[p] && answers[p][cat]) || '').trim().toLowerCase();
+                });
+                players.forEach(p => {
+                    const raw = (answers[p] && answers[p][cat]) || '';
+                    const norm = raw.trim().toLowerCase();
+                    let cls = 'slf-score-empty';
+                    let pts = '0';
+                    if (norm && norm.startsWith(letter)) {
+                        const same = players.filter(q => q !== p && catAnswers[q] === norm);
+                        if (same.length === 0) { cls = 'slf-score-unique'; pts = '10'; }
+                        else { cls = 'slf-score-duplicate'; pts = '5'; }
+                    }
+                    tableHTML += `<td>${raw || '—'} <span class="${cls}">(${pts})</span></td>`;
+                });
+                tableHTML += '</tr>';
+            });
+            tableHTML += '</tbody>';
+            document.getElementById('slf-results-table').innerHTML = tableHTML;
+
+            // Next round button (host only)
+            const nextBtn = document.getElementById('slf-next-btn');
+            nextBtn.style.display = isHost ? '' : 'none';
+
+            // Host: update total scores
+            if (isHost && !roomData._scoresUpdated) {
+                const updatedPlayers = { ...roomData.players };
+                players.forEach(p => {
+                    updatedPlayers[p] = { ...updatedPlayers[p], score: (updatedPlayers[p].score || 0) + (roundScores[p] || 0) };
+                });
+                updateDoc(roomDocRef(roomCode), { players: updatedPlayers, _scoresUpdated: true });
+            }
+        }
     }
 
     // ── Drawer ──
