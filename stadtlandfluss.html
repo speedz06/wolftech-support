@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Wolfle – Stadt Land Fluss</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        * { box-sizing: border-box; }
+        html { touch-action: manipulation; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+        body {
+            background: radial-gradient(circle at top, #1e293b, #020617);
+            color: #f8fafc;
+            font-family: 'Inter', sans-serif;
+            height: 100dvh;
+            overflow: hidden;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            touch-action: manipulation;
+            overscroll-behavior: none;
+        }
+
+        /* Tabs */
+        #game-tabs {
+            display: flex;
+            background: #0f172a;
+            border-bottom: 1px solid #1e293b;
+            flex-shrink: 0;
+            padding: 0 12px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        #game-tabs::-webkit-scrollbar { display: none; }
+        .tab-link {
+            display: flex; align-items: center; gap: 6px;
+            padding: 10px 18px; font-size: 13px; font-weight: 600;
+            color: #64748b; text-decoration: none;
+            border-bottom: 2px solid transparent;
+            transition: all 0.15s; white-space: nowrap;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .tab-link.active { color: #4ade80; border-bottom-color: #4ade80; }
+        .tab-link:hover:not(.active) { color: #94a3b8; }
+
+        /* Header */
+        #slf-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: max(10px, env(safe-area-inset-top)) 16px 8px;
+            border-bottom: 1px solid #1e293b;
+            flex-shrink: 0;
+            background: rgba(15,23,42,0.85);
+            backdrop-filter: blur(12px);
+        }
+
+        /* App layout */
+        #slf-app {
+            display: flex; flex-direction: row;
+            flex: 1; min-height: 0; overflow: hidden;
+        }
+        #slf-sidebar {
+            width: 280px; min-width: 280px;
+            background: rgba(15,23,42,0.6);
+            border-right: 1px solid #1e293b;
+            padding: 16px;
+            display: flex; flex-direction: column; gap: 12px;
+            overflow-y: auto;
+        }
+        #slf-game-center {
+            flex: 1; display: flex; flex-direction: column;
+            align-items: center; overflow: hidden; min-width: 0;
+            padding: 16px;
+        }
+
+        /* Drawer (mobile) */
+        #slf-drawer-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(2,6,23,0.75); z-index: 40;
+            backdrop-filter: blur(4px);
+        }
+        #slf-drawer-overlay.open { display: block; }
+        #slf-sidebar.open-drawer { transform: translateY(0) !important; }
+
+        @media (max-width: 900px) {
+            #slf-app { flex-direction: column; }
+            #slf-sidebar {
+                position: fixed; bottom: 0; left: 0; right: 0;
+                width: auto; min-width: unset;
+                border-right: none; border-top: 1px solid #1e293b;
+                border-radius: 20px 20px 0 0;
+                max-height: 78dvh; z-index: 50;
+                transform: translateY(105%);
+                transition: transform 0.3s cubic-bezier(0.32,0.72,0,1);
+            }
+        }
+
+        /* Panels & buttons */
+        .slf-panel {
+            background: rgba(30,41,59,0.6);
+            border: 1px solid #334155;
+            border-radius: 14px;
+            padding: 14px;
+        }
+        .slf-label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 600; color: #94a3b8; }
+        .slf-input {
+            background: #1e293b; border: 1px solid #334155; border-radius: 10px;
+            padding: 10px 12px; color: white; font-size: 14px; width: 100%;
+        }
+        .slf-input:focus { border-color: #4ade80; outline: none; }
+        .slf-btn {
+            padding: 10px 16px; border-radius: 12px; font-weight: 700;
+            font-size: 14px; border: none; cursor: pointer;
+            transition: all 0.15s; -webkit-tap-highlight-color: transparent;
+        }
+        .slf-btn-primary { background: #16a34a; color: white; }
+        .slf-btn-primary:hover { background: #15803d; }
+        .slf-btn-secondary { background: #334155; color: #e2e8f0; }
+        .slf-btn-secondary:hover { background: #475569; }
+        .slf-btn-ghost { background: transparent; color: #94a3b8; border: 1px solid #334155; }
+        .slf-muted { color: #64748b; font-size: 0.8rem; }
+
+        /* Player chips */
+        .slf-player-chip {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: #1e293b; border: 1px solid #334155;
+            border-radius: 10px; padding: 6px 10px; font-size: 13px;
+        }
+        .slf-player-chip.host { border-color: #4ade80; }
+
+        /* Category tags */
+        .slf-category-tag {
+            display: inline-flex; align-items: center; gap: 4px;
+            background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.25);
+            border-radius: 8px; padding: 4px 10px; font-size: 12px; color: #4ade80;
+        }
+        .slf-category-tag button {
+            background: none; border: none; color: #ef4444; cursor: pointer;
+            font-size: 14px; line-height: 1; padding: 0 0 0 4px;
+        }
+
+        /* Swipe hints */
+        .swipe-hint {
+            display: none; position: fixed; top: 50%; transform: translateY(-50%);
+            width: 4px; height: 48px; border-radius: 4px;
+            opacity: 0.25; z-index: 30; pointer-events: none;
+        }
+        .swipe-hint-left { left: 2px; background: #4ade80; }
+        @media (max-width: 900px) { .swipe-hint { display: block; } }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 999px; }
+        button:focus, input:focus, select:focus { outline: none; box-shadow: 0 0 0 2px rgba(74,222,128,0.35); }
+
+        /* Theme overrides */
+        html.light body { background: linear-gradient(135deg, #dde3ed, #f0f4f8); color: #1e293b; }
+        html.light #slf-header, html.light #game-tabs { background: #f1f5f9; border-color: #cbd5e1; }
+        html.light .tab-link { color: #94a3b8; }
+        html.light .tab-link.active { color: #16a34a; border-bottom-color: #16a34a; }
+        html.light .slf-panel { background: rgba(255,255,255,0.7); border-color: #cbd5e1; }
+        html.light .slf-input { background: #f1f5f9; border-color: #cbd5e1; color: #0f172a; }
+        html.retro body { background: #000 !important; color: #00ff41; font-family: 'Courier New', monospace !important; }
+        html.retro * { font-family: 'Courier New', monospace !important; }
+        html.retro #slf-header, html.retro #game-tabs, html.retro .slf-panel { background: #000 !important; border-color: #00ff41 !important; }
+        html.retro .tab-link { color: #007a1f; }
+        html.retro .tab-link.active { color: #00ff41; border-bottom-color: #00ff41; }
+        html.ocean body { background: radial-gradient(circle at top, #0c2340, #020d1a) !important; color: #e0f4ff; }
+        html.ocean #slf-header, html.ocean #game-tabs, html.ocean .slf-panel { background: rgba(5,16,31,0.85) !important; border-color: #1d4e6e !important; }
+        html.ocean .tab-link { color: #4d89ac; }
+        html.ocean .tab-link.active { color: #38bdf8; border-bottom-color: #38bdf8; }
+        html.pastel body { background: linear-gradient(135deg, #fce7f3, #ede9fe) !important; color: #4a1d52; }
+        html.pastel #slf-header, html.pastel #game-tabs, html.pastel .slf-panel { background: rgba(255,255,255,0.82) !important; border-color: #f0abdb !important; }
+        html.pastel .tab-link { color: #c084db; }
+        html.pastel .tab-link.active { color: #9333ea; border-bottom-color: #9333ea; }
+    </style>
+</head>
+<body>
+
+    <!-- HEADER -->
+    <div id="slf-header">
+        <h1 class="text-xl font-bold flex items-center gap-1.5" style="color:#4ade80;">
+            <i data-lucide="globe" class="w-5 h-5"></i> Stadt Land Fluss
+        </h1>
+        <div class="flex items-center gap-1.5">
+            <button id="slf-login-btn" onclick="slfOpenLogin()" class="flex items-center gap-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white px-2 py-1.5 rounded-lg border border-slate-600 transition-all">
+                <span id="slf-avatar">🐺</span>
+                <span id="slf-name-label">Anmelden</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- TABS -->
+    <div id="game-tabs">
+        <a href="index.html" class="tab-link">
+            <i data-lucide="home" class="w-4 h-4"></i> Home
+        </a>
+        <a href="wordle.html" class="tab-link">
+            <i data-lucide="grid-2x2" class="w-4 h-4"></i> Wordle
+        </a>
+        <a href="hangman.html" class="tab-link">
+            <i data-lucide="skull" class="w-4 h-4"></i> Hangman
+        </a>
+        <a href="verbinde.html" class="tab-link">
+            <i data-lucide="link" class="w-4 h-4"></i> Verbinde
+        </a>
+        <a href="stadtlandfluss.html" class="tab-link active">
+            <i data-lucide="globe" class="w-4 h-4"></i> SLF
+        </a>
+    </div>
+
+    <!-- DRAWER OVERLAY -->
+    <div id="slf-drawer-overlay" onclick="slfCloseDrawer()"></div>
+
+    <!-- MAIN APP -->
+    <div id="slf-app">
+
+        <!-- SIDEBAR / DRAWER -->
+        <div id="slf-sidebar">
+            <div class="w-10 h-1 bg-slate-600 rounded-full mx-auto mb-2" style="display:none" id="slf-drawer-handle"></div>
+
+            <!-- Name input -->
+            <label class="slf-label">Dein Name
+                <input class="slf-input" id="slf-name-input" type="text" maxlength="16" placeholder="Name eingeben...">
+            </label>
+
+            <!-- Room controls -->
+            <div class="flex flex-col gap-2">
+                <label class="slf-label">Raumcode
+                    <input class="slf-input" id="slf-room-input" type="text" maxlength="5" placeholder="ABCDE" style="text-transform:uppercase;">
+                </label>
+                <div class="flex gap-2">
+                    <button class="slf-btn slf-btn-primary flex-1" onclick="slfCreateRoom()">Erstellen</button>
+                    <button class="slf-btn slf-btn-secondary flex-1" onclick="slfJoinRoom()">Beitreten</button>
+                </div>
+            </div>
+
+            <!-- Room status -->
+            <div class="slf-panel">
+                <div style="font-size:0.85rem;font-weight:600;">Aktueller Raum</div>
+                <div class="slf-muted" id="slf-room-status">Noch nicht verbunden.</div>
+                <code id="slf-room-code-display" style="font-size:0.8rem;color:#4ade80;">-----</code>
+            </div>
+            <div class="flex gap-2">
+                <button class="slf-btn slf-btn-ghost flex-1" onclick="slfLeaveRoom()">Verlassen</button>
+                <button class="slf-btn slf-btn-secondary flex-1" onclick="slfShareRoom()">Link kopieren</button>
+            </div>
+
+            <!-- Players -->
+            <div>
+                <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Spieler</div>
+                <div id="slf-player-list" class="flex flex-wrap gap-2"></div>
+            </div>
+
+            <!-- Categories (host only) -->
+            <div id="slf-categories-section" style="display:none;">
+                <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Kategorien</div>
+                <div id="slf-category-list" class="flex flex-wrap gap-2 mb-2"></div>
+                <div class="flex gap-2">
+                    <input class="slf-input" id="slf-new-category" type="text" maxlength="20" placeholder="Neue Kategorie..." style="flex:1;">
+                    <button class="slf-btn slf-btn-secondary" onclick="slfAddCategory()">+</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- GAME CENTER -->
+        <div id="slf-game-center">
+            <div id="slf-lobby-view" style="text-align:center;margin-top:48px;">
+                <i data-lucide="globe" style="width:48px;height:48px;color:#4ade80;margin:0 auto 16px;display:block;"></i>
+                <h2 style="font-size:1.3rem;font-weight:800;margin:0 0 8px;">Stadt Land Fluss</h2>
+                <p class="slf-muted" style="max-width:320px;margin:0 auto;">
+                    Erstelle einen Raum oder tritt einem bei, um zu spielen.
+                </p>
+            </div>
+            <div id="slf-game-view" style="display:none;">
+                <!-- Game UI will be built here in the next push -->
+            </div>
+        </div>
+    </div>
+
+    <!-- SWIPE HINT -->
+    <div class="swipe-hint swipe-hint-left"></div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot, updateDoc, deleteDoc, deleteField } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDTPO-01gusabZGy-TthEWZWntwct6LrEQ",
+        authDomain: "wolfle.firebaseapp.com",
+        projectId: "wolfle",
+        storageBucket: "wolfle.firebasestorage.app",
+        messagingSenderId: "286289741614",
+        appId: "1:286289741614:web:14e5faad1616fe75755cbf"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const DEFAULT_CATEGORIES = ['Stadt', 'Land', 'Fluss', 'Name', 'Tier', 'Beruf'];
+    const LETTERS = 'ABCDEFGHIJKLMNOPRSTUVW'.split('');
+
+    let roomCode = null;
+    let roomUnsub = null;
+    let roomData = null;
+
+    // ── Helpers ──
+    function getPlayerName() {
+        return (document.getElementById('slf-name-input').value || '').trim();
+    }
+    function generateRoomCode() {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        let code = '';
+        for (let i = 0; i < 5; i++) code += chars[Math.floor(Math.random() * chars.length)];
+        return code;
+    }
+    function roomDocRef(code) {
+        return doc(db, 'artifacts', 'wolfle-v1', 'public', 'data', 'slf-rooms', code);
+    }
+    function showToast(msg) {
+        // Simple alert for now, will be replaced with a toast UI later
+        alert(msg);
+    }
+
+    // ── Room management ──
+    window.slfCreateRoom = async () => {
+        const name = getPlayerName();
+        if (!name) return showToast('Bitte zuerst einen Namen eingeben.');
+        const code = generateRoomCode();
+        const payload = {
+            hostName: name,
+            players: { [name]: { score: 0 } },
+            categories: [...DEFAULT_CATEGORIES],
+            currentLetter: '',
+            roundNumber: 0,
+            status: 'lobby', // lobby | playing | scoring | results
+            answers: {},
+            usedLetters: [],
+            stoppedBy: null,
+            createdAt: Date.now()
+        };
+        await setDoc(roomDocRef(code), payload);
+        document.getElementById('slf-room-input').value = code;
+        listenToRoom(code);
+    };
+
+    window.slfJoinRoom = async () => {
+        const name = getPlayerName();
+        if (!name) return showToast('Bitte zuerst einen Namen eingeben.');
+        const code = (document.getElementById('slf-room-input').value || '').toUpperCase().trim();
+        if (!code) return showToast('Bitte einen Raumcode eingeben.');
+        const snap = await getDoc(roomDocRef(code));
+        if (!snap.exists()) return showToast('Raum nicht gefunden.');
+        const data = snap.data();
+        const players = { ...(data.players || {}) };
+        players[name] = players[name] || { score: 0 };
+        await updateDoc(roomDocRef(code), { players });
+        listenToRoom(code);
+    };
+
+    window.slfLeaveRoom = async () => {
+        if (!roomCode) return;
+        const name = getPlayerName();
+        if (roomUnsub) { roomUnsub(); roomUnsub = null; }
+        try {
+            await updateDoc(roomDocRef(roomCode), { [`players.${name}`]: deleteField() });
+        } catch (e) {}
+        roomCode = null;
+        roomData = null;
+        renderRoom();
+    };
+
+    window.slfShareRoom = () => {
+        if (!roomCode) return;
+        navigator.clipboard?.writeText(roomCode);
+        showToast('Raumcode kopiert!');
+    };
+
+    function listenToRoom(code) {
+        if (roomUnsub) roomUnsub();
+        roomCode = code;
+        roomUnsub = onSnapshot(roomDocRef(code), (snap) => {
+            if (!snap.exists()) {
+                roomCode = null;
+                roomData = null;
+                if (roomUnsub) { roomUnsub(); roomUnsub = null; }
+            } else {
+                roomData = snap.data();
+            }
+            renderRoom();
+        });
+    }
+
+    // ── Categories (host only) ──
+    window.slfAddCategory = async () => {
+        if (!roomCode || !roomData) return;
+        const name = getPlayerName();
+        if (name !== roomData.hostName) return;
+        const input = document.getElementById('slf-new-category');
+        const cat = (input.value || '').trim();
+        if (!cat) return;
+        if (roomData.categories.includes(cat)) return showToast('Kategorie existiert bereits.');
+        await updateDoc(roomDocRef(roomCode), { categories: [...roomData.categories, cat] });
+        input.value = '';
+    };
+
+    window.slfRemoveCategory = async (cat) => {
+        if (!roomCode || !roomData) return;
+        const name = getPlayerName();
+        if (name !== roomData.hostName) return;
+        if (roomData.categories.length <= 2) return showToast('Mindestens 2 Kategorien.');
+        await updateDoc(roomDocRef(roomCode), {
+            categories: roomData.categories.filter(c => c !== cat)
+        });
+    };
+
+    // ── Rendering ──
+    function renderRoom() {
+        const statusEl = document.getElementById('slf-room-status');
+        const codeEl = document.getElementById('slf-room-code-display');
+        const playerList = document.getElementById('slf-player-list');
+        const catSection = document.getElementById('slf-categories-section');
+        const catList = document.getElementById('slf-category-list');
+        const lobbyView = document.getElementById('slf-lobby-view');
+
+        if (!roomCode || !roomData) {
+            statusEl.textContent = 'Noch nicht verbunden.';
+            codeEl.textContent = '-----';
+            playerList.innerHTML = '';
+            catSection.style.display = 'none';
+            lobbyView.querySelector('p').textContent = 'Erstelle einen Raum oder tritt einem bei, um zu spielen.';
+            return;
+        }
+
+        statusEl.textContent = roomData.status === 'lobby' ? 'Warte auf Spieler...' : 'Runde ' + roomData.roundNumber;
+        codeEl.textContent = roomCode;
+
+        // Players
+        const players = Object.keys(roomData.players || {});
+        playerList.innerHTML = players.map(p =>
+            `<div class="slf-player-chip ${p === roomData.hostName ? 'host' : ''}">
+                ${p === roomData.hostName ? '👑 ' : ''}${p}
+                <span class="slf-muted">${roomData.players[p].score} Pkt</span>
+            </div>`
+        ).join('');
+
+        // Categories (host only)
+        const isHost = getPlayerName() === roomData.hostName;
+        catSection.style.display = roomCode ? '' : 'none';
+        catList.innerHTML = (roomData.categories || []).map(c =>
+            `<span class="slf-category-tag">${c}${isHost ? `<button onclick="slfRemoveCategory('${c}')">&times;</button>` : ''}</span>`
+        ).join('');
+
+        // Lobby text
+        lobbyView.querySelector('p').textContent = `Raum ${roomCode} — ${players.length} Spieler`;
+    }
+
+    // ── Drawer ──
+    window.slfOpenDrawer = () => {
+        const sidebar = document.getElementById('slf-sidebar');
+        const overlay = document.getElementById('slf-drawer-overlay');
+        const handle = document.getElementById('slf-drawer-handle');
+        if (sidebar) { sidebar.classList.add('open-drawer'); sidebar.style.transform = ''; }
+        if (overlay) overlay.classList.add('open');
+        if (handle) handle.style.display = 'block';
+    };
+    window.slfCloseDrawer = () => {
+        const sidebar = document.getElementById('slf-sidebar');
+        const overlay = document.getElementById('slf-drawer-overlay');
+        const handle = document.getElementById('slf-drawer-handle');
+        if (sidebar) sidebar.classList.remove('open-drawer');
+        if (overlay) overlay.classList.remove('open');
+        if (handle) handle.style.display = 'none';
+    };
+
+    // ── Swipe gestures ──
+    {
+        let swStartX = 0, swStartY = 0, swTracking = false;
+        document.addEventListener('touchstart', (e) => {
+            if (e.touches.length !== 1) return;
+            swStartX = e.touches[0].clientX;
+            swStartY = e.touches[0].clientY;
+            swTracking = true;
+        }, { passive: true });
+        document.addEventListener('touchend', (e) => {
+            if (!swTracking) return;
+            swTracking = false;
+            const t = e.changedTouches[0];
+            const dx = t.clientX - swStartX;
+            const dy = t.clientY - swStartY;
+            if (Math.abs(dx) < 60) return;
+            if (Math.abs(dy) / Math.abs(dx) > 0.6) return;
+            if (e.target.closest('#slf-sidebar, #slf-drawer-overlay, input, select, button')) return;
+            if (dx > 0) slfOpenDrawer();
+        }, { passive: true });
+    }
+
+    // ── Zoom prevention ──
+    let lastTouchEnd = 0;
+    document.addEventListener('touchstart', e => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
+    document.addEventListener('touchmove', e => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
+    document.addEventListener('touchend', e => {
+        const now = Date.now();
+        if (now - lastTouchEnd <= 300) e.preventDefault();
+        lastTouchEnd = now;
+    }, { passive: false });
+    document.addEventListener('gesturestart', e => e.preventDefault());
+
+    // ── Theme ──
+    const savedTheme = localStorage.getItem('wolfle_theme') || '';
+    if (savedTheme) document.documentElement.className = savedTheme;
+
+    // ── Saved name ──
+    const savedName = localStorage.getItem('wolfle_user_name') || '';
+    if (savedName) document.getElementById('slf-name-input').value = savedName;
+    document.getElementById('slf-name-input').addEventListener('change', (e) => {
+        localStorage.setItem('wolfle_user_name', e.target.value.trim());
+    });
+
+    // ── Init ──
+    lucide.createIcons();
+    renderRoom();
+</script>
+</body>
+</html>
