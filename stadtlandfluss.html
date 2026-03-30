@@ -228,6 +228,36 @@
         .slf-score-card .name { font-size: 12px; color: #94a3b8; }
         .slf-score-card .pts { font-size: 20px; font-weight: 800; color: #4ade80; }
 
+        /* Toast */
+        #slf-toast {
+            position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px);
+            background: #1e293b; border: 1px solid #334155; color: #e2e8f0;
+            padding: 10px 20px; border-radius: 12px; font-size: 14px; font-weight: 600;
+            z-index: 300; transition: transform 0.3s cubic-bezier(0.32,0.72,0,1);
+            pointer-events: none; white-space: nowrap;
+        }
+        #slf-toast.show { transform: translateX(-50%) translateY(0); }
+
+        /* Waiting pulse */
+        .slf-waiting { animation: slf-pulse 2s ease-in-out infinite; }
+        @keyframes slf-pulse { 0%,100% { opacity:.5; } 50% { opacity:1; } }
+
+        /* Dispute button */
+        .slf-dispute-btn {
+            background: none; border: none; cursor: pointer;
+            font-size: 14px; padding: 2px 4px; border-radius: 4px;
+            transition: all 0.1s; opacity: 0.4;
+        }
+        .slf-dispute-btn:hover { opacity: 1; }
+        .slf-dispute-btn.disputed { opacity: 1; background: rgba(239,68,68,0.2); }
+        .slf-answer-rejected { text-decoration: line-through; opacity: 0.5; }
+
+        /* Timer setting */
+        .slf-timer-select {
+            background: #1e293b; border: 1px solid #334155; border-radius: 8px;
+            color: white; padding: 6px 10px; font-size: 13px;
+        }
+
         /* Scrollbar */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
@@ -342,6 +372,19 @@
                     <button class="slf-btn slf-btn-secondary" onclick="slfAddCategory()">+</button>
                 </div>
             </div>
+
+            <!-- Timer setting (host only) -->
+            <div id="slf-timer-section" style="display:none;">
+                <label class="slf-label">Rundenzeit
+                    <select class="slf-timer-select" id="slf-timer-select">
+                        <option value="0">Kein Timer</option>
+                        <option value="30">30 Sekunden</option>
+                        <option value="60" selected>60 Sekunden</option>
+                        <option value="90">90 Sekunden</option>
+                        <option value="120">2 Minuten</option>
+                    </select>
+                </label>
+            </div>
         </div>
 
         <!-- GAME CENTER -->
@@ -377,6 +420,9 @@
             </div>
         </div>
     </div>
+
+    <!-- TOAST -->
+    <div id="slf-toast"></div>
 
     <!-- SWIPE HINT -->
     <div class="swipe-hint swipe-hint-left"></div>
@@ -417,8 +463,11 @@
         return doc(db, 'artifacts', 'wolfle-v1', 'public', 'data', 'slf-rooms', code);
     }
     function showToast(msg) {
-        // Simple alert for now, will be replaced with a toast UI later
-        alert(msg);
+        const t = document.getElementById('slf-toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        clearTimeout(t._tid);
+        t._tid = setTimeout(() => t.classList.remove('show'), 2500);
     }
 
     // ── Room management ──
@@ -426,16 +475,21 @@
         const name = getPlayerName();
         if (!name) return showToast('Bitte zuerst einen Namen eingeben.');
         const code = generateRoomCode();
+        const timerSec = parseInt(document.getElementById('slf-timer-select')?.value || '60');
         const payload = {
             hostName: name,
             players: { [name]: { score: 0 } },
             categories: [...DEFAULT_CATEGORIES],
             currentLetter: '',
             roundNumber: 0,
-            status: 'lobby', // lobby | playing | scoring | results
+            status: 'lobby',
             answers: {},
+            disputes: {},
             usedLetters: [],
             stoppedBy: null,
+            timerSeconds: timerSec,
+            roundStartedAt: 0,
+            _scoresUpdated: false,
             createdAt: Date.now()
         };
         await setDoc(roomDocRef(code), payload);
@@ -516,29 +570,30 @@
     // ── Game logic ──
     let timerInterval = null;
     let timeLeft = 0;
-    let localAnswers = {};
     let answersSubmitted = false;
+    let lastRenderedRound = 0;
 
     window.slfStartRound = async () => {
         if (!roomCode || !roomData) return;
         const name = getPlayerName();
         if (name !== roomData.hostName) return;
 
-        // Pick a letter not yet used
         const used = roomData.usedLetters || [];
         const available = LETTERS.filter(l => !used.includes(l));
-        if (available.length === 0) {
-            return showToast('Alle Buchstaben wurden bereits verwendet!');
-        }
+        if (available.length === 0) return showToast('Alle Buchstaben wurden bereits verwendet!');
         const letter = available[Math.floor(Math.random() * available.length)];
+        const timerSec = parseInt(document.getElementById('slf-timer-select')?.value || '60');
 
         await updateDoc(roomDocRef(roomCode), {
             status: 'playing',
             currentLetter: letter,
             roundNumber: (roomData.roundNumber || 0) + 1,
             answers: {},
+            disputes: {},
             stoppedBy: null,
             usedLetters: [...used, letter],
+            timerSeconds: timerSec,
+            roundStartedAt: Date.now(),
             _scoresUpdated: false
         });
     };
@@ -546,12 +601,8 @@
     window.slfStop = async () => {
         if (!roomCode || !roomData || roomData.status !== 'playing') return;
         const name = getPlayerName();
-        // Submit own answers first
         await slfSubmitAnswers();
-        await updateDoc(roomDocRef(roomCode), {
-            status: 'scoring',
-            stoppedBy: name
-        });
+        await updateDoc(roomDocRef(roomCode), { status: 'scoring', stoppedBy: name });
     };
 
     async function slfSubmitAnswers() {
@@ -566,42 +617,97 @@
         await updateDoc(roomDocRef(roomCode), { [`answers.${name}`]: answers });
     }
 
+    // Dispute: player marks an answer as invalid
+    window.slfDispute = async (player, cat) => {
+        if (!roomCode || !roomData || roomData.status !== 'scoring') return;
+        const me = getPlayerName();
+        if (me === player) return; // can't dispute your own
+        const key = `disputes.${player}___${cat}.${me}`;
+        // Toggle: if already disputed, remove
+        const existing = roomData.disputes?.[`${player}___${cat}`]?.[me];
+        if (existing) {
+            await updateDoc(roomDocRef(roomCode), { [key]: deleteField() });
+        } else {
+            await updateDoc(roomDocRef(roomCode), { [key]: true });
+        }
+    };
+
+    // Host finalizes scores after disputes
+    window.slfFinalizeScores = async () => {
+        if (!roomCode || !roomData) return;
+        const name = getPlayerName();
+        if (name !== roomData.hostName) return;
+
+        const roundScores = scoreRound(roomData);
+        const players = Object.keys(roomData.players || {});
+        const updatedPlayers = { ...roomData.players };
+        players.forEach(p => {
+            updatedPlayers[p] = { ...updatedPlayers[p], score: (updatedPlayers[p].score || 0) + (roundScores[p] || 0) };
+        });
+        await updateDoc(roomDocRef(roomCode), { players: updatedPlayers, status: 'results', _scoresUpdated: true });
+    };
+
+    function isDisputed(data, player, cat) {
+        const disputes = data.disputes || {};
+        const key = `${player}___${cat}`;
+        const votes = disputes[key] || {};
+        const disputeCount = Object.values(votes).filter(Boolean).length;
+        const totalPlayers = Object.keys(data.players || {}).length;
+        // Disputed if at least half of OTHER players flagged it
+        return disputeCount >= Math.ceil((totalPlayers - 1) / 2);
+    }
+
     function scoreRound(data) {
         const players = Object.keys(data.players || {});
         const categories = data.categories || [];
         const answers = data.answers || {};
         const roundScores = {};
-
         players.forEach(p => { roundScores[p] = 0; });
+        const letter = (data.currentLetter || '').toLowerCase();
 
         categories.forEach(cat => {
-            // Collect all answers for this category, normalized
             const catAnswers = {};
             players.forEach(p => {
-                const raw = (answers[p] && answers[p][cat]) || '';
-                catAnswers[p] = raw.trim().toLowerCase();
+                catAnswers[p] = ((answers[p] && answers[p][cat]) || '').trim().toLowerCase();
             });
-
-            // Check if answer starts with the correct letter
-            const letter = (data.currentLetter || '').toLowerCase();
-
             players.forEach(p => {
                 const ans = catAnswers[p];
-                if (!ans || !ans.startsWith(letter)) {
-                    // 0 points - empty or wrong letter
-                    return;
-                }
-                // Check if unique among all players
-                const same = players.filter(q => q !== p && catAnswers[q] === ans);
-                if (same.length === 0) {
-                    roundScores[p] += 10; // unique
-                } else {
-                    roundScores[p] += 5; // duplicate
-                }
+                if (!ans || !ans.startsWith(letter)) return;
+                if (isDisputed(data, p, cat)) return; // rejected by majority
+                const same = players.filter(q => q !== p && catAnswers[q] === ans && !isDisputed(data, q, cat));
+                roundScores[p] += same.length === 0 ? 10 : 5;
             });
         });
-
         return roundScores;
+    }
+
+    function startTimer() {
+        clearInterval(timerInterval);
+        if (!roomData?.timerSeconds || roomData.timerSeconds <= 0) {
+            document.getElementById('slf-timer').textContent = '';
+            return;
+        }
+        const elapsed = Math.floor((Date.now() - (roomData.roundStartedAt || Date.now())) / 1000);
+        timeLeft = Math.max(0, roomData.timerSeconds - elapsed);
+        updateTimerDisplay();
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            updateTimerDisplay();
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                // Auto-stop
+                if (roomData?.status === 'playing') slfStop();
+            }
+        }, 1000);
+    }
+
+    function updateTimerDisplay() {
+        const el = document.getElementById('slf-timer');
+        if (timeLeft <= 0) { el.textContent = 'Zeit abgelaufen!'; el.className = 'urgent'; return; }
+        const m = Math.floor(timeLeft / 60);
+        const s = timeLeft % 60;
+        el.textContent = m > 0 ? `${m}:${String(s).padStart(2, '0')}` : `${s}s`;
+        el.className = timeLeft <= 10 ? 'urgent' : '';
     }
 
     // ── Rendering ──
@@ -611,27 +717,33 @@
         const playerList = document.getElementById('slf-player-list');
         const catSection = document.getElementById('slf-categories-section');
         const catList = document.getElementById('slf-category-list');
+        const timerSection = document.getElementById('slf-timer-section');
         const lobbyView = document.getElementById('slf-lobby-view');
         const gameView = document.getElementById('slf-game-view');
+        const me = getPlayerName();
 
         if (!roomCode || !roomData) {
             statusEl.textContent = 'Noch nicht verbunden.';
             codeEl.textContent = '-----';
             playerList.innerHTML = '';
             catSection.style.display = 'none';
+            timerSection.style.display = 'none';
             lobbyView.style.display = '';
             gameView.style.display = 'none';
             lobbyView.querySelector('p').textContent = 'Erstelle einen Raum oder tritt einem bei, um zu spielen.';
             return;
         }
 
-        statusEl.textContent = roomData.status === 'lobby' ? 'Warte auf Spieler...' :
-            roomData.status === 'playing' ? 'Runde ' + roomData.roundNumber + ' läuft...' :
-            'Runde ' + roomData.roundNumber + ' — Auswertung';
+        const isHost = me === roomData.hostName;
+        const players = Object.keys(roomData.players || {});
+        const status = roomData.status || 'lobby';
+
+        // Sidebar info
+        statusEl.textContent = status === 'lobby' ? 'Warte auf Spieler...' :
+            status === 'playing' ? `Runde ${roomData.roundNumber} läuft...` :
+            `Runde ${roomData.roundNumber} — Auswertung`;
         codeEl.textContent = roomCode;
 
-        // Players
-        const players = Object.keys(roomData.players || {});
         playerList.innerHTML = players.map(p =>
             `<div class="slf-player-chip ${p === roomData.hostName ? 'host' : ''}">
                 ${p === roomData.hostName ? '👑 ' : ''}${p}
@@ -639,89 +751,79 @@
             </div>`
         ).join('');
 
-        // Categories
-        const isHost = getPlayerName() === roomData.hostName;
         catSection.style.display = roomCode ? '' : 'none';
         catList.innerHTML = (roomData.categories || []).map(c =>
-            `<span class="slf-category-tag">${c}${isHost && roomData.status === 'lobby' ? `<button onclick="slfRemoveCategory('${c}')">&times;</button>` : ''}</span>`
+            `<span class="slf-category-tag">${c}${isHost && status === 'lobby' ? `<button onclick="slfRemoveCategory('${c}')">&times;</button>` : ''}</span>`
         ).join('');
 
-        // Show game view when in room
-        const status = roomData.status || 'lobby';
+        timerSection.style.display = isHost && (status === 'lobby' || status === 'results') ? '' : 'none';
+
+        // ── Game states ──
+        const startBtn = document.getElementById('slf-start-btn');
+        const roundArea = document.getElementById('slf-round-area');
+        const resultsArea = document.getElementById('slf-results-area');
 
         if (status === 'lobby') {
-            lobbyView.style.display = '';
-            gameView.style.display = 'none';
-            lobbyView.querySelector('p').textContent = `Raum ${roomCode} — ${players.length} Spieler`;
-
-            // Show start button for host
-            gameView.style.display = 'flex';
             lobbyView.style.display = 'none';
-            const startBtn = document.getElementById('slf-start-btn');
-            const roundArea = document.getElementById('slf-round-area');
-            const resultsArea = document.getElementById('slf-results-area');
-            startBtn.style.display = isHost ? '' : 'none';
-            startBtn.disabled = players.length < 1;
+            gameView.style.display = 'flex';
             roundArea.style.display = 'none';
             resultsArea.style.display = 'none';
+            clearInterval(timerInterval);
 
-            if (!isHost) {
-                // Show waiting message for non-host
-                startBtn.style.display = 'none';
+            if (isHost) {
+                startBtn.style.display = '';
+                startBtn.disabled = players.length < 2;
+                startBtn.textContent = players.length < 2 ? 'Warte auf Mitspieler...' : 'Runde starten';
+            } else {
+                startBtn.style.display = '';
+                startBtn.disabled = true;
+                startBtn.textContent = 'Warte auf Host...';
+                startBtn.classList.add('slf-waiting');
             }
         } else if (status === 'playing') {
             lobbyView.style.display = 'none';
             gameView.style.display = 'flex';
-            answersSubmitted = false;
-
-            const startBtn = document.getElementById('slf-start-btn');
-            const roundArea = document.getElementById('slf-round-area');
-            const resultsArea = document.getElementById('slf-results-area');
             startBtn.style.display = 'none';
+            startBtn.classList.remove('slf-waiting');
             roundArea.style.display = 'flex';
             resultsArea.style.display = 'none';
 
-            // Show letter
             document.getElementById('slf-letter-display').textContent = roomData.currentLetter;
 
-            // Build input fields (only if not already built for this round)
+            // Build inputs once per round
             const inputsEl = document.getElementById('slf-inputs');
-            const existingRound = inputsEl.dataset.round;
-            if (existingRound !== String(roomData.roundNumber)) {
-                inputsEl.dataset.round = roomData.roundNumber;
+            if (lastRenderedRound !== roomData.roundNumber) {
+                lastRenderedRound = roomData.roundNumber;
+                answersSubmitted = false;
                 inputsEl.innerHTML = (roomData.categories || []).map(cat =>
                     `<div class="slf-input-row">
                         <label>${cat}</label>
                         <input type="text" id="slf-answer-${cat}" placeholder="${roomData.currentLetter}..." autocomplete="off">
                     </div>`
                 ).join('');
-                // Focus first input
                 inputsEl.querySelector('input')?.focus();
+                startTimer();
             }
 
             document.getElementById('slf-stop-btn').disabled = false;
-        } else if (status === 'scoring') {
+        } else if (status === 'scoring' || status === 'results') {
             lobbyView.style.display = 'none';
             gameView.style.display = 'flex';
-
-            const startBtn = document.getElementById('slf-start-btn');
-            const roundArea = document.getElementById('slf-round-area');
-            const resultsArea = document.getElementById('slf-results-area');
             startBtn.style.display = 'none';
+            startBtn.classList.remove('slf-waiting');
             roundArea.style.display = 'none';
             resultsArea.style.display = 'flex';
+            clearInterval(timerInterval);
 
-            // Auto-submit if we haven't yet
             if (!answersSubmitted) slfSubmitAnswers();
 
-            // Disable inputs
             document.querySelectorAll('#slf-inputs input').forEach(i => i.disabled = true);
             document.getElementById('slf-stop-btn').disabled = true;
 
-            // Score and render results
             const roundScores = scoreRound(roomData);
             const categories = roomData.categories || [];
             const answers = roomData.answers || {};
+            const letter = (roomData.currentLetter || '').toLowerCase();
 
             // Score cards
             document.getElementById('slf-round-scores').innerHTML = players.map(p =>
@@ -731,8 +833,7 @@
                 </div>`
             ).join('');
 
-            // Results table
-            const letter = (roomData.currentLetter || '').toLowerCase();
+            // Results table with dispute buttons
             let tableHTML = '<thead><tr><th>Kategorie</th>';
             players.forEach(p => { tableHTML += `<th>${p}</th>`; });
             tableHTML += '</tr></thead><tbody>';
@@ -746,31 +847,44 @@
                 players.forEach(p => {
                     const raw = (answers[p] && answers[p][cat]) || '';
                     const norm = raw.trim().toLowerCase();
+                    const rejected = isDisputed(roomData, p, cat);
                     let cls = 'slf-score-empty';
                     let pts = '0';
-                    if (norm && norm.startsWith(letter)) {
-                        const same = players.filter(q => q !== p && catAnswers[q] === norm);
+                    if (norm && norm.startsWith(letter) && !rejected) {
+                        const same = players.filter(q => q !== p && catAnswers[q] === norm && !isDisputed(roomData, q, cat));
                         if (same.length === 0) { cls = 'slf-score-unique'; pts = '10'; }
                         else { cls = 'slf-score-duplicate'; pts = '5'; }
                     }
-                    tableHTML += `<td>${raw || '—'} <span class="${cls}">(${pts})</span></td>`;
+
+                    // Dispute button (not for own answers, only during scoring)
+                    const disputeKey = `${p}___${cat}`;
+                    const myDispute = roomData.disputes?.[disputeKey]?.[me];
+                    let disputeBtn = '';
+                    if (status === 'scoring' && p !== me && norm && norm.startsWith(letter)) {
+                        disputeBtn = `<button class="slf-dispute-btn ${myDispute ? 'disputed' : ''}" onclick="slfDispute('${p}','${cat}')" title="Einspruch">
+                            ${myDispute ? '🚫' : '❓'}
+                        </button>`;
+                    }
+
+                    const rejClass = rejected ? ' slf-answer-rejected' : '';
+                    tableHTML += `<td><span class="${rejClass}">${raw || '—'}</span> <span class="${cls}">(${pts})</span> ${disputeBtn}</td>`;
                 });
                 tableHTML += '</tr>';
             });
             tableHTML += '</tbody>';
             document.getElementById('slf-results-table').innerHTML = tableHTML;
 
-            // Next round button (host only)
+            // Host: finalize / next round
             const nextBtn = document.getElementById('slf-next-btn');
-            nextBtn.style.display = isHost ? '' : 'none';
-
-            // Host: update total scores
-            if (isHost && !roomData._scoresUpdated) {
-                const updatedPlayers = { ...roomData.players };
-                players.forEach(p => {
-                    updatedPlayers[p] = { ...updatedPlayers[p], score: (updatedPlayers[p].score || 0) + (roundScores[p] || 0) };
-                });
-                updateDoc(roomDocRef(roomCode), { players: updatedPlayers, _scoresUpdated: true });
+            if (status === 'scoring') {
+                nextBtn.style.display = isHost ? '' : 'none';
+                nextBtn.textContent = 'Punkte bestätigen';
+                nextBtn.onclick = () => slfFinalizeScores();
+            } else {
+                // results
+                nextBtn.style.display = isHost ? '' : 'none';
+                nextBtn.textContent = 'Nächste Runde';
+                nextBtn.onclick = () => slfStartRound();
             }
         }
     }
