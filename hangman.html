@@ -109,35 +109,53 @@
             border-radius: 14px;
             padding: 14px;
         }
-        #hm-bottom-nav {
+        /* Edge swipe indicators */
+        .swipe-hint {
             display: none;
-            justify-content: space-around;
-            align-items: center;
-            border-top: 1px solid #1e293b;
-            background: #0f172a;
-            padding: 4px 0 max(4px, env(safe-area-inset-bottom));
-            flex-shrink: 0;
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 48px;
+            border-radius: 4px;
+            opacity: 0.25;
+            z-index: 30;
+            pointer-events: none;
         }
-        @media (max-width: 900px) {
-            #hm-bottom-nav { display: flex; }
-        }
-        .hm-nav-btn {
-            flex: 1;
-            display: flex;
+        .swipe-hint-left { left: 2px; background: #f43f5e; }
+        @media (max-width: 900px) { .swipe-hint { display: block; } }
+
+        /* Swipe onboarding overlay */
+        #hm-swipe-onboarding {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(2,6,23,0.9);
+            z-index: 200;
             flex-direction: column;
             align-items: center;
-            gap: 2px;
-            color: #64748b;
-            font-size: 10px;
-            padding: 6px 4px;
-            cursor: pointer;
-            background: none;
-            border: none;
-            transition: color 0.15s;
-            -webkit-tap-highlight-color: transparent;
-            touch-action: manipulation;
+            justify-content: center;
+            gap: 36px;
+            backdrop-filter: blur(6px);
+            color: white;
+            padding: 24px;
+            text-align: center;
         }
-        .hm-nav-btn.active { color: #f43f5e; }
+        #hm-swipe-onboarding.show { display: flex; }
+        .onboarding-row { display: flex; align-items: center; gap: 14px; font-size: 15px; }
+        .onboarding-arrow {
+            font-size: 28px;
+            display: inline-block;
+        }
+        .onboarding-arrow.right { animation: swipe-r 1.2s ease-in-out infinite; }
+        @keyframes swipe-r { 0%,100% { transform: translateX(0); opacity:.4; } 50% { transform: translateX(10px); opacity:1; } }
+        .onboarding-dismiss {
+            margin-top: 8px;
+            padding: 12px 36px;
+            background: #f43f5e;
+            border: none; border-radius: 12px;
+            color: white; font-size: 15px; font-weight: 700;
+            cursor: pointer;
+        }
         #hm-drawer-overlay {
             display: none;
             position: fixed; inset: 0;
@@ -661,20 +679,17 @@
         </div>
     </div>
 
-    <!-- MOBILE BOTTOM NAV -->
-    <div id="hm-bottom-nav">
-        <button class="hm-nav-btn" id="hm-nav-menu" onclick="hmOpenDrawer()">
-            <i data-lucide="menu" class="w-5 h-5"></i>
-            <span>Menü</span>
-        </button>
-        <button class="hm-nav-btn active" id="hm-nav-game" onclick="hmCloseDrawer()">
-            <i data-lucide="skull" class="w-5 h-5"></i>
-            <span>Spiel</span>
-        </button>
-        <button class="hm-nav-btn" id="hm-nav-players" onclick="hmOpenDrawer()">
-            <i data-lucide="users" class="w-5 h-5"></i>
-            <span>Spieler</span>
-        </button>
+    <!-- SWIPE EDGE HINT -->
+    <div class="swipe-hint swipe-hint-left"></div>
+
+    <!-- SWIPE ONBOARDING -->
+    <div id="hm-swipe-onboarding">
+        <div style="font-size:22px;font-weight:800;margin-bottom:4px;">Wisch-Navigation</div>
+        <div class="onboarding-row">
+            <span class="onboarding-arrow right">👆➡️</span>
+            <span>Nach rechts wischen — <strong>Menü & Einstellungen</strong></span>
+        </div>
+        <button class="onboarding-dismiss" onclick="dismissHmSwipeOnboarding()">Verstanden!</button>
     </div>
 
     <!-- PLAYER PROFILE MODAL -->
@@ -833,9 +848,6 @@
         if (sidebar) { sidebar.classList.add('open-drawer'); sidebar.style.transform = ''; }
         if (overlay) overlay.classList.add('open');
         if (handle) handle.style.display = 'block';
-        document.getElementById('hm-nav-menu')?.classList.add('active');
-        document.getElementById('hm-nav-game')?.classList.remove('active');
-        document.getElementById('hm-nav-players')?.classList.remove('active');
     }
     function hmCloseDrawer() {
         const sidebar = document.getElementById('hm-sidebar-left');
@@ -844,9 +856,6 @@
         if (sidebar) sidebar.classList.remove('open-drawer');
         if (overlay) overlay.classList.remove('open');
         if (handle) handle.style.display = 'none';
-        document.getElementById('hm-nav-menu')?.classList.remove('active');
-        document.getElementById('hm-nav-game')?.classList.add('active');
-        document.getElementById('hm-nav-players')?.classList.remove('active');
     }
 
     const FALLBACK = ["WOLFLE","HANGMAN","SPIELEN","RATEN","BUCHSTABE"];
@@ -2062,6 +2071,42 @@
     }, { passive: false });
     document.addEventListener('wheel', e => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
     document.addEventListener('gesturestart', e => e.preventDefault());
+
+    // ═══════════════════════════════════════════════════════════
+    // SWIPE GESTURE NAVIGATION
+    // ═══════════════════════════════════════════════════════════
+    {
+        let swStartX = 0, swStartY = 0, swTracking = false;
+        const SWIPE_MIN = 60, SWIPE_MAX_RATIO = 0.6;
+
+        document.addEventListener('touchstart', (e) => {
+            if (e.touches.length !== 1) return;
+            swStartX = e.touches[0].clientX;
+            swStartY = e.touches[0].clientY;
+            swTracking = true;
+        }, { passive: true });
+
+        document.addEventListener('touchend', (e) => {
+            if (!swTracking) return;
+            swTracking = false;
+            const t = e.changedTouches[0];
+            const dx = t.clientX - swStartX;
+            const dy = t.clientY - swStartY;
+            if (Math.abs(dx) < SWIPE_MIN) return;
+            if (Math.abs(dy) / Math.abs(dx) > SWIPE_MAX_RATIO) return;
+            if (e.target.closest('#hm-keyboard, #hm-sidebar-left, #hm-drawer-overlay, .modal, input, select, button')) return;
+            if (dx > 0) hmOpenDrawer();
+        }, { passive: true });
+    }
+
+    // Swipe onboarding
+    window.dismissHmSwipeOnboarding = () => {
+        document.getElementById('hm-swipe-onboarding')?.classList.remove('show');
+        localStorage.setItem('wolfle_hm_swipe_seen', '1');
+    };
+    if (!localStorage.getItem('wolfle_hm_swipe_seen')) {
+        document.getElementById('hm-swipe-onboarding')?.classList.add('show');
+    }
 
     async function pushSettingsToRoom() {
         if (!gameState.roomCode || !gameState.isHost) return;

@@ -232,36 +232,57 @@
         #drawer.open { transform: translateY(0); }
         #drawer-overlay.open { display: block; }
 
-        /* Bottom nav */
-        #bottom-nav {
+        /* Edge swipe indicators */
+        .swipe-hint {
             display: none;
-            justify-content: space-around;
-            align-items: center;
-            border-top: 1px solid #1e293b;
-            background: #0f172a;
-            padding: 4px 0 max(4px, env(safe-area-inset-bottom));
-            flex-shrink: 0;
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 48px;
+            border-radius: 4px;
+            opacity: 0.25;
+            z-index: 30;
+            pointer-events: none;
         }
-        @media (max-width: 900px) {
-            #bottom-nav { display: flex; }
-        }
-        .nav-btn {
-            flex: 1;
-            display: flex;
+        .swipe-hint-left { left: 2px; background: #818cf8; }
+        .swipe-hint-right { right: 2px; background: #fbbf24; }
+        @media (max-width: 900px) { .swipe-hint { display: block; } }
+        html.mobile-forced .swipe-hint { display: block; }
+
+        /* Swipe onboarding overlay */
+        #swipe-onboarding {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(2,6,23,0.9);
+            z-index: 200;
             flex-direction: column;
             align-items: center;
-            gap: 2px;
-            color: #64748b;
-            font-size: 10px;
-            padding: 6px 4px;
-            cursor: pointer;
-            -webkit-tap-highlight-color: transparent;
-            touch-action: manipulation;
-            background: none;
-            border: none;
-            transition: color 0.15s;
+            justify-content: center;
+            gap: 36px;
+            backdrop-filter: blur(6px);
+            color: white;
+            padding: 24px;
+            text-align: center;
         }
-        .nav-btn.active { color: #818cf8; }
+        #swipe-onboarding.show { display: flex; }
+        .onboarding-row { display: flex; align-items: center; gap: 14px; font-size: 15px; }
+        .onboarding-arrow {
+            font-size: 28px;
+            display: inline-block;
+        }
+        .onboarding-arrow.right { animation: swipe-r 1.2s ease-in-out infinite; }
+        .onboarding-arrow.left { animation: swipe-l 1.2s ease-in-out infinite; }
+        @keyframes swipe-r { 0%,100% { transform: translateX(0); opacity:.4; } 50% { transform: translateX(10px); opacity:1; } }
+        @keyframes swipe-l { 0%,100% { transform: translateX(0); opacity:.4; } 50% { transform: translateX(-10px); opacity:1; } }
+        .onboarding-dismiss {
+            margin-top: 8px;
+            padding: 12px 36px;
+            background: #6366f1;
+            border: none; border-radius: 12px;
+            color: white; font-size: 15px; font-weight: 700;
+            cursor: pointer;
+        }
 
         /* Modal */
         #end-modal { backdrop-filter: blur(6px); }
@@ -585,8 +606,7 @@
         html.mobile-forced #app { flex-direction: column; }
         html.mobile-forced #sidebar-left,
         html.mobile-forced #sidebar-right { display: none !important; }
-        html.mobile-forced #bottom-nav { display: flex; }
-        html.mobile-forced #keyboard { padding-bottom: max(4px, env(safe-area-inset-bottom)); }
+        html.mobile-forced .swipe-hint { display: block; }
 
         /* ── ENHANCED ANIMATIONS ── */
         .letter-pop { animation: letter-pop 0.1s ease-out forwards; }
@@ -1272,20 +1292,22 @@
         </div>
     </div>
 
-    <!-- MOBILE BOTTOM NAV -->
-    <div id="bottom-nav">
-        <button class="nav-btn" onclick="window.openDrawer('menu')" id="nav-menu">
-            <i data-lucide="menu" class="w-5 h-5"></i>
-            <span data-i18n="menu">Menü</span>
-        </button>
-        <button class="nav-btn active" id="nav-game" onclick="window.closeDrawer()">
-            <i data-lucide="grid-2x2" class="w-5 h-5"></i>
-            <span data-i18n="game">Spiel</span>
-        </button>
-        <button class="nav-btn" onclick="window.openDrawer('leaderboard')" id="nav-lb">
-            <i data-lucide="trophy" class="w-5 h-5"></i>
-            <span data-i18n="topList">Top Liste</span>
-        </button>
+    <!-- SWIPE EDGE HINTS -->
+    <div class="swipe-hint swipe-hint-left"></div>
+    <div class="swipe-hint swipe-hint-right"></div>
+
+    <!-- SWIPE ONBOARDING -->
+    <div id="swipe-onboarding">
+        <div style="font-size:22px;font-weight:800;margin-bottom:4px;">Wisch-Navigation</div>
+        <div class="onboarding-row">
+            <span class="onboarding-arrow right">👆➡️</span>
+            <span>Nach rechts wischen — <strong>Menü</strong></span>
+        </div>
+        <div class="onboarding-row">
+            <span class="onboarding-arrow left">⬅️👆</span>
+            <span>Nach links wischen — <strong>Bestenliste</strong></span>
+        </div>
+        <button class="onboarding-dismiss" onclick="dismissSwipeOnboarding()">Verstanden!</button>
     </div>
 
 <script type="module">
@@ -2940,8 +2962,6 @@
     // DRAWER
     // ═══════════════════════════════════════════════════════════
     window.openDrawer = (tab) => {
-        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById(tab === 'menu' ? 'nav-menu' : 'nav-lb')?.classList.add('active');
 
         const savedName = localStorage.getItem('wolfle_user_name') || '';
         const drawerContent = document.getElementById('drawer-content');
@@ -3040,9 +3060,6 @@
     window.closeDrawer = () => {
         document.getElementById('drawer').classList.remove('open');
         document.getElementById('drawer-overlay').classList.remove('open');
-        document.getElementById('nav-game').classList.add('active');
-        document.getElementById('nav-menu').classList.remove('active');
-        document.getElementById('nav-lb').classList.remove('active');
     };
 
     // ═══════════════════════════════════════════════════════════
@@ -3296,6 +3313,43 @@
         if (e.ctrlKey) e.preventDefault();
     }, { passive: false });
 
+    // ═══════════════════════════════════════════════════════════
+    // SWIPE GESTURE NAVIGATION
+    // ═══════════════════════════════════════════════════════════
+    {
+        let swStartX = 0, swStartY = 0, swTracking = false;
+        const SWIPE_MIN = 60, SWIPE_MAX_RATIO = 0.6; // min px, max vertical/horizontal ratio
+
+        document.addEventListener('touchstart', (e) => {
+            if (e.touches.length !== 1) return;
+            swStartX = e.touches[0].clientX;
+            swStartY = e.touches[0].clientY;
+            swTracking = true;
+        }, { passive: true });
+
+        document.addEventListener('touchend', (e) => {
+            if (!swTracking) return;
+            swTracking = false;
+            const t = e.changedTouches[0];
+            const dx = t.clientX - swStartX;
+            const dy = t.clientY - swStartY;
+            if (Math.abs(dx) < SWIPE_MIN) return;
+            if (Math.abs(dy) / Math.abs(dx) > SWIPE_MAX_RATIO) return;
+            // Ignore swipes starting on interactive elements
+            if (e.target.closest('#keyboard, #drawer, #drawer-overlay, .modal, input, select, button')) return;
+            if (dx > 0) window.openDrawer('menu');
+            else window.openDrawer('leaderboard');
+        }, { passive: true });
+    }
+
+    // Swipe onboarding
+    window.dismissSwipeOnboarding = () => {
+        document.getElementById('swipe-onboarding')?.classList.remove('show');
+        localStorage.setItem('wolfle_swipe_seen', '1');
+    };
+    if (!localStorage.getItem('wolfle_swipe_seen')) {
+        document.getElementById('swipe-onboarding')?.classList.add('show');
+    }
 
     document.getElementById('settings-modal')?.addEventListener('click', (e) => {
         if (e.target.id === 'settings-modal') window.closeSettingsModal();
