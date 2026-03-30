@@ -110,20 +110,16 @@
             padding: 14px;
         }
         #hm-bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            display: flex;
+            display: none;
             justify-content: space-around;
             align-items: center;
             border-top: 1px solid #1e293b;
             background: #0f172a;
             padding: 4px 0 max(4px, env(safe-area-inset-bottom));
-            z-index: 60;
+            flex-shrink: 0;
         }
-        @media (min-width: 901px) {
-            #hm-bottom-nav { display: none; }
+        @media (max-width: 900px) {
+            #hm-bottom-nav { display: flex; }
         }
         .hm-nav-btn {
             flex: 1;
@@ -438,9 +434,7 @@
             }
             #hm-sidebar-right { display: none !important; }
             #hm-game-center { overflow-y: auto; min-height: 0; }
-            /* fixed nav sits on top, so give keyboard bottom clearance */
-            #hm-keyboard { padding-bottom: calc(56px + env(safe-area-inset-bottom)); }
-            #hm-end-buttons { padding-bottom: calc(56px + env(safe-area-inset-bottom)); }
+            #hm-keyboard { padding-bottom: max(4px, env(safe-area-inset-bottom)); }
         }
         @media (max-width: 480px) {
             .hm-key { height: clamp(30px, 4.5vh, 40px); }
