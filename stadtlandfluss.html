@@ -330,6 +330,9 @@
             <button id="slf-haptic-btn" onclick="slfToggleHaptic()" class="header-mobile-only text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Vibration">
                 <i data-lucide="smartphone" class="w-4 h-4"></i>
             </button>
+            <button onclick="slfOpenFriends()" class="relative text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Freunde">
+                <i data-lucide="users" class="w-4 h-4"></i>
+            </button>
             <button id="slf-login-btn" onclick="slfOpenLogin()" title="Anmelden" class="flex items-center gap-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white px-2 py-1.5 rounded-lg border border-slate-600 transition-all">
                 <span id="slf-avatar">🐺</span>
                 <span id="slf-name-label" class="hidden-xs">Anmelden</span>
@@ -1197,6 +1200,21 @@
         } catch(e) {}
     }
 
+    // ── Friends ──
+    window.slfOpenFriends = () => {
+        if (!roomCode) {
+            showToast('Erstelle oder tritt einem Raum bei!');
+            return;
+        }
+        // On mobile, open the drawer which shows players
+        if (window.innerWidth <= 900) {
+            slfOpenDrawer();
+        } else {
+            showToast(`Raum ${roomCode} — teile den Code mit Freunden!`);
+            navigator.clipboard?.writeText(roomCode);
+        }
+    };
+
     // ── Theme / Sound / Haptic ──
     const THEMES = ['dark', 'light', 'retro', 'ocean', 'pastel'];
     let soundEnabled = localStorage.getItem('wolfle_sound') !== 'false';
@@ -1214,12 +1232,18 @@
         showToast(`Design: ${next.charAt(0).toUpperCase() + next.slice(1)}`);
     };
 
+    function updateSoundIcon() {
+        const btn = document.getElementById('slf-sound-btn');
+        if (!btn) return;
+        const icon = soundEnabled ? 'volume-2' : 'volume-x';
+        btn.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4"></i>`;
+        lucide.createIcons({ nodes: [btn] });
+    }
+
     window.slfToggleSound = () => {
         soundEnabled = !soundEnabled;
         localStorage.setItem('wolfle_sound', soundEnabled);
-        const btn = document.getElementById('slf-sound-btn');
-        btn.querySelector('i').setAttribute('data-lucide', soundEnabled ? 'volume-2' : 'volume-x');
-        lucide.createIcons();
+        updateSoundIcon();
         showToast(soundEnabled ? 'Ton an' : 'Ton aus');
     };
 
@@ -1229,15 +1253,10 @@
         showToast(hapticEnabled ? 'Vibration an' : 'Vibration aus');
     };
 
-    // Apply saved sound icon
-    if (!soundEnabled) {
-        const btn = document.getElementById('slf-sound-btn');
-        btn?.querySelector('i')?.setAttribute('data-lucide', 'volume-x');
-    }
-
     // ── Init ──
     updateLoginHeader();
     lucide.createIcons();
+    updateSoundIcon();
     renderRoom();
     loadSlfLeaderboard();
 </script>
