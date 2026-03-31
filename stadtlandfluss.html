@@ -106,6 +106,9 @@
         .avatar-btn:hover { border-color: #4ade80; transform: scale(1.1); }
         .avatar-btn.selected { border-color: #4ade80; background: rgba(74,222,128,0.2); }
 
+        @media (min-width: 901px) { .header-mobile-only { display: none !important; } }
+        @media (max-width: 400px) { .hidden-xs { display: none !important; } }
+
         @media (max-width: 900px) {
             #slf-app { flex-direction: column; }
             #slf-sidebar {
@@ -315,12 +318,21 @@
     <!-- HEADER -->
     <div id="slf-header">
         <h1 class="text-xl font-bold flex items-center gap-1.5" style="color:#4ade80;">
-            <i data-lucide="globe" class="w-5 h-5"></i> Stadt Land Fluss
+            <i data-lucide="globe" class="w-5 h-5"></i> Wolfle
         </h1>
         <div class="flex items-center gap-1.5">
-            <button id="slf-login-btn" onclick="slfOpenLogin()" class="flex items-center gap-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white px-2 py-1.5 rounded-lg border border-slate-600 transition-all">
+            <button onclick="slfToggleTheme()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Design wechseln">
+                <i data-lucide="sun" class="w-4 h-4"></i>
+            </button>
+            <button id="slf-sound-btn" onclick="slfToggleSound()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Ton">
+                <i data-lucide="volume-2" class="w-4 h-4"></i>
+            </button>
+            <button id="slf-haptic-btn" onclick="slfToggleHaptic()" class="header-mobile-only text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Vibration">
+                <i data-lucide="smartphone" class="w-4 h-4"></i>
+            </button>
+            <button id="slf-login-btn" onclick="slfOpenLogin()" title="Anmelden" class="flex items-center gap-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white px-2 py-1.5 rounded-lg border border-slate-600 transition-all">
                 <span id="slf-avatar">🐺</span>
-                <span id="slf-name-label">Anmelden</span>
+                <span id="slf-name-label" class="hidden-xs">Anmelden</span>
             </button>
         </div>
     </div>
@@ -1183,6 +1195,44 @@
             const weekScore = (existing.weekKey === weekKey ? (existing.weekScore || 0) : 0) + points;
             await setDoc(ref, { name: playerName, score: total, weekScore, weekKey }, { merge: true });
         } catch(e) {}
+    }
+
+    // ── Theme / Sound / Haptic ──
+    const THEMES = ['dark', 'light', 'retro', 'ocean', 'pastel'];
+    let soundEnabled = localStorage.getItem('wolfle_sound') !== 'false';
+    let hapticEnabled = localStorage.getItem('wolfle_haptic') !== 'false';
+
+    function applyTheme(theme) {
+        document.documentElement.className = theme === 'dark' ? '' : theme;
+        localStorage.setItem('wolfle_theme', theme);
+    }
+
+    window.slfToggleTheme = () => {
+        const current = localStorage.getItem('wolfle_theme') || 'dark';
+        const next = THEMES[(THEMES.indexOf(current) + 1) % THEMES.length];
+        applyTheme(next);
+        showToast(`Design: ${next.charAt(0).toUpperCase() + next.slice(1)}`);
+    };
+
+    window.slfToggleSound = () => {
+        soundEnabled = !soundEnabled;
+        localStorage.setItem('wolfle_sound', soundEnabled);
+        const btn = document.getElementById('slf-sound-btn');
+        btn.querySelector('i').setAttribute('data-lucide', soundEnabled ? 'volume-2' : 'volume-x');
+        lucide.createIcons();
+        showToast(soundEnabled ? 'Ton an' : 'Ton aus');
+    };
+
+    window.slfToggleHaptic = () => {
+        hapticEnabled = !hapticEnabled;
+        localStorage.setItem('wolfle_haptic', hapticEnabled);
+        showToast(hapticEnabled ? 'Vibration an' : 'Vibration aus');
+    };
+
+    // Apply saved sound icon
+    if (!soundEnabled) {
+        const btn = document.getElementById('slf-sound-btn');
+        btn?.querySelector('i')?.setAttribute('data-lucide', 'volume-x');
     }
 
     // ── Init ──
