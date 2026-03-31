@@ -83,6 +83,29 @@
         #slf-drawer-overlay.open { display: block; }
         #slf-sidebar.open-drawer { transform: translateY(0) !important; }
 
+        #slf-sidebar-right {
+            width: 240px; min-width: 240px;
+            background: rgba(15,23,42,0.6);
+            border-left: 1px solid #1e293b;
+            padding: 16px;
+            display: flex; flex-direction: column;
+            overflow-y: auto;
+        }
+        .slf-lb-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
+        .slf-lb-item {
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(30,41,59,0.5); padding: 8px 10px; border-radius: 8px;
+            font-size: 13px; transition: background 0.2s;
+        }
+        .slf-lb-item.me { background: rgba(74,222,128,0.15); border: 1px solid rgba(74,222,128,0.25); }
+        .slf-lb-pts { color: #4ade80; font-weight: 700; }
+
+        /* Avatar grid */
+        .avatar-grid { display: grid; grid-template-columns: repeat(6,1fr); gap: 6px; }
+        .avatar-btn { width: 100%; aspect-ratio: 1; font-size: 1.4rem; border: 2px solid #334155; border-radius: 10px; background: #1e293b; cursor: pointer; transition: all 0.1s; }
+        .avatar-btn:hover { border-color: #4ade80; transform: scale(1.1); }
+        .avatar-btn.selected { border-color: #4ade80; background: rgba(74,222,128,0.2); }
+
         @media (max-width: 900px) {
             #slf-app { flex-direction: column; }
             #slf-sidebar {
@@ -94,6 +117,7 @@
                 transform: translateY(105%);
                 transition: transform 0.3s cubic-bezier(0.32,0.72,0,1);
             }
+            #slf-sidebar-right { display: none !important; }
         }
 
         /* Panels & buttons */
@@ -419,6 +443,48 @@
                 </div>
             </div>
         </div>
+
+        <!-- RIGHT SIDEBAR (desktop) -->
+        <div id="slf-sidebar-right">
+            <h2 class="text-base font-bold flex items-center gap-2 text-slate-200" style="margin:0 0 8px;">
+                <i data-lucide="trophy" class="text-yellow-500 w-4 h-4"></i> Bestenliste
+            </h2>
+            <div class="flex gap-1 mb-3" style="background:rgba(30,41,59,0.5);padding:3px;border-radius:8px;">
+                <button onclick="slfSetLbTab('total')" id="slf-lb-tab-total" class="flex-1 text-xs py-1.5 rounded-md bg-green-600 text-white font-semibold transition-colors">Gesamt</button>
+                <button onclick="slfSetLbTab('week')" id="slf-lb-tab-week" class="flex-1 text-xs py-1.5 rounded-md text-slate-400 transition-colors">Woche</button>
+            </div>
+            <ul id="slf-leaderboard" class="slf-lb-list overflow-y-auto flex-1">
+                <li class="text-slate-500 italic text-sm">Lädt...</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- LOGIN MODAL -->
+    <div id="slf-login-modal" class="hidden fixed inset-0 bg-slate-900/80 z-[100] flex items-center justify-center p-4" onclick="if(event.target===this)slfCloseLogin()">
+        <div class="w-full max-w-sm bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-5">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">🔑 Anmelden</h2>
+                <button onclick="slfCloseLogin()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div id="slf-login-form">
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Nutzername</label>
+                <input id="slf-login-name" type="text" maxlength="15" placeholder="Name eingeben..."
+                    class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white mb-3">
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">PIN (optional)</label>
+                <input id="slf-login-pin" type="password" maxlength="8" placeholder="PIN..."
+                    class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white mb-4">
+                <div id="slf-login-error" class="hidden text-red-400 text-xs mb-3 text-center"></div>
+                <button onclick="slfDoLogin()" class="w-full bg-green-600 hover:bg-green-500 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors mb-2">Anmelden / Registrieren</button>
+                <button onclick="slfGuestLogin()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 py-2 rounded-xl text-sm transition-colors">👤 Als Gast spielen</button>
+            </div>
+            <div id="slf-login-loggedin" class="hidden text-center">
+                <div id="slf-login-avatar-display" class="text-5xl mb-2">🐺</div>
+                <div class="text-lg font-bold text-white mb-1" id="slf-login-welcome"></div>
+                <div class="text-xs text-slate-400 mb-4">Angemeldet</div>
+                <button onclick="slfDoLogout()" class="w-full bg-red-900/40 hover:bg-red-900/60 border border-red-800/40 text-red-400 py-2 rounded-xl text-sm transition-colors mb-2">Abmelden</button>
+                <button onclick="slfCloseLogin()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 py-2 rounded-xl text-sm transition-colors">Schließen</button>
+            </div>
+        </div>
     </div>
 
     <!-- TOAST -->
@@ -429,7 +495,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot, updateDoc, deleteDoc, deleteField } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getFirestore, collection, doc, setDoc, getDoc, getDocs, onSnapshot, updateDoc, deleteDoc, deleteField } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyDTPO-01gusabZGy-TthEWZWntwct6LrEQ",
@@ -645,6 +711,12 @@
             updatedPlayers[p] = { ...updatedPlayers[p], score: (updatedPlayers[p].score || 0) + (roundScores[p] || 0) };
         });
         await updateDoc(roomDocRef(roomCode), { players: updatedPlayers, status: 'results', _scoresUpdated: true });
+
+        // Save individual scores to leaderboard
+        for (const p of players) {
+            if (roundScores[p] > 0) await saveSlfScore(p, roundScores[p]);
+        }
+        loadSlfLeaderboard();
     };
 
     function isDisputed(data, player, cat) {
@@ -944,16 +1016,180 @@
     const savedTheme = localStorage.getItem('wolfle_theme') || '';
     if (savedTheme) document.documentElement.className = savedTheme;
 
-    // ── Saved name ──
-    const savedName = localStorage.getItem('wolfle_user_name') || '';
-    if (savedName) document.getElementById('slf-name-input').value = savedName;
+    // ── Profile system (shared with other games) ──
+    const appId = 'wolfle-v1';
+
+    function hashPin(pin) {
+        let h = 0;
+        for (let i = 0; i < pin.length; i++) { h = ((h << 5) - h) + pin.charCodeAt(i); h |= 0; }
+        return 'h_' + Math.abs(h).toString(36);
+    }
+
+    function getWeekKey() {
+        const d = new Date();
+        const jan1 = new Date(d.getFullYear(), 0, 1);
+        const week = Math.ceil(((d - jan1) / 86400000 + jan1.getDay() + 1) / 7);
+        return `${d.getFullYear()}-W${week}`;
+    }
+
+    function updateLoginHeader() {
+        const loggedIn = localStorage.getItem('wolfle_logged_in') === '1';
+        const name = localStorage.getItem('wolfle_user_name') || '';
+        const avatar = localStorage.getItem('wolfle_avatar') || '🐺';
+        document.getElementById('slf-avatar').textContent = avatar;
+        document.getElementById('slf-name-label').textContent = loggedIn ? name : 'Anmelden';
+        if (name) document.getElementById('slf-name-input').value = name;
+    }
+
+    window.slfOpenLogin = () => {
+        const loggedIn = localStorage.getItem('wolfle_logged_in') === '1';
+        const form = document.getElementById('slf-login-form');
+        const loggedInSection = document.getElementById('slf-login-loggedin');
+        if (loggedIn) {
+            document.getElementById('slf-login-welcome').textContent = localStorage.getItem('wolfle_user_name') || '';
+            document.getElementById('slf-login-avatar-display').textContent = localStorage.getItem('wolfle_avatar') || '🐺';
+            form.classList.add('hidden');
+            loggedInSection.classList.remove('hidden');
+        } else {
+            document.getElementById('slf-login-name').value = '';
+            document.getElementById('slf-login-pin').value = '';
+            document.getElementById('slf-login-error').classList.add('hidden');
+            form.classList.remove('hidden');
+            loggedInSection.classList.add('hidden');
+        }
+        const modal = document.getElementById('slf-login-modal');
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        lucide.createIcons();
+    };
+
+    window.slfCloseLogin = () => {
+        const modal = document.getElementById('slf-login-modal');
+        modal.classList.add('hidden');
+        modal.style.display = '';
+    };
+
+    window.slfDoLogin = async () => {
+        const name = document.getElementById('slf-login-name').value.trim();
+        const pin = document.getElementById('slf-login-pin').value;
+        const errorEl = document.getElementById('slf-login-error');
+        if (!name) { errorEl.textContent = 'Bitte einen Namen eingeben.'; errorEl.classList.remove('hidden'); return; }
+        errorEl.classList.add('hidden');
+        try {
+            const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', name));
+            if (snap.exists()) {
+                const ud = snap.data();
+                if (ud.pinHash) {
+                    if (!pin) { errorEl.textContent = 'Bitte PIN eingeben.'; errorEl.classList.remove('hidden'); return; }
+                    if (hashPin(pin) !== ud.pinHash) { errorEl.textContent = 'Falscher PIN.'; errorEl.classList.remove('hidden'); return; }
+                }
+                if (ud.avatar) localStorage.setItem('wolfle_avatar', ud.avatar);
+            } else {
+                const pinHash = pin ? hashPin(pin) : null;
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', name),
+                    { name, avatar: '🐺', pinHash, createdAt: Date.now() });
+            }
+        } catch(e) {}
+        localStorage.setItem('wolfle_user_name', name);
+        localStorage.setItem('wolfle_logged_in', '1');
+        localStorage.removeItem('wolfle_is_guest');
+        document.getElementById('slf-name-input').value = name;
+        updateLoginHeader();
+        slfCloseLogin();
+        showToast(`Willkommen, ${name}!`);
+        loadSlfLeaderboard();
+    };
+
+    window.slfGuestLogin = () => {
+        const name = document.getElementById('slf-login-name').value.trim() || 'Gast';
+        localStorage.setItem('wolfle_user_name', name);
+        localStorage.setItem('wolfle_is_guest', '1');
+        localStorage.setItem('wolfle_logged_in', '1');
+        document.getElementById('slf-name-input').value = name;
+        updateLoginHeader();
+        slfCloseLogin();
+    };
+
+    window.slfDoLogout = () => {
+        localStorage.removeItem('wolfle_logged_in');
+        localStorage.removeItem('wolfle_user_name');
+        localStorage.removeItem('wolfle_avatar');
+        localStorage.setItem('wolfle_is_guest', '1');
+        document.getElementById('slf-name-input').value = '';
+        updateLoginHeader();
+        slfCloseLogin();
+        showToast('Abgemeldet');
+    };
+
     document.getElementById('slf-name-input').addEventListener('change', (e) => {
         localStorage.setItem('wolfle_user_name', e.target.value.trim());
     });
 
+    // ── Leaderboard ──
+    let slfLbTab = 'total';
+
+    window.slfSetLbTab = (tab) => {
+        slfLbTab = tab;
+        loadSlfLeaderboard();
+    };
+
+    async function loadSlfLeaderboard() {
+        const listEl = document.getElementById('slf-leaderboard');
+        if (!listEl) return;
+
+        // Update tab styling
+        const totalBtn = document.getElementById('slf-lb-tab-total');
+        const weekBtn = document.getElementById('slf-lb-tab-week');
+        totalBtn.className = `flex-1 text-xs py-1.5 rounded-md transition-colors ${slfLbTab === 'total' ? 'bg-green-600 text-white font-semibold' : 'text-slate-400'}`;
+        weekBtn.className = `flex-1 text-xs py-1.5 rounded-md transition-colors ${slfLbTab === 'week' ? 'bg-green-600 text-white font-semibold' : 'text-slate-400'}`;
+
+        listEl.innerHTML = '<li class="text-slate-500 italic text-sm">Lädt...</li>';
+        try {
+            const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'slf_scores'));
+            let d = [];
+            snap.forEach(doc => { if (doc.data().score) d.push(doc.data()); });
+            const weekKey = getWeekKey();
+            if (slfLbTab === 'week') {
+                d = d.filter(s => s.weekKey === weekKey && (s.weekScore || 0) > 0);
+                d.sort((a, b) => (b.weekScore || 0) - (a.weekScore || 0));
+            } else {
+                d.sort((a, b) => b.score - a.score);
+            }
+            const me = getPlayerName().toLowerCase();
+            listEl.innerHTML = d.length === 0
+                ? '<li class="text-slate-500 italic text-sm">Noch keine Einträge</li>'
+                : d.slice(0, 10).map((s, i) => {
+                    const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
+                    const isMe = s.name.toLowerCase() === me;
+                    const pts = slfLbTab === 'week' ? (s.weekScore || 0) : s.score;
+                    return `<li class="slf-lb-item ${isMe ? 'me' : ''}">
+                        <span>${medal} ${s.name}</span><span class="slf-lb-pts">${pts}</span></li>`;
+                }).join('');
+        } catch(e) {
+            listEl.innerHTML = '<li class="text-slate-500 italic text-sm">Fehler</li>';
+        }
+    }
+
+    // Save score to Firebase after round finalize
+    async function saveSlfScore(playerName, points) {
+        if (!points || !playerName) return;
+        if (localStorage.getItem('wolfle_is_guest') === '1') return;
+        try {
+            const ref = doc(db, 'artifacts', appId, 'public', 'data', 'slf_scores', playerName.toLowerCase());
+            const snap = await getDoc(ref);
+            const existing = snap.exists() ? snap.data() : {};
+            const weekKey = getWeekKey();
+            const total = (existing.score || 0) + points;
+            const weekScore = (existing.weekKey === weekKey ? (existing.weekScore || 0) : 0) + points;
+            await setDoc(ref, { name: playerName, score: total, weekScore, weekKey }, { merge: true });
+        } catch(e) {}
+    }
+
     // ── Init ──
+    updateLoginHeader();
     lucide.createIcons();
     renderRoom();
+    loadSlfLeaderboard();
 </script>
 </body>
 </html>
