@@ -633,10 +633,20 @@
     window.slfLeaveRoom = async () => {
         if (!roomCode) return;
         const name = getPlayerName();
+        const code = roomCode;
         stopActivityHeartbeat();
         if (roomUnsub) { roomUnsub(); roomUnsub = null; }
         try {
-            await updateDoc(roomDocRef(roomCode), { [`players.${name}`]: deleteField() });
+            const snap = await getDoc(roomDocRef(code));
+            if (snap.exists()) {
+                const players = { ...(snap.data().players || {}) };
+                delete players[name];
+                if (Object.keys(players).length === 0) {
+                    await deleteDoc(roomDocRef(code));
+                } else {
+                    await updateDoc(roomDocRef(code), { [`players.${name}`]: deleteField() });
+                }
+            }
         } catch (e) {}
         roomCode = null;
         roomData = null;
