@@ -1187,7 +1187,7 @@
     async function cleanupStaleHmRooms() {
         try {
             const firestore = await ensureDB(); if (!firestore) return;
-            const STALE_MS = 30 * 60 * 1000;
+            const STALE_MS = 10 * 60 * 1000;
             const now = Date.now();
             const snap = await firebaseFns.getDocs(firebaseFns.collection(firestore,'artifacts',appId,'public','data','hangman_rooms'));
             snap.forEach(d => {
