@@ -884,6 +884,17 @@
     let db = null;
     let firebaseFns = null;
     let roomUnsubscribe = null;
+    let _hmActivityInterval = null;
+    function hmStartActivityHeartbeat(code) {
+        hmStopActivityHeartbeat();
+        if (firebaseFns) firebaseFns.updateDoc(roomDocRef(code), { lastActivity: Date.now() }).catch(()=>{});
+        _hmActivityInterval = setInterval(() => {
+            if (gameState.roomCode && firebaseFns) firebaseFns.updateDoc(roomDocRef(gameState.roomCode), { lastActivity: Date.now() }).catch(()=>{});
+        }, 2 * 60 * 1000);
+    }
+    function hmStopActivityHeartbeat() {
+        if (_hmActivityInterval) { clearInterval(_hmActivityInterval); _hmActivityInterval = null; }
+    }
 
     const gameState = {
         mode: 'solo',
@@ -1176,13 +1187,14 @@
     async function cleanupStaleHmRooms() {
         try {
             const firestore = await ensureDB(); if (!firestore) return;
-            const STALE_MS = 10 * 60 * 1000;
+            const STALE_MS = 30 * 60 * 1000;
             const now = Date.now();
             const snap = await firebaseFns.getDocs(firebaseFns.collection(firestore,'artifacts',appId,'public','data','hangman_rooms'));
             snap.forEach(d => {
                 const data = d.data();
                 const playerCount = data.players ? Object.keys(data.players).length : 0;
-                const isStale = data.createdAt && (now - data.createdAt > STALE_MS);
+                const lastActive = data.lastActivity || data.createdAt || 0;
+                const isStale = lastActive && (now - lastActive > STALE_MS);
                 if (playerCount === 0 || isStale) {
                     firebaseFns.deleteDoc(roomDocRef(d.id)).catch(()=>{});
                 }
@@ -1678,10 +1690,12 @@
             wordLanguage: null,
             isPrivate: window._hmRoomIsPrivate || false,
             roomStatus: 'Raum erstellt – warte auf Mitspieler oder starte direkt die erste Runde.',
-            createdAt: Date.now()
+            createdAt: Date.now(),
+            lastActivity: Date.now()
         };
         await firebaseFns.setDoc(roomDocRef(code), payload);
         document.getElementById('hm-room-code-input').value = code;
+        hmStartActivityHeartbeat(code);
         await listenToRoom(code);
     }
     async function hmJoinRoom() {
@@ -1695,11 +1709,13 @@
         const data = snap.data();
         const players = { ...(data.players || {}) };
         players[name] = players[name] || { guessed: 0, picked: 0 };
-        await firebaseFns.setDoc(roomDocRef(code), { players, roomStatus: data.active ? 'Runde läuft.' : 'Spieler beigetreten.' }, { merge: true });
+        await firebaseFns.setDoc(roomDocRef(code), { players, lastActivity: Date.now(), roomStatus: data.active ? 'Runde läuft.' : 'Spieler beigetreten.' }, { merge: true });
+        hmStartActivityHeartbeat(code);
         await listenToRoom(code);
     }
     async function hmLeaveRoom() {
         if (!gameState.roomCode) return;
+        hmStopActivityHeartbeat();
         localStorage.removeItem('wolfle_active_hm_room');
         await ensureDB();
         const name = getPlayerName();
