@@ -330,6 +330,9 @@
             <button id="slf-haptic-btn" onclick="slfToggleHaptic()" class="header-mobile-only text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Vibration">
                 <i data-lucide="smartphone" class="w-4 h-4"></i>
             </button>
+            <button onclick="slfOpenFriends()" class="relative text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Freunde">
+                <i data-lucide="users" class="w-4 h-4"></i>
+            </button>
             <button id="slf-login-btn" onclick="slfOpenLogin()" title="Anmelden" class="flex items-center gap-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white px-2 py-1.5 rounded-lg border border-slate-600 transition-all">
                 <span id="slf-avatar">🐺</span>
                 <span id="slf-name-label" class="hidden-xs">Anmelden</span>
@@ -499,6 +502,29 @@
         </div>
     </div>
 
+    <!-- FRIENDS MODAL -->
+    <div id="slf-friends-modal" class="hidden fixed inset-0 bg-slate-900/80 z-[97] flex items-center justify-center p-4" onclick="if(event.target===this)window.slfCloseFriends()">
+        <div class="w-full max-w-sm bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl" style="max-height:85dvh;overflow-y:auto;">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i data-lucide="users" class="w-5 h-5"></i> Freunde
+                </h2>
+                <button onclick="window.slfCloseFriends()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="flex gap-2 mb-2">
+                <input id="slf-friend-search-input" type="text" placeholder="Spieler suchen..." maxlength="20"
+                    class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white transition-colors"
+                    onkeydown="if(event.key==='Enter')window.slfSearchFriends()">
+                <button onclick="window.slfSearchFriends()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-lg transition-colors">
+                    <i data-lucide="search" class="w-4 h-4"></i>
+                </button>
+            </div>
+            <div id="slf-friend-search-results" class="mb-4"></div>
+            <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Meine Freunde</div>
+            <div id="slf-friends-list"><div class="text-slate-500 italic text-sm">Lädt...</div></div>
+        </div>
+    </div>
+
     <!-- TOAST -->
     <div id="slf-toast"></div>
 
@@ -507,7 +533,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getFirestore, collection, doc, setDoc, getDoc, getDocs, onSnapshot, updateDoc, deleteDoc, deleteField } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getFirestore, collection, doc, setDoc, getDoc, getDocs, onSnapshot, updateDoc, deleteDoc, deleteField, arrayUnion, arrayRemove, query, where, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyDTPO-01gusabZGy-TthEWZWntwct6LrEQ",
@@ -1197,6 +1223,111 @@
         } catch(e) {}
     }
 
+    // ── Friends ──
+    window.slfOpenFriends = async () => {
+        const modal = document.getElementById('slf-friends-modal');
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        document.getElementById('slf-friend-search-input').value = '';
+        document.getElementById('slf-friend-search-results').innerHTML = '';
+        lucide.createIcons();
+        await slfLoadFriendsList();
+    };
+    window.slfCloseFriends = () => {
+        const modal = document.getElementById('slf-friends-modal');
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+    };
+    async function slfLoadFriendsList() {
+        const listEl = document.getElementById('slf-friends-list');
+        if (!listEl) return;
+        if (localStorage.getItem('wolfle_is_guest') === '1') {
+            listEl.innerHTML = '<div class="text-slate-500 text-sm text-center py-2">Nur für registrierte Accounts.<br><button onclick="window.slfCloseFriends();slfOpenLogin();" class="mt-2 bg-indigo-600 text-white px-3 py-1 rounded-lg text-xs font-semibold">Konto erstellen</button></div>';
+            return;
+        }
+        const myName = getPlayerName();
+        if (!myName) {
+            listEl.innerHTML = '<div class="text-slate-500 text-sm text-center py-2">Bitte anmelden.<br><button onclick="window.slfCloseFriends();slfOpenLogin();" class="mt-2 bg-indigo-600 text-white px-3 py-1 rounded-lg text-xs font-semibold">Anmelden</button></div>';
+            return;
+        }
+        listEl.innerHTML = '<div class="text-slate-500 italic text-sm">Lädt...</div>';
+        try {
+            const myDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', myName));
+            const friends = myDoc.exists() ? (myDoc.data().friends || []) : [];
+            if (friends.length === 0) {
+                listEl.innerHTML = '<div class="text-slate-500 italic text-sm">Noch keine Freunde. Suche nach Spielern!</div>';
+                return;
+            }
+            const friendData = await Promise.all(friends.map(async (fname) => {
+                const [uSnap, sSnap] = await Promise.all([
+                    getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', fname)),
+                    getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'scores', fname.toLowerCase())),
+                ]);
+                return {
+                    name: fname,
+                    avatar: uSnap.exists() ? (uSnap.data().avatar || '🐺') : '🐺',
+                    score: sSnap.exists() ? (sSnap.data().score || 0) : 0
+                };
+            }));
+            listEl.innerHTML = friendData.map(f => `
+                <div class="flex items-center justify-between bg-slate-700/50 p-2 rounded-lg mb-1">
+                    <div class="flex items-center gap-2 flex-1">
+                        <span class="text-xl">${f.avatar}</span>
+                        <div><div class="text-sm text-white font-medium">${f.name}</div><div class="text-xs text-indigo-400">${f.score} Pts</div></div>
+                    </div>
+                    <button onclick="window.slfRemoveFriend('${f.name.replace(/'/g,"\\'")}') " class="text-slate-400 hover:text-red-400 transition-colors p-1.5 rounded-lg" title="Entfernen"><i data-lucide="user-minus" class="w-4 h-4"></i></button>
+                </div>`).join('');
+            lucide.createIcons();
+        } catch(e) { listEl.innerHTML = '<div class="text-slate-500 italic text-sm">Fehler beim Laden</div>'; }
+    }
+    window.slfSearchFriends = async () => {
+        const queryText = document.getElementById('slf-friend-search-input').value.trim();
+        const resultsEl = document.getElementById('slf-friend-search-results');
+        if (!queryText) { resultsEl.innerHTML = ''; return; }
+        resultsEl.innerHTML = '<div class="text-slate-500 text-sm">Suche...</div>';
+        try {
+            const snap = await getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'users'), where('name', '>=', queryText), where('name', '<=', queryText + '\uf8ff'), limit(8)));
+            const myName = getPlayerName();
+            const myDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', myName));
+            const myFriends = myDoc.exists() ? (myDoc.data().friends || []) : [];
+            if (snap.empty) { resultsEl.innerHTML = '<div class="text-slate-500 text-sm py-1">Keine Spieler gefunden</div>'; return; }
+            const rows = snap.docs
+                .filter(d => d.data().name?.toLowerCase() !== myName?.toLowerCase())
+                .map(d => {
+                    const ud = d.data();
+                    const isFriend = myFriends.some(f => f.toLowerCase() === ud.name.toLowerCase());
+                    return `<div class="flex items-center justify-between bg-slate-700/40 p-2 rounded-lg mb-1">
+                        <div class="flex items-center gap-2"><span class="text-xl">${ud.avatar || '🐺'}</span><span class="text-sm text-white">${ud.name}</span></div>
+                        ${isFriend
+                            ? '<span class="text-xs text-green-400 flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> Freund</span>'
+                            : `<button onclick="window.slfAddFriend('${ud.name.replace(/'/g,"\\'")}', this)" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-2 py-1 rounded-lg transition-colors flex items-center gap-1"><i data-lucide="user-plus" class="w-3 h-3"></i> Hinzufügen</button>`}
+                    </div>`;
+                });
+            resultsEl.innerHTML = rows.length ? rows.join('') : '<div class="text-slate-500 text-sm py-1">Keine anderen Spieler gefunden</div>';
+            lucide.createIcons();
+        } catch(e) { resultsEl.innerHTML = '<div class="text-slate-500 text-sm">Fehler bei der Suche</div>'; }
+    };
+    window.slfAddFriend = async (theirName, btn) => {
+        const myName = getPlayerName();
+        if (!myName || localStorage.getItem('wolfle_is_guest') === '1') return;
+        if (btn) { btn.disabled = true; btn.textContent = '...'; }
+        try {
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', myName), { friends: arrayUnion(theirName) });
+            showToast(`${theirName} als Freund hinzugefügt!`, 'success');
+            slfLoadFriendsList();
+            window.slfSearchFriends();
+        } catch(e) { if (btn) { btn.disabled = false; lucide.createIcons(); } }
+    };
+    window.slfRemoveFriend = async (theirName) => {
+        const myName = getPlayerName();
+        if (!myName) return;
+        try {
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', myName), { friends: arrayRemove(theirName) });
+            showToast(`${theirName} entfernt`, 'info');
+            slfLoadFriendsList();
+        } catch(e) {}
+    };
+
     // ── Theme / Sound / Haptic ──
     const THEMES = ['dark', 'light', 'retro', 'ocean', 'pastel'];
     let soundEnabled = localStorage.getItem('wolfle_sound') !== 'false';
@@ -1214,12 +1345,18 @@
         showToast(`Design: ${next.charAt(0).toUpperCase() + next.slice(1)}`);
     };
 
+    function updateSoundIcon() {
+        const btn = document.getElementById('slf-sound-btn');
+        if (!btn) return;
+        const icon = soundEnabled ? 'volume-2' : 'volume-x';
+        btn.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4"></i>`;
+        lucide.createIcons({ nodes: [btn] });
+    }
+
     window.slfToggleSound = () => {
         soundEnabled = !soundEnabled;
         localStorage.setItem('wolfle_sound', soundEnabled);
-        const btn = document.getElementById('slf-sound-btn');
-        btn.querySelector('i').setAttribute('data-lucide', soundEnabled ? 'volume-2' : 'volume-x');
-        lucide.createIcons();
+        updateSoundIcon();
         showToast(soundEnabled ? 'Ton an' : 'Ton aus');
     };
 
@@ -1229,15 +1366,10 @@
         showToast(hapticEnabled ? 'Vibration an' : 'Vibration aus');
     };
 
-    // Apply saved sound icon
-    if (!soundEnabled) {
-        const btn = document.getElementById('slf-sound-btn');
-        btn?.querySelector('i')?.setAttribute('data-lucide', 'volume-x');
-    }
-
     // ── Init ──
     updateLoginHeader();
     lucide.createIcons();
+    updateSoundIcon();
     renderRoom();
     loadSlfLeaderboard();
 </script>
