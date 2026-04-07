@@ -552,6 +552,18 @@
     let roomCode = null;
     let roomUnsub = null;
     let roomData = null;
+    let activityInterval = null;
+
+    function startActivityHeartbeat(code) {
+        stopActivityHeartbeat();
+        updateDoc(roomDocRef(code), { lastActivity: Date.now() }).catch(() => {});
+        activityInterval = setInterval(() => {
+            if (roomCode) updateDoc(roomDocRef(roomCode), { lastActivity: Date.now() }).catch(() => {});
+        }, 2 * 60 * 1000);
+    }
+    function stopActivityHeartbeat() {
+        if (activityInterval) { clearInterval(activityInterval); activityInterval = null; }
+    }
 
     // ── Helpers ──
     function getPlayerName() {
@@ -594,10 +606,12 @@
             timerSeconds: timerSec,
             roundStartedAt: 0,
             _scoresUpdated: false,
-            createdAt: Date.now()
+            createdAt: Date.now(),
+            lastActivity: Date.now()
         };
         await setDoc(roomDocRef(code), payload);
         document.getElementById('slf-room-input').value = code;
+        startActivityHeartbeat(code);
         listenToRoom(code);
     };
 
@@ -611,13 +625,15 @@
         const data = snap.data();
         const players = { ...(data.players || {}) };
         players[name] = players[name] || { score: 0 };
-        await updateDoc(roomDocRef(code), { players });
+        await updateDoc(roomDocRef(code), { players, lastActivity: Date.now() });
+        startActivityHeartbeat(code);
         listenToRoom(code);
     };
 
     window.slfLeaveRoom = async () => {
         if (!roomCode) return;
         const name = getPlayerName();
+        stopActivityHeartbeat();
         if (roomUnsub) { roomUnsub(); roomUnsub = null; }
         try {
             await updateDoc(roomDocRef(roomCode), { [`players.${name}`]: deleteField() });
@@ -1171,7 +1187,25 @@
         loadSlfLeaderboard();
     };
 
+    async function cleanupStaleSlfRooms() {
+        try {
+            const STALE_MS = 10 * 60 * 1000;
+            const now = Date.now();
+            const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'slf-rooms'));
+            snap.forEach(d => {
+                const data = d.data();
+                const playerCount = data.players ? Object.keys(data.players).length : 0;
+                const lastActive = data.lastActivity || data.createdAt || 0;
+                const isStale = lastActive && (now - lastActive > STALE_MS);
+                if (playerCount === 0 || isStale) {
+                    deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'slf-rooms', d.id)).catch(() => {});
+                }
+            });
+        } catch(e) {}
+    }
+
     async function loadSlfLeaderboard() {
+        cleanupStaleSlfRooms();
         const listEl = document.getElementById('slf-leaderboard');
         if (!listEl) return;
 

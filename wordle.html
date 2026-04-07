@@ -1510,6 +1510,18 @@
     let targetWord = "";
     let currentRow = 0, currentCol = 0, cells = [], gameOver = false, letterStates = {};
     let currentRoomCode = null, roomUnsubscribe = null, db = null;
+    let _activityInterval = null;
+    function startActivityHeartbeat(code) {
+        stopActivityHeartbeat();
+        const firestore = db; if (!firestore) return;
+        updateDoc(doc(firestore,'artifacts',appId,'public','data','rooms',code), { lastActivity: Date.now() }).catch(()=>{});
+        _activityInterval = setInterval(() => {
+            if (currentRoomCode && db) updateDoc(doc(db,'artifacts',appId,'public','data','rooms',currentRoomCode), { lastActivity: Date.now() }).catch(()=>{});
+        }, 2 * 60 * 1000);
+    }
+    function stopActivityHeartbeat() {
+        if (_activityInterval) { clearInterval(_activityInterval); _activityInterval = null; }
+    }
     let currentRound = 1, maxRounds = 3, playerTotalScore = 0, playerRoundsWon = 0;
     let leaderboardTab = 'total';
     // Blitz / Duel mode flags (declared early, logic added later)
@@ -2166,7 +2178,8 @@
             snap.forEach(d => {
                 const data = d.data();
                 const playerCount = data.players ? Object.keys(data.players).length : 0;
-                const isStale = data.createdAt && (now - data.createdAt > STALE_MS);
+                const lastActive = data.lastActivity || data.createdAt || 0;
+                const isStale = lastActive && (now - lastActive > STALE_MS);
                 if (playerCount === 0 || isStale) {
                     deleteDoc(doc(firestore,'artifacts',appId,'public','data','rooms',d.id)).catch(()=>{});
                 }
@@ -2601,7 +2614,7 @@
         hostRoundTime = hostSettings.timeLimit;
 
         await setDoc(doc(firestore,'artifacts',appId,'public','data','rooms',code),
-            { word, round: 1, maxRounds: hostSettings.maxRounds, timeLimit: hostSettings.timeLimit, maxAttempts: hostSettings.maxAttempts, isPrivate: window._roomIsPrivate || false, createdAt: Date.now(), players: { [name]: { name, guesses:0, finished:false, won:false, totalScore:0, roundsWon:0 } } });
+            { word, round: 1, maxRounds: hostSettings.maxRounds, timeLimit: hostSettings.timeLimit, maxAttempts: hostSettings.maxAttempts, isPrivate: window._roomIsPrivate || false, createdAt: Date.now(), lastActivity: Date.now(), players: { [name]: { name, guesses:0, finished:false, won:false, totalScore:0, roundsWon:0 } } });
         window.closeCreateRoomModal();
         joinInternal(code, word, 1, hostSettings.maxRounds, hostSettings.timeLimit, hostSettings.maxAttempts);
         document.querySelectorAll('.share-btn').forEach(b => b.classList.remove('hidden'));
@@ -2636,6 +2649,7 @@
         playerTotalScore = 0; playerRoundsWon = 0;
         document.querySelectorAll('.room-code-display').forEach(el => el.textContent = code);
         document.querySelectorAll('.room-status').forEach(el => el.classList.remove('hidden'));
+        startActivityHeartbeat(code);
         listenToRoom(code);
         updateRoundDisplay();
         showToast(t('roomJoined') + ": " + code, "success");
@@ -2827,6 +2841,7 @@
     }
 
     window.leaveRoom = async () => {
+        stopActivityHeartbeat();
         const code = currentRoomCode;
         localStorage.removeItem('wolfle_active_room');
         if (roomUnsubscribe) roomUnsubscribe();
