@@ -1171,7 +1171,24 @@
         loadSlfLeaderboard();
     };
 
+    async function cleanupStaleSlfRooms() {
+        try {
+            const STALE_MS = 10 * 60 * 1000;
+            const now = Date.now();
+            const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'slf-rooms'));
+            snap.forEach(d => {
+                const data = d.data();
+                const playerCount = data.players ? Object.keys(data.players).length : 0;
+                const isStale = data.createdAt && (now - data.createdAt > STALE_MS);
+                if (playerCount === 0 || isStale) {
+                    deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'slf-rooms', d.id)).catch(() => {});
+                }
+            });
+        } catch(e) {}
+    }
+
     async function loadSlfLeaderboard() {
+        cleanupStaleSlfRooms();
         const listEl = document.getElementById('slf-leaderboard');
         if (!listEl) return;
 

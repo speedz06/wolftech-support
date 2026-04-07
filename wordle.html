@@ -2160,7 +2160,7 @@
     async function cleanupStaleRooms() {
         try {
             const firestore = await getDB(); if (!firestore) return;
-            const STALE_MS = 30 * 60 * 1000;
+            const STALE_MS = 10 * 60 * 1000;
             const now = Date.now();
             const snap = await getDocs(collection(firestore,'artifacts',appId,'public','data','rooms'));
             snap.forEach(d => {
