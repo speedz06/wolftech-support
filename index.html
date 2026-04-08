@@ -605,6 +605,17 @@
     if (localStorage.getItem('wolfle_logged_in') !== '1') {
         openOnboarding();
     }
+
+
+    if (window.ui) {
+        ui.setHandlers({
+            toggleTheme,
+            toggleSound,
+            toggleHaptics: toggleHaptic,
+            openLogin: openLoginModal
+        });
+    }
+
 </script>
 </body>
 </html>

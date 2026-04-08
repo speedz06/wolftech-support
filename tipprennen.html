@@ -886,6 +886,12 @@
 
         // Initialize Lucide icons
         lucide.createIcons();
-    </script>
+    
+
+        if (window.ui) {
+            ui.setHandlers({ toggleTheme });
+        }
+
+</script>
 </body>
 </html>

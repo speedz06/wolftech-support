@@ -4004,6 +4004,17 @@
             checkLayout();
         })();
     }
+
+
+    if (window.ui) {
+        ui.setHandlers({
+            toggleTheme: window.toggleTheme,
+            toggleSound: window.toggleSound,
+            toggleHaptics: window.toggleHaptic,
+            openLogin: window.openLoginModal
+        });
+    }
+
 </script>
 </body>
 </html>

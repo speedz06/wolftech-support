@@ -1413,6 +1413,17 @@
     updateSoundIcon();
     renderRoom();
     loadSlfLeaderboard();
+
+
+    if (window.ui) {
+        ui.setHandlers({
+            toggleTheme: window.slfToggleTheme,
+            toggleSound: window.slfToggleSound,
+            toggleHaptics: window.slfToggleHaptic,
+            openLogin: window.slfOpenLogin
+        });
+    }
+
 </script>
 </body>
 </html>
