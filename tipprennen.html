@@ -566,7 +566,7 @@
     </div>
 
     <script>
-        // Theme support
+        // ── Theme support ──
         const themes = ['', 'light', 'retro', 'ocean', 'pastel'];
         let themeIndex = themes.indexOf(localStorage.getItem('wolfle-theme') || '');
         if (themeIndex < 0) themeIndex = 0;
@@ -577,6 +577,302 @@
             document.documentElement.className = themes[themeIndex];
             localStorage.setItem('wolfle-theme', themes[themeIndex]);
         }
+
+        // ── Text pools by difficulty ──
+        const texts = {
+            easy: [
+                "Der Hund läuft schnell über die Wiese und springt über den Zaun.",
+                "Die Sonne scheint hell und der Himmel ist blau und klar.",
+                "Ich gehe gerne im Park spazieren wenn das Wetter schön ist.",
+                "Das Auto fährt langsam durch die enge Straße in der Stadt.",
+                "Die Katze schläft auf dem warmen Sofa neben dem Fenster.",
+                "Morgen gehen wir zusammen in den Zoo und sehen die Tiere.",
+                "Das Buch liegt auf dem Tisch neben der Lampe im Zimmer.",
+                "Wir essen heute Abend Pizza mit Käse und frischen Tomaten.",
+                "Der Zug kommt um acht Uhr am Bahnhof an und fährt weiter.",
+                "Sie spielt gerne Fußball mit ihren Freunden nach der Schule.",
+            ],
+            medium: [
+                "Die Geschichte der Menschheit ist geprägt von großen Entdeckungen und Erfindungen, die unser Leben grundlegend verändert haben.",
+                "Programmieren erfordert logisches Denken und die Fähigkeit, komplexe Probleme in kleinere Teile zu zerlegen und systematisch zu lösen.",
+                "Der Klimawandel stellt eine der größten Herausforderungen unserer Zeit dar und erfordert gemeinsames Handeln aller Nationen.",
+                "Künstliche Intelligenz wird in vielen Bereichen eingesetzt, von der Medizin über die Industrie bis hin zur Unterhaltung und Bildung.",
+                "Die deutsche Sprache hat viele zusammengesetzte Wörter, die manchmal überraschend lang und schwer auszusprechen sein können.",
+                "Im Herbst verfärben sich die Blätter der Bäume in wunderschöne Farben von Gelb über Orange bis Dunkelrot.",
+                "Musik verbindet Menschen auf der ganzen Welt, unabhängig von Sprache, Kultur oder Herkunft, und weckt starke Emotionen.",
+                "Das Internet hat die Art und Weise verändert, wie wir kommunizieren, arbeiten und Informationen austauschen und finden.",
+            ],
+            hard: [
+                "Die Quantenmechanik beschreibt das Verhalten subatomarer Teilchen und widerspricht häufig unserer alltäglichen Wahrnehmung der physikalischen Realität. Phänomene wie Verschränkung und Superposition sind dabei besonders faszinierend.",
+                "Während der industriellen Revolution im 18. und 19. Jahrhundert veränderten sich Produktionsmethoden, Transportwege und gesellschaftliche Strukturen grundlegend, was zu beispiellosem wirtschaftlichen Wachstum führte.",
+                "Die Biodiversität unseres Planeten umfasst schätzungsweise 8,7 Millionen Arten, von denen viele noch nicht wissenschaftlich beschrieben wurden. Der Verlust dieser Vielfalt gefährdet zahlreiche Ökosysteme nachhaltig.",
+                "Philosophische Fragestellungen zur Existenz, Ethik und Erkenntnistheorie beschäftigen die Menschheit seit Jahrtausenden und bleiben trotz wissenschaftlicher Fortschritte weiterhin hochaktuell und relevant.",
+                "Die Entwicklung effizienter Algorithmen und Datenstrukturen bildet das Fundament moderner Softwareentwicklung; ohne sie wären komplexe Anwendungen wie Suchmaschinen, soziale Netzwerke und autonomes Fahren undenkbar.",
+                "Neuroplastizität bezeichnet die Fähigkeit des Gehirns, sich durch Erfahrungen, Lernen und nach Verletzungen strukturell und funktionell anzupassen – eine Eigenschaft, die bis ins hohe Alter erhalten bleibt.",
+            ],
+        };
+
+        // ── Bot WPM ranges per difficulty ──
+        const botSpeeds = { easy: [25, 35], medium: [40, 55], hard: [55, 75] };
+
+        // ── DOM refs ──
+        const $startScreen   = document.getElementById('start-screen');
+        const $raceScreen    = document.getElementById('race-screen');
+        const $resultsScreen = document.getElementById('results-screen');
+        const $textContent   = document.getElementById('text-content');
+        const $typingInput   = document.getElementById('typing-input');
+        const $countdown     = document.getElementById('countdown-overlay');
+        const $countdownNum  = document.getElementById('countdown-number');
+        const $progressBar   = document.getElementById('progress-bar');
+        const $wpm           = document.getElementById('wpm-display');
+        const $accuracy      = document.getElementById('accuracy-display');
+        const $time          = document.getElementById('time-display');
+        const $playerCar     = document.getElementById('player-car');
+        const $botCar        = document.getElementById('bot-car');
+        const $startBtn      = document.getElementById('start-btn');
+        const $restartBtn    = document.getElementById('restart-btn');
+
+        // ── Game state ──
+        let currentText = '';
+        let charIndex = 0;
+        let errors = 0;
+        let totalKeystrokes = 0;
+        let startTime = null;
+        let timerInterval = null;
+        let botInterval = null;
+        let botProgress = 0;
+        let difficulty = 'easy';
+        let gameActive = false;
+
+        // ── Difficulty selection ──
+        document.querySelectorAll('.diff-pill').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.diff-pill').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                difficulty = btn.dataset.diff;
+            });
+        });
+
+        // ── Screen helpers ──
+        function showScreen(screen) {
+            $startScreen.classList.add('hidden');
+            $raceScreen.classList.add('hidden');
+            $resultsScreen.classList.add('hidden');
+            screen.classList.remove('hidden');
+        }
+
+        // ── Render text with character spans ──
+        function renderText(text) {
+            $textContent.innerHTML = '';
+            for (let i = 0; i < text.length; i++) {
+                const span = document.createElement('span');
+                span.className = 'char pending';
+                span.textContent = text[i];
+                if (i === 0) span.classList.add('current');
+                $textContent.appendChild(span);
+            }
+        }
+
+        // ── Update character highlights ──
+        function updateChars() {
+            const spans = $textContent.querySelectorAll('.char');
+            spans.forEach((span, i) => {
+                span.classList.remove('current', 'correct', 'incorrect', 'pending');
+                if (i < charIndex) {
+                    // Already typed — check if it was correct
+                    span.classList.add(span.dataset.err ? 'incorrect' : 'correct');
+                } else if (i === charIndex) {
+                    span.classList.add('current');
+                } else {
+                    span.classList.add('pending');
+                }
+            });
+        }
+
+        // ── Compute WPM (words = chars / 5) ──
+        function calcWPM() {
+            if (!startTime) return 0;
+            const mins = (Date.now() - startTime) / 60000;
+            if (mins < 0.01) return 0;
+            return Math.round((charIndex / 5) / mins);
+        }
+
+        // ── Compute accuracy ──
+        function calcAccuracy() {
+            if (totalKeystrokes === 0) return 100;
+            return Math.round(((totalKeystrokes - errors) / totalKeystrokes) * 100);
+        }
+
+        // ── Update live stats ──
+        function updateStats() {
+            $wpm.textContent = calcWPM();
+            $accuracy.textContent = calcAccuracy() + '%';
+            const elapsed = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
+            $time.textContent = elapsed + 's';
+        }
+
+        // ── Update progress bar + player car ──
+        function updateProgress() {
+            const pct = (charIndex / currentText.length) * 100;
+            $progressBar.style.width = pct + '%';
+            // Car position: leave room for the emoji width (~24px)
+            $playerCar.style.left = `calc(${pct}% - ${pct * 0.24}px)`;
+        }
+
+        // ── Bot racer ──
+        function startBot() {
+            const [minWPM, maxWPM] = botSpeeds[difficulty];
+            const botWPM = minWPM + Math.random() * (maxWPM - minWPM);
+            // chars per second = (wpm * 5) / 60
+            const cps = (botWPM * 5) / 60;
+            botProgress = 0;
+
+            botInterval = setInterval(() => {
+                // Add some variance per tick
+                const variance = 0.7 + Math.random() * 0.6;
+                botProgress += cps * 0.1 * variance;
+                if (botProgress >= currentText.length) {
+                    botProgress = currentText.length;
+                    clearInterval(botInterval);
+                    botInterval = null;
+                    // If player hasn't finished, bot wins — end game
+                    if (gameActive) endGame();
+                }
+                const pct = (botProgress / currentText.length) * 100;
+                $botCar.style.left = `calc(${pct}% - ${pct * 0.24}px)`;
+            }, 100);
+        }
+
+        // ── Countdown then go ──
+        function startCountdown(cb) {
+            $countdown.classList.remove('hidden');
+            $typingInput.disabled = true;
+            let count = 3;
+            $countdownNum.textContent = count;
+
+            const tick = () => {
+                if (count <= 0) {
+                    $countdown.classList.add('hidden');
+                    $typingInput.disabled = false;
+                    $typingInput.focus();
+                    cb();
+                    return;
+                }
+                $countdownNum.textContent = count;
+                // Re-trigger animation
+                $countdownNum.style.animation = 'none';
+                void $countdownNum.offsetHeight;
+                $countdownNum.style.animation = 'countPulse 0.6s ease-in-out';
+                count--;
+                setTimeout(tick, 700);
+            };
+            tick();
+        }
+
+        // ── Start game ──
+        function startGame() {
+            // Pick a random text
+            const pool = texts[difficulty];
+            currentText = pool[Math.floor(Math.random() * pool.length)];
+            charIndex = 0;
+            errors = 0;
+            totalKeystrokes = 0;
+            startTime = null;
+            botProgress = 0;
+            gameActive = false;
+
+            // Reset UI
+            $typingInput.value = '';
+            $progressBar.style.width = '0%';
+            $playerCar.style.left = '0';
+            $botCar.style.left = '0';
+            $wpm.textContent = '0';
+            $accuracy.textContent = '100%';
+            $time.textContent = '0s';
+
+            renderText(currentText);
+            showScreen($raceScreen);
+
+            startCountdown(() => {
+                gameActive = true;
+                startTime = Date.now();
+                timerInterval = setInterval(updateStats, 200);
+                startBot();
+            });
+        }
+
+        // ── End game ──
+        function endGame() {
+            gameActive = false;
+            clearInterval(timerInterval);
+            timerInterval = null;
+            if (botInterval) { clearInterval(botInterval); botInterval = null; }
+
+            const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+            const finalWPM = calcWPM();
+            const finalAcc = calcAccuracy();
+
+            // Populate results
+            document.getElementById('result-wpm').textContent = finalWPM + ' WPM';
+            document.getElementById('result-accuracy').textContent = finalAcc + '%';
+            document.getElementById('result-time').textContent = elapsed + 's';
+            document.getElementById('result-chars').textContent = charIndex + ' / ' + currentText.length;
+            document.getElementById('result-errors').textContent = errors;
+
+            showScreen($resultsScreen);
+            lucide.createIcons();
+        }
+
+        // ── Typing handler ──
+        $typingInput.addEventListener('input', () => {
+            if (!gameActive) return;
+
+            const val = $typingInput.value;
+            const spans = $textContent.querySelectorAll('.char');
+
+            // Process each character the user has typed so far
+            // We track charIndex = how far confirmed correct chars go
+            // The input field mirrors the full typed string
+            const newLen = val.length;
+
+            // We allow the user to type ahead; we evaluate char-by-char
+            // Reset charIndex to match input length evaluation
+            charIndex = 0;
+            let currentErrors = 0;
+
+            for (let i = 0; i < newLen && i < currentText.length; i++) {
+                if (val[i] === currentText[i]) {
+                    spans[i].removeAttribute('data-err');
+                    charIndex = i + 1;
+                } else {
+                    spans[i].setAttribute('data-err', '1');
+                    currentErrors++;
+                    charIndex = i + 1;
+                }
+            }
+
+            totalKeystrokes = newLen;
+            errors = currentErrors;
+
+            updateChars();
+            updateProgress();
+            updateStats();
+
+            // Check if finished
+            if (charIndex >= currentText.length) {
+                endGame();
+            }
+        });
+
+        // Prevent paste
+        $typingInput.addEventListener('paste', e => e.preventDefault());
+
+        // ── Button handlers ──
+        $startBtn.addEventListener('click', startGame);
+        $restartBtn.addEventListener('click', () => {
+            showScreen($startScreen);
+            lucide.createIcons();
+        });
 
         // Initialize Lucide icons
         lucide.createIcons();
