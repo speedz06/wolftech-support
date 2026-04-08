@@ -6,7 +6,7 @@
     <title>Wolfle – Tipp-Rennen</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="shared-header.js"></script>
+    <script src="shared-ui.js"></script>
     <style>
         * { box-sizing: border-box; }
         html {
@@ -423,11 +423,19 @@
 </head>
 <body class="game-tipprennen">
     <!-- HEADER -->
-    <div id="header-mount"></div>
-
-    <script>
-        window.renderWolfleHeader?.({ pageClass: document.body.className });
-    </script>
+    <div id="page-header">
+        <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400 flex items-center gap-1.5">
+            <i data-lucide="paw-print" class="w-5 h-5 text-indigo-400"></i> Wolfle
+        </h1>
+        <div class="flex items-center gap-1.5">
+            <button id="theme-btn" onclick="ui.toggleTheme()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Design wechseln">
+                <i data-lucide="sun" class="w-4 h-4"></i>
+            </button>
+            <a href="index.html" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Zurück">
+                <i data-lucide="home" class="w-4 h-4"></i>
+            </a>
+        </div>
+    </div>
 
     <div id="game-tabs">
         <a href="index.html" class="tab-link">

@@ -6,7 +6,7 @@
     <title>Wolfle – Stadt Land Fluss</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="shared-header.js"></script>
+    <script src="shared-ui.js"></script>
     <style>
         * { box-sizing: border-box; }
         html { touch-action: manipulation; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
@@ -316,11 +316,29 @@
 </head>
 <body class="game-stadtlandfluss">
     <!-- HEADER -->
-    <div id="header-mount"></div>
-    <script>window.renderWolfleHeader?.({
-        pageClass: document.body.className,
-        extraControlsHtml: '<button onclick="slfOpenFriends()" class="relative text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Freunde"><i data-lucide="users" class="w-4 h-4"></i></button>'
-    });</script>
+    <div id="slf-header">
+        <h1 class="text-xl font-bold flex items-center gap-1.5" style="color:#4ade80;">
+            <i data-lucide="globe" class="w-5 h-5"></i> Wolfle
+        </h1>
+        <div class="flex items-center gap-1.5">
+            <button onclick="ui.toggleTheme()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Design wechseln">
+                <i data-lucide="sun" class="w-4 h-4"></i>
+            </button>
+            <button id="slf-sound-btn" onclick="ui.toggleSound()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Ton">
+                <i data-lucide="volume-2" class="w-4 h-4"></i>
+            </button>
+            <button id="slf-haptic-btn" onclick="ui.toggleHaptics()" class="header-mobile-only text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Vibration">
+                <i data-lucide="smartphone" class="w-4 h-4"></i>
+            </button>
+            <button onclick="slfOpenFriends()" class="relative text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Freunde">
+                <i data-lucide="users" class="w-4 h-4"></i>
+            </button>
+            <button id="slf-login-btn" onclick="ui.openLogin()" title="Anmelden" class="flex items-center gap-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white px-2 py-1.5 rounded-lg border border-slate-600 transition-all">
+                <span id="slf-avatar">🐺</span>
+                <span id="slf-name-label" class="hidden-xs">Anmelden</span>
+            </button>
+        </div>
+    </div>
 
     <!-- TABS -->
     <div id="game-tabs">
