@@ -29,7 +29,7 @@
         }
 
         /* ── HEADER ── */
-        #vb-header {
+        #page-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -459,7 +459,7 @@
 
         /* ── THEME OVERRIDES ── */
         html.light body { background: linear-gradient(135deg, #f1f5f9, #e2e8f0); color: #1e293b; }
-        html.light #vb-header { background: rgba(241,245,249,0.95); border-color: #cbd5e1; }
+        html.light #page-header { background: rgba(241,245,249,0.95); border-color: #cbd5e1; }
         html.light #game-tabs { background: #f1f5f9; border-color: #cbd5e1; }
         html.light .tab-link { color: #94a3b8; }
         html.light .tab-link.active { color: #a16207; border-bottom-color: #a16207; }
@@ -476,7 +476,7 @@
 
         html.retro body { background: #000 !important; color: #00ff41; font-family: 'Courier New', monospace !important; }
         html.retro * { font-family: 'Courier New', monospace !important; }
-        html.retro #vb-header { background: #000 !important; border-color: #00ff41 !important; }
+        html.retro #page-header { background: #000 !important; border-color: #00ff41 !important; }
         html.retro #game-tabs { background: #000 !important; border-color: #00ff41 !important; }
         html.retro .tab-link { color: #007a1f; }
         html.retro .tab-link.active { color: #00ff41; border-bottom-color: #00ff41; }
@@ -490,7 +490,7 @@
         html.retro .vb-message.success { color: #00ff41; }
 
         html.ocean body { background: linear-gradient(180deg, #0a1628, #0c1e3a) !important; }
-        html.ocean #vb-header { background: rgba(5,16,31,0.85) !important; border-color: #1d4e6e !important; }
+        html.ocean #page-header { background: rgba(5,16,31,0.85) !important; border-color: #1d4e6e !important; }
         html.ocean #game-tabs { background: #05101f !important; border-color: #1d4e6e !important; }
         html.ocean .tab-link { color: #4d89ac; }
         html.ocean .tab-link.active { color: #38bdf8; border-bottom-color: #38bdf8; }
@@ -500,7 +500,7 @@
         html.ocean .vb-btn.submit { background: linear-gradient(135deg, #0369a1, #0ea5e9); border-color: transparent; color: white; }
 
         html.pastel body { background: linear-gradient(135deg, #fce7f3, #ede9fe) !important; color: #581c87; }
-        html.pastel #vb-header { background: rgba(255,240,250,0.97) !important; border-color: #f0abdb !important; }
+        html.pastel #page-header { background: rgba(255,240,250,0.97) !important; border-color: #f0abdb !important; }
         html.pastel #game-tabs { background: #fce7f3 !important; border-color: #f0abdb !important; }
         html.pastel .tab-link { color: #c084db; }
         html.pastel .tab-link.active { color: #9333ea; border-bottom-color: #9333ea; }
@@ -575,7 +575,7 @@
         .stat-lbl { font-size: 0.65rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
     </style>
 </head>
-<body>
+<body class="game-verbinde">
     <!-- HEADER -->
     <div id="vb-header">
         <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400 flex items-center gap-1.5">
