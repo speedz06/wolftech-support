@@ -6,6 +6,7 @@
     <title>Wolfle – Wordle</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="shared-ui.js"></script>
     <script src="words.js"></script>
     <style>
         * { box-sizing: border-box; }
@@ -862,13 +863,13 @@
             <div id="mobile-timer" class="hidden timer-display text-sm header-mobile-only"></div>
             <!-- Mode Badges (hidden on very small screens) -->
             <div id="mode-badges" class="flex gap-1 header-mobile-only hidden-xs"></div>
-            <button id="theme-btn-mobile" onclick="window.toggleTheme()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Design wechseln">
+            <button id="theme-btn-mobile" onclick="ui.toggleTheme()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Design wechseln">
                 <i data-lucide="sun" class="w-4 h-4"></i>
             </button>
-            <button id="sound-btn-mobile" onclick="window.toggleSound()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Ton">
+            <button id="sound-btn-mobile" onclick="ui.toggleSound()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Ton">
                 <i data-lucide="volume-2" class="w-4 h-4"></i>
             </button>
-            <button id="haptic-btn-mobile" onclick="window.toggleHaptic()" class="header-mobile-only text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Vibration">
+            <button id="haptic-btn-mobile" onclick="ui.toggleHaptics()" class="header-mobile-only text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Vibration">
                 <i data-lucide="smartphone" class="w-4 h-4"></i>
             </button>
             <button id="settings-btn-mobile" onclick="window.openSettingsModal()" class="header-mobile-only text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Einstellungen">
@@ -878,7 +879,7 @@
                 <i data-lucide="users" class="w-4 h-4"></i>
                 <span id="invite-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:#ef4444;color:white;font-size:10px;font-weight:700;border-radius:9999px;width:16px;height:16px;align-items:center;justify-content:center;line-height:1;"></span>
             </button>
-            <button id="login-header-btn" onclick="window.openLoginModal()" title="Anmelden" class="flex items-center gap-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white px-2 py-1.5 rounded-lg border border-slate-600 transition-all">
+            <button id="login-header-btn" onclick="ui.openLogin()" title="Anmelden" class="flex items-center gap-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white px-2 py-1.5 rounded-lg border border-slate-600 transition-all">
                 <span id="login-header-avatar">🐺</span>
                 <span id="login-header-label" class="hidden-xs">Anmelden</span>
             </button>
@@ -4291,6 +4292,17 @@
             checkLayout();
         })();
     }
+
+
+    if (window.ui) {
+        ui.setHandlers({
+            toggleTheme: window.toggleTheme,
+            toggleSound: window.toggleSound,
+            toggleHaptics: window.toggleHaptic,
+            openLogin: window.openLoginModal
+        });
+    }
+
 </script>
 </body>
 </html>
