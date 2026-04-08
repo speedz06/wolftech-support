@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Wolfle – Tipp-Rennen</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        * { box-sizing: border-box; }
+        html {
+            touch-action: manipulation;
+            -webkit-touch-callout: none;
+        }
+        body {
+            background: radial-gradient(circle at top, #1e293b, #020617);
+            color: #f8fafc;
+            font-family: 'Inter', sans-serif;
+            height: 100dvh;
+            overflow: hidden;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            touch-action: manipulation;
+            overscroll-behavior: none;
+        }
+
+        /* ── Header ── */
+        #page-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: max(10px, env(safe-area-inset-top)) 16px 8px;
+            border-bottom: 1px solid #1e293b;
+            flex-shrink: 0;
+            background: rgba(15,23,42,0.85);
+            backdrop-filter: blur(12px);
+        }
+
+        /* ── Tabs ── */
+        #game-tabs {
+            display: flex;
+            background: #0f172a;
+            border-bottom: 1px solid #1e293b;
+            flex-shrink: 0;
+            padding: 0 12px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        #game-tabs::-webkit-scrollbar { display: none; }
+        .tab-link {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 18px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #64748b;
+            text-decoration: none;
+            border-bottom: 2px solid transparent;
+            transition: all 0.15s;
+            white-space: nowrap;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .tab-link.active { color: #22d3ee; border-bottom-color: #22d3ee; }
+        .tab-link:hover:not(.active) { color: #94a3b8; }
+
+        /* ── Game area ── */
+        #game-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 20px max(20px, env(safe-area-inset-bottom));
+            min-height: 0;
+            overflow-y: auto;
+        }
+
+        /* ── Stats bar ── */
+        #stats-bar {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-shrink: 0;
+        }
+        .stat-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+        .stat-value {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #22d3ee;
+            line-height: 1;
+        }
+        .stat-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        /* ── Text display ── */
+        #text-display {
+            background: rgba(15,23,42,0.7);
+            border: 1px solid #1e293b;
+            border-radius: 16px;
+            padding: 24px;
+            font-size: clamp(1rem, 2.5vw, 1.25rem);
+            line-height: 1.8;
+            max-width: 700px;
+            width: 100%;
+            min-height: 120px;
+            margin-bottom: 20px;
+            user-select: none;
+            -webkit-user-select: none;
+            position: relative;
+            font-family: 'Courier New', 'Fira Code', monospace;
+            letter-spacing: 0.02em;
+        }
+        .char {
+            transition: color 0.05s;
+        }
+        .char.correct {
+            color: #22c55e;
+        }
+        .char.incorrect {
+            color: #ef4444;
+            text-decoration: underline;
+            text-decoration-color: #ef4444;
+        }
+        .char.current {
+            background: rgba(34,211,238,0.25);
+            border-radius: 2px;
+            box-shadow: 0 0 8px rgba(34,211,238,0.3);
+        }
+        .char.pending {
+            color: #64748b;
+        }
+
+        /* ── Input area ── */
+        #typing-input {
+            width: 100%;
+            max-width: 700px;
+            background: rgba(30,41,59,0.6);
+            border: 2px solid #334155;
+            border-radius: 12px;
+            padding: 14px 18px;
+            font-size: 1.05rem;
+            font-family: 'Courier New', 'Fira Code', monospace;
+            color: #f8fafc;
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
+            caret-color: #22d3ee;
+        }
+        #typing-input:focus {
+            border-color: #22d3ee;
+            box-shadow: 0 0 0 3px rgba(34,211,238,0.15), 0 4px 24px rgba(34,211,238,0.1);
+        }
+        #typing-input::placeholder {
+            color: #475569;
+        }
+
+        /* ── Countdown overlay ── */
+        #countdown-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(2,6,23,0.85);
+            backdrop-filter: blur(8px);
+            z-index: 20;
+            border-radius: 16px;
+        }
+        #countdown-number {
+            font-size: 4rem;
+            font-weight: 900;
+            color: #22d3ee;
+            text-shadow: 0 0 40px rgba(34,211,238,0.5);
+            animation: countPulse 0.6s ease-in-out;
+        }
+        @keyframes countPulse {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* ── Progress bar ── */
+        #progress-bar-wrap {
+            width: 100%;
+            max-width: 700px;
+            height: 6px;
+            background: #1e293b;
+            border-radius: 999px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        #progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #06b6d4, #22d3ee);
+            border-radius: 999px;
+            transition: width 0.15s ease;
+        }
+
+        /* ── Action buttons ── */
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 28px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: white;
+            background: linear-gradient(135deg, #0891b2, #06b6d4);
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.15s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(6,182,212,0.35);
+        }
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        /* ── Results panel ── */
+        #results-panel {
+            background: rgba(15,23,42,0.8);
+            border: 1px solid #1e293b;
+            border-radius: 16px;
+            padding: 28px;
+            max-width: 420px;
+            width: 100%;
+            text-align: center;
+        }
+        #results-panel h2 {
+            font-size: 1.4rem;
+            font-weight: 800;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #22d3ee, #06b6d4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(30,41,59,0.6);
+        }
+        .result-row:last-child {
+            border-bottom: none;
+        }
+        .result-label {
+            font-size: 0.85rem;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+        .result-value {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #e2e8f0;
+        }
+        .result-value.highlight {
+            color: #22d3ee;
+            font-size: 1.15rem;
+        }
+
+        /* ── Difficulty pills ── */
+        #difficulty-select {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-shrink: 0;
+        }
+        .diff-pill {
+            padding: 6px 16px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            border-radius: 999px;
+            border: 2px solid #334155;
+            background: transparent;
+            color: #94a3b8;
+            cursor: pointer;
+            transition: all 0.15s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .diff-pill:hover {
+            border-color: #475569;
+            color: #e2e8f0;
+        }
+        .diff-pill.active {
+            border-color: #22d3ee;
+            background: rgba(34,211,238,0.1);
+            color: #22d3ee;
+        }
+
+        /* ── Race track (visual) ── */
+        #race-track {
+            width: 100%;
+            max-width: 700px;
+            margin-bottom: 16px;
+            flex-shrink: 0;
+        }
+        .racer-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        .racer-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #94a3b8;
+            min-width: 50px;
+            text-align: right;
+        }
+        .racer-track {
+            flex: 1;
+            height: 28px;
+            background: rgba(15,23,42,0.5);
+            border: 1px solid #1e293b;
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+        .racer-car {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.2rem;
+            transition: left 0.3s ease;
+        }
+        .racer-car.player {
+            filter: drop-shadow(0 0 6px rgba(34,211,238,0.6));
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 480px) {
+            #text-display {
+                padding: 16px;
+                font-size: 0.95rem;
+                border-radius: 12px;
+            }
+            #typing-input {
+                padding: 12px 14px;
+                font-size: 0.95rem;
+            }
+            #stats-bar { gap: 14px; }
+            .stat-value { font-size: 1.3rem; }
+            #results-panel { padding: 20px; }
+        }
+
+        /* ── Light mode ── */
+        html.light body { background: linear-gradient(135deg, #dde3ed, #f0f4f8); color: #1e293b; }
+        html.light #page-header, html.light #game-tabs { background: #f1f5f9; border-color: #cbd5e1; }
+        html.light .tab-link { color: #94a3b8; }
+        html.light .tab-link.active { color: #0891b2; border-bottom-color: #0891b2; }
+        html.light #text-display { background: rgba(255,255,255,0.8); border-color: #cbd5e1; }
+        html.light .char.pending { color: #94a3b8; }
+        html.light #typing-input { background: rgba(255,255,255,0.9); border-color: #cbd5e1; color: #1e293b; }
+        html.light #typing-input:focus { border-color: #0891b2; }
+        html.light #results-panel { background: rgba(255,255,255,0.85); border-color: #cbd5e1; }
+        html.light #results-panel h2 { -webkit-text-fill-color: #0891b2; }
+        html.light .result-label { color: #64748b; }
+        html.light .result-value { color: #1e293b; }
+        html.light .stat-value { color: #0891b2; }
+        html.light .diff-pill { border-color: #cbd5e1; color: #64748b; }
+        html.light .diff-pill.active { border-color: #0891b2; color: #0891b2; background: rgba(8,145,178,0.08); }
+        html.light .racer-track { background: rgba(255,255,255,0.5); border-color: #cbd5e1; }
+        html.light #progress-bar-wrap { background: #cbd5e1; }
+
+        /* ── Retro mode ── */
+        html.retro body { background: #000 !important; color: #00ff41; font-family: 'Courier New', monospace !important; }
+        html.retro * { font-family: 'Courier New', monospace !important; }
+        html.retro #page-header, html.retro #game-tabs { background: #000 !important; border-color: #00ff41 !important; }
+        html.retro .tab-link { color: #007a1f; }
+        html.retro .tab-link.active { color: #00ff41; border-bottom-color: #00ff41; }
+        html.retro #text-display { background: #001a00 !important; border-color: #00ff41 !important; }
+        html.retro .char.pending { color: #005a10; }
+        html.retro .char.correct { color: #00ff41; }
+        html.retro .char.current { background: rgba(0,255,65,0.2); }
+        html.retro #typing-input { background: #001a00 !important; border-color: #00ff41 !important; color: #00ff41; caret-color: #00ff41; }
+        html.retro .stat-value { color: #00ff41; }
+
+        /* ── Ocean mode ── */
+        html.ocean body { background: radial-gradient(circle at top, #0c2340, #020d1a) !important; color: #e0f4ff; }
+        html.ocean #page-header, html.ocean #game-tabs { background: rgba(5,16,31,0.85) !important; border-color: #1d4e6e !important; }
+        html.ocean .tab-link { color: #4d89ac; }
+        html.ocean .tab-link.active { color: #38bdf8; border-bottom-color: #38bdf8; }
+        html.ocean #text-display { background: rgba(5,16,31,0.7) !important; border-color: #1d4e6e !important; }
+        html.ocean #typing-input { background: rgba(5,16,31,0.6) !important; border-color: #1d4e6e !important; }
+
+        /* ── Pastel mode ── */
+        html.pastel body { background: linear-gradient(135deg, #fce7f3, #ede9fe) !important; color: #4a1d52; }
+        html.pastel #page-header, html.pastel #game-tabs { background: rgba(255,240,250,0.97) !important; border-color: #f0abdb !important; }
+        html.pastel .tab-link { color: #c084db; }
+        html.pastel .tab-link.active { color: #9333ea; border-bottom-color: #9333ea; }
+        html.pastel #text-display { background: rgba(255,255,255,0.7) !important; border-color: #f0abdb !important; }
+        html.pastel .char.pending { color: #c084db; }
+        html.pastel #typing-input { background: rgba(255,255,255,0.8) !important; border-color: #f0abdb !important; color: #4a1d52; }
+        html.pastel .stat-value { color: #9333ea; }
+
+        button:focus, input:focus { outline: none; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 999px; }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <div id="page-header">
+        <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-teal-400 flex items-center gap-1.5">
+            <i data-lucide="keyboard" class="w-5 h-5 text-cyan-400"></i> Tipp-Rennen
+        </h1>
+        <div class="flex items-center gap-1.5">
+            <button id="theme-btn" onclick="toggleTheme()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Design wechseln">
+                <i data-lucide="sun" class="w-4 h-4"></i>
+            </button>
+            <a href="index.html" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Zurück">
+                <i data-lucide="home" class="w-4 h-4"></i>
+            </a>
+        </div>
+    </div>
+
+    <!-- TABS -->
+    <div id="game-tabs">
+        <a href="index.html" class="tab-link">
+            <i data-lucide="home" class="w-4 h-4"></i> Home
+        </a>
+        <a href="wordle.html" class="tab-link">
+            <i data-lucide="grid-2x2" class="w-4 h-4"></i> Wordle
+        </a>
+        <a href="hangman.html" class="tab-link">
+            <i data-lucide="skull" class="w-4 h-4"></i> Hangman
+        </a>
+        <a href="verbinde.html" class="tab-link">
+            <i data-lucide="link" class="w-4 h-4"></i> Verbinde
+        </a>
+        <a href="stadtlandfluss.html" class="tab-link">
+            <i data-lucide="globe" class="w-4 h-4"></i> SLF
+        </a>
+        <a href="tipprennen.html" class="tab-link active">
+            <i data-lucide="keyboard" class="w-4 h-4"></i> Tippen
+        </a>
+        <a href="anagramm.html" class="tab-link">
+            <i data-lucide="shuffle" class="w-4 h-4"></i> Anagramm
+        </a>
+        <a href="quiz.html" class="tab-link">
+            <i data-lucide="help-circle" class="w-4 h-4"></i> Quiz
+        </a>
+    </div>
+
+    <!-- GAME CONTENT -->
+    <div id="game-area">
+
+        <!-- Start screen -->
+        <div id="start-screen" class="flex flex-col items-center gap-4">
+            <div class="text-center mb-2">
+                <h2 class="text-2xl font-extrabold mb-1" style="background: linear-gradient(135deg, #22d3ee, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Tipp-Rennen</h2>
+                <p class="text-slate-400 text-sm">Tippe den Text so schnell und fehlerfrei wie möglich!</p>
+            </div>
+            <div id="difficulty-select">
+                <button class="diff-pill active" data-diff="easy">Leicht</button>
+                <button class="diff-pill" data-diff="medium">Mittel</button>
+                <button class="diff-pill" data-diff="hard">Schwer</button>
+            </div>
+            <button class="btn-primary" id="start-btn">
+                <i data-lucide="play" class="w-5 h-5"></i> Rennen starten
+            </button>
+        </div>
+
+        <!-- Race screen (hidden by default) -->
+        <div id="race-screen" class="hidden w-full flex flex-col items-center">
+            <!-- Stats -->
+            <div id="stats-bar">
+                <div class="stat-box">
+                    <span class="stat-value" id="wpm-display">0</span>
+                    <span class="stat-label">WPM</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-value" id="accuracy-display">100%</span>
+                    <span class="stat-label">Genauigkeit</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-value" id="time-display">0s</span>
+                    <span class="stat-label">Zeit</span>
+                </div>
+            </div>
+
+            <!-- Race track -->
+            <div id="race-track">
+                <div class="racer-row">
+                    <span class="racer-label">Du</span>
+                    <div class="racer-track">
+                        <span class="racer-car player" id="player-car">🚗</span>
+                    </div>
+                </div>
+                <div class="racer-row">
+                    <span class="racer-label">Bot</span>
+                    <div class="racer-track">
+                        <span class="racer-car" id="bot-car">🤖</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress bar -->
+            <div id="progress-bar-wrap">
+                <div id="progress-bar"></div>
+            </div>
+
+            <!-- Text to type -->
+            <div id="text-display" style="position: relative;">
+                <div id="countdown-overlay" class="hidden">
+                    <span id="countdown-number">3</span>
+                </div>
+                <div id="text-content"></div>
+            </div>
+
+            <!-- Typing input -->
+            <input type="text" id="typing-input" placeholder="Tippe hier los..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+        </div>
+
+        <!-- Results screen (hidden by default) -->
+        <div id="results-screen" class="hidden flex flex-col items-center gap-5">
+            <div id="results-panel">
+                <h2>Ergebnis</h2>
+                <div class="result-row">
+                    <span class="result-label">Geschwindigkeit</span>
+                    <span class="result-value highlight" id="result-wpm">0 WPM</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Genauigkeit</span>
+                    <span class="result-value" id="result-accuracy">100%</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Zeit</span>
+                    <span class="result-value" id="result-time">0s</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Zeichen</span>
+                    <span class="result-value" id="result-chars">0</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Fehler</span>
+                    <span class="result-value" id="result-errors">0</span>
+                </div>
+            </div>
+            <button class="btn-primary" id="restart-btn">
+                <i data-lucide="rotate-ccw" class="w-5 h-5"></i> Nochmal spielen
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Theme support
+        const themes = ['', 'light', 'retro', 'ocean', 'pastel'];
+        let themeIndex = themes.indexOf(localStorage.getItem('wolfle-theme') || '');
+        if (themeIndex < 0) themeIndex = 0;
+        if (themes[themeIndex]) document.documentElement.className = themes[themeIndex];
+
+        function toggleTheme() {
+            themeIndex = (themeIndex + 1) % themes.length;
+            document.documentElement.className = themes[themeIndex];
+            localStorage.setItem('wolfle-theme', themes[themeIndex]);
+        }
+
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>
