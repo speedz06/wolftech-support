@@ -6,7 +6,7 @@
     <title>Wolfle – Hangman</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="shared-ui.js"></script>
+    <script src="shared-header.js"></script>
     <script src="hangman-words.js"></script>
     <style>
         * { box-sizing: border-box; }
@@ -50,7 +50,7 @@
         }
         .tab-link.active { color: #f43f5e; border-bottom-color: #f43f5e; }
         .tab-link:hover:not(.active) { color: #94a3b8; }
-        #hm-header {
+        #page-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -387,7 +387,7 @@
         html.pastel .hm-nav-btn.active { color: #9333ea !important; }
 
         html.light body { background: linear-gradient(135deg, #dde3ed, #f0f4f8); color: #1e293b; }
-        html.light #hm-header, html.light #game-tabs { background: #f1f5f9; border-color: #cbd5e1; }
+        html.light #page-header, html.light #game-tabs { background: #f1f5f9; border-color: #cbd5e1; }
         html.light .tab-link { color: #94a3b8; }
         html.light .tab-link.active { color: #be123c; border-bottom-color: #be123c; }
         html.light .hm-panel, html.light .hm-badge, html.light .hm-stat-card, html.light .hm-player-chip, html.light .hm-pill, html.light .hm-info-item, html.light .hm-hidden-word {
@@ -409,7 +409,7 @@
         html.light #hangman-scaffold circle, html.light #hangman-scaffold .hm-body-part { stroke: #ef4444; }
         html.retro body { background: #000 !important; color: #00ff41; font-family: 'Courier New', monospace !important; }
         html.retro * { font-family: 'Courier New', monospace !important; }
-        html.retro #hm-header, html.retro #game-tabs, html.retro .hm-panel, html.retro .hm-badge, html.retro .hm-stat-card, html.retro .hm-player-chip, html.retro .hm-info-item, html.retro .hm-hidden-word { background: #000 !important; border-color: #00ff41 !important; box-shadow: none !important; }
+        html.retro #page-header, html.retro #game-tabs, html.retro .hm-panel, html.retro .hm-badge, html.retro .hm-stat-card, html.retro .hm-player-chip, html.retro .hm-info-item, html.retro .hm-hidden-word { background: #000 !important; border-color: #00ff41 !important; box-shadow: none !important; }
         html.retro .tab-link { color: #007a1f; }
         html.retro .tab-link.active { color: #00ff41; border-bottom-color: #00ff41; }
         html.retro .hm-key:not(:disabled), html.retro .hm-btn-secondary, html.retro .hm-btn-ghost, html.retro .hm-input, html.retro .hm-select { background: #001a00 !important; color: #00ff41 !important; border: 1px solid #00ff41 !important; }
@@ -419,14 +419,14 @@
         html.retro .hm-letter-box.revealed { color: #00ff41; }
         html.retro .hm-btn-primary { background: #003300; border: 1px solid #00ff41; color: #00ff41; }
         html.ocean body { background: radial-gradient(circle at top, #0c2340, #020d1a) !important; color: #e0f4ff; }
-        html.ocean #hm-header, html.ocean #game-tabs, html.ocean .hm-panel, html.ocean .hm-badge, html.ocean .hm-stat-card, html.ocean .hm-player-chip, html.ocean .hm-info-item, html.ocean .hm-hidden-word { background: rgba(5,16,31,0.85) !important; border-color: #1d4e6e !important; }
+        html.ocean #page-header, html.ocean #game-tabs, html.ocean .hm-panel, html.ocean .hm-badge, html.ocean .hm-stat-card, html.ocean .hm-player-chip, html.ocean .hm-info-item, html.ocean .hm-hidden-word { background: rgba(5,16,31,0.85) !important; border-color: #1d4e6e !important; }
         html.ocean .tab-link { color: #4d89ac; }
         html.ocean .tab-link.active { color: #38bdf8; border-bottom-color: #38bdf8; }
         html.ocean .hm-key:not(:disabled), html.ocean .hm-btn-secondary, html.ocean .hm-input, html.ocean .hm-select { background: #0a2540 !important; color: #a0d8f0 !important; border: 1px solid #1d4e6e !important; }
         html.ocean .hm-letter-box { color: #4d89ac; }
         html.ocean .hm-letter-box.revealed { color: #0ea5e9; }
         html.pastel body { background: linear-gradient(135deg, #fce7f3, #ede9fe) !important; color: #4a1d52; }
-        html.pastel #hm-header, html.pastel #game-tabs, html.pastel .hm-panel, html.pastel .hm-badge, html.pastel .hm-stat-card, html.pastel .hm-player-chip, html.pastel .hm-info-item, html.pastel .hm-hidden-word { background: rgba(255,255,255,0.82) !important; border-color: #f0abdb !important; }
+        html.pastel #page-header, html.pastel #game-tabs, html.pastel .hm-panel, html.pastel .hm-badge, html.pastel .hm-stat-card, html.pastel .hm-player-chip, html.pastel .hm-info-item, html.pastel .hm-hidden-word { background: rgba(255,255,255,0.82) !important; border-color: #f0abdb !important; }
         html.pastel .tab-link { color: #c084db; }
         html.pastel .tab-link.active { color: #9333ea; border-bottom-color: #9333ea; }
         html.pastel .hm-key:not(:disabled), html.pastel .hm-btn-secondary, html.pastel .hm-input, html.pastel .hm-select { background: #fad1e8 !important; color: #6b21a8 !important; border: 1px solid #e879b0 !important; }
@@ -496,31 +496,9 @@
         .stat-lbl { font-size: 0.65rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
     </style>
 </head>
-<body>
-    <div id="hm-header">
-        <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400 flex items-center gap-1.5">
-            <i data-lucide="paw-print" class="w-5 h-5 text-indigo-400"></i> Wolfle
-        </h1>
-        <div class="flex items-center gap-1.5">
-            <button id="theme-btn" onclick="ui.toggleTheme()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Design wechseln">
-                <i data-lucide="sun" class="w-4 h-4"></i>
-            </button>
-            <button id="sound-btn" onclick="ui.toggleSound()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Ton">
-                <i data-lucide="volume-2" class="w-4 h-4"></i>
-            </button>
-            <button id="haptic-btn" onclick="ui.toggleHaptics()" class="mobile-only text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Vibration">
-                <i data-lucide="smartphone" class="w-4 h-4"></i>
-            </button>
-            <button onclick="window.hmOpenFriendsModal()" class="relative text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Freunde">
-                <i data-lucide="users" class="w-4 h-4"></i>
-                <span id="hm-invite-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:#ef4444;color:white;font-size:10px;font-weight:700;border-radius:9999px;width:16px;height:16px;align-items:center;justify-content:center;line-height:1;"></span>
-            </button>
-            <button id="login-header-btn" onclick="ui.openLogin()" title="Anmelden" class="flex items-center gap-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white px-2 py-1.5 rounded-lg border border-slate-600 transition-all">
-                <span id="login-header-avatar">🐺</span>
-                <span id="login-header-label">Anmelden</span>
-            </button>
-        </div>
-    </div>
+<body class="game-hangman">
+    <div id="header-mount"></div>
+    <script>window.renderWolfleHeader?.({ pageClass: document.body.className });</script>
 
     <div id="game-tabs">
         <a href="index.html" class="tab-link">

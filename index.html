@@ -6,7 +6,7 @@
     <title>Wolfle – Spieleauswahl</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="shared-ui.js"></script>
+    <script src="shared-header.js"></script>
     <style>
         * { box-sizing: border-box; }
         html {
@@ -193,30 +193,14 @@
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 999px; }
     </style>
 </head>
-<body>
+<body class="game-home">
     <!-- HEADER -->
-    <div id="page-header">
-        <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400 flex items-center gap-1.5">
-            <i data-lucide="paw-print" class="w-5 h-5 text-indigo-400"></i> Wolfle
-        </h1>
-        <div class="flex items-center gap-1.5">
-            <button id="theme-btn" onclick="ui.toggleTheme()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Design wechseln">
-                <i data-lucide="sun" class="w-4 h-4"></i>
-            </button>
-            <button id="sound-btn" onclick="ui.toggleSound()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Ton">
-                <i data-lucide="volume-2" class="w-4 h-4"></i>
-            </button>
-            <button id="haptic-btn" onclick="ui.toggleHaptics()" class="mobile-only text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Vibration">
-                <i data-lucide="smartphone" class="w-4 h-4"></i>
-            </button>
-            <button id="login-header-btn" onclick="ui.openLogin()" title="Anmelden" class="flex items-center gap-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white px-2 py-1.5 rounded-lg border border-slate-600 transition-all">
-                <span id="login-header-avatar">🐺</span>
-                <span id="login-header-label">Anmelden</span>
-            </button>
-        </div>
-    </div>
+    <div id="header-mount"></div>
 
-    <!-- TABS -->
+    <script>
+        window.renderWolfleHeader?.({ pageClass: document.body.className });
+    </script>
+
     <div id="game-tabs">
         <a href="index.html" class="tab-link active">
             <i data-lucide="home" class="w-4 h-4"></i> Home
