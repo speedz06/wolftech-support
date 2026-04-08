@@ -6,6 +6,7 @@
     <title>Wolfle – Stadt Land Fluss</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="shared-header.js"></script>
     <style>
         * { box-sizing: border-box; }
         html { touch-action: manipulation; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
@@ -46,7 +47,7 @@
         .tab-link:hover:not(.active) { color: #94a3b8; }
 
         /* Header */
-        #slf-header {
+        #page-header {
             display: flex; align-items: center; justify-content: space-between;
             padding: max(10px, env(safe-area-inset-top)) 16px 8px;
             border-bottom: 1px solid #1e293b;
@@ -293,52 +294,33 @@
 
         /* Theme overrides */
         html.light body { background: linear-gradient(135deg, #dde3ed, #f0f4f8); color: #1e293b; }
-        html.light #slf-header, html.light #game-tabs { background: #f1f5f9; border-color: #cbd5e1; }
+        html.light #page-header, html.light #game-tabs { background: #f1f5f9; border-color: #cbd5e1; }
         html.light .tab-link { color: #94a3b8; }
         html.light .tab-link.active { color: #16a34a; border-bottom-color: #16a34a; }
         html.light .slf-panel { background: rgba(255,255,255,0.7); border-color: #cbd5e1; }
         html.light .slf-input { background: #f1f5f9; border-color: #cbd5e1; color: #0f172a; }
         html.retro body { background: #000 !important; color: #00ff41; font-family: 'Courier New', monospace !important; }
         html.retro * { font-family: 'Courier New', monospace !important; }
-        html.retro #slf-header, html.retro #game-tabs, html.retro .slf-panel { background: #000 !important; border-color: #00ff41 !important; }
+        html.retro #page-header, html.retro #game-tabs, html.retro .slf-panel { background: #000 !important; border-color: #00ff41 !important; }
         html.retro .tab-link { color: #007a1f; }
         html.retro .tab-link.active { color: #00ff41; border-bottom-color: #00ff41; }
         html.ocean body { background: radial-gradient(circle at top, #0c2340, #020d1a) !important; color: #e0f4ff; }
-        html.ocean #slf-header, html.ocean #game-tabs, html.ocean .slf-panel { background: rgba(5,16,31,0.85) !important; border-color: #1d4e6e !important; }
+        html.ocean #page-header, html.ocean #game-tabs, html.ocean .slf-panel { background: rgba(5,16,31,0.85) !important; border-color: #1d4e6e !important; }
         html.ocean .tab-link { color: #4d89ac; }
         html.ocean .tab-link.active { color: #38bdf8; border-bottom-color: #38bdf8; }
         html.pastel body { background: linear-gradient(135deg, #fce7f3, #ede9fe) !important; color: #4a1d52; }
-        html.pastel #slf-header, html.pastel #game-tabs, html.pastel .slf-panel { background: rgba(255,255,255,0.82) !important; border-color: #f0abdb !important; }
+        html.pastel #page-header, html.pastel #game-tabs, html.pastel .slf-panel { background: rgba(255,255,255,0.82) !important; border-color: #f0abdb !important; }
         html.pastel .tab-link { color: #c084db; }
         html.pastel .tab-link.active { color: #9333ea; border-bottom-color: #9333ea; }
     </style>
 </head>
-<body>
-
+<body class="game-stadtlandfluss">
     <!-- HEADER -->
-    <div id="slf-header">
-        <h1 class="text-xl font-bold flex items-center gap-1.5" style="color:#4ade80;">
-            <i data-lucide="globe" class="w-5 h-5"></i> Wolfle
-        </h1>
-        <div class="flex items-center gap-1.5">
-            <button onclick="slfToggleTheme()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Design wechseln">
-                <i data-lucide="sun" class="w-4 h-4"></i>
-            </button>
-            <button id="slf-sound-btn" onclick="slfToggleSound()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Ton">
-                <i data-lucide="volume-2" class="w-4 h-4"></i>
-            </button>
-            <button id="slf-haptic-btn" onclick="slfToggleHaptic()" class="header-mobile-only text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Vibration">
-                <i data-lucide="smartphone" class="w-4 h-4"></i>
-            </button>
-            <button onclick="slfOpenFriends()" class="relative text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Freunde">
-                <i data-lucide="users" class="w-4 h-4"></i>
-            </button>
-            <button id="slf-login-btn" onclick="slfOpenLogin()" title="Anmelden" class="flex items-center gap-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white px-2 py-1.5 rounded-lg border border-slate-600 transition-all">
-                <span id="slf-avatar">🐺</span>
-                <span id="slf-name-label" class="hidden-xs">Anmelden</span>
-            </button>
-        </div>
-    </div>
+    <div id="header-mount"></div>
+    <script>window.renderWolfleHeader?.({
+        pageClass: document.body.className,
+        extraControlsHtml: '<button onclick="slfOpenFriends()" class="relative text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Freunde"><i data-lucide="users" class="w-4 h-4"></i></button>'
+    });</script>
 
     <!-- TABS -->
     <div id="game-tabs">
@@ -1109,8 +1091,8 @@
         const loggedIn = localStorage.getItem('wolfle_logged_in') === '1';
         const name = localStorage.getItem('wolfle_user_name') || '';
         const avatar = localStorage.getItem('wolfle_avatar') || '🐺';
-        document.getElementById('slf-avatar').textContent = avatar;
-        document.getElementById('slf-name-label').textContent = loggedIn ? name : 'Anmelden';
+        document.getElementById('login-header-avatar').textContent = avatar;
+        document.getElementById('login-header-label').textContent = loggedIn ? name : 'Anmelden';
         if (name) document.getElementById('slf-name-input').value = name;
     }
 
@@ -1399,7 +1381,7 @@
     };
 
     function updateSoundIcon() {
-        const btn = document.getElementById('slf-sound-btn');
+        const btn = document.getElementById('sound-btn');
         if (!btn) return;
         const icon = soundEnabled ? 'volume-2' : 'volume-x';
         btn.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4"></i>`;
@@ -1418,6 +1400,12 @@
         localStorage.setItem('wolfle_haptic', hapticEnabled);
         showToast(hapticEnabled ? 'Vibration an' : 'Vibration aus');
     };
+
+    // Standard Header Hooks
+    window.toggleTheme = window.slfToggleTheme;
+    window.toggleSound = window.slfToggleSound;
+    window.toggleHaptic = window.slfToggleHaptic;
+    window.openLoginModal = window.slfOpenLogin;
 
     // ── Init ──
     updateLoginHeader();
