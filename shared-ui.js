@@ -91,9 +91,10 @@
   };
 
   window.ui = ui;
-  // temporary backwards-compat aliases
-  window.toggleTheme = () => ui.toggleTheme();
-  window.toggleSound = () => ui.toggleSound();
-  window.toggleHaptic = () => ui.toggleHaptics();
-  window.openLoginModal = () => ui.openLogin();
+  // Backwards-compat aliases — call defaults directly to avoid circular
+  // references if a game passes window.toggleTheme into ui.setHandlers.
+  window.toggleTheme = defaultToggleTheme;
+  window.toggleSound = defaultToggleSound;
+  window.toggleHaptic = defaultToggleHaptics;
+  window.openLoginModal = defaultOpenLogin;
 })();

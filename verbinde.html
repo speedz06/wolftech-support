@@ -2857,9 +2857,9 @@
 
     if (window.ui) {
         ui.setHandlers({
-            toggleTheme: window.toggleTheme || toggleTheme,
-            toggleSound: window.toggleSound || toggleSound,
-            toggleHaptics: window.toggleHaptic || toggleHaptic,
+            toggleTheme,
+            toggleSound,
+            toggleHaptics: toggleHaptic,
             openLogin: window.openLoginModal
         });
     }
