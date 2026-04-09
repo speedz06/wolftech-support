@@ -542,6 +542,24 @@
     <!-- SWIPE HINT -->
     <div class="swipe-hint swipe-hint-left"></div>
 
+<script>
+    // Run immediately (non-module) so icons and basic button stubs work before Firebase loads
+    lucide.createIcons();
+
+    // Stubs so header buttons work before the module finishes loading
+    function slfOpenFriends() {
+        const m = document.getElementById('slf-friends-modal');
+        if (m) { m.classList.remove('hidden'); m.style.display = 'flex'; lucide.createIcons(); }
+    }
+    if (window.ui) {
+        ui.setHandlers({
+            openLogin: function() {
+                const m = document.getElementById('slf-login-modal');
+                if (m) { m.classList.remove('hidden'); m.style.display = 'flex'; lucide.createIcons(); }
+            }
+        });
+    }
+</script>
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getFirestore, collection, doc, setDoc, getDoc, getDocs, onSnapshot, updateDoc, deleteDoc, deleteField, arrayUnion, arrayRemove, query, where, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
