@@ -6,6 +6,7 @@
     <title>Wolfle – Tipp-Rennen</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="shared-ui.js"></script>
     <style>
         * { box-sizing: border-box; }
         html {
@@ -483,7 +484,7 @@
         html.pastel #mp-lobby { background: rgba(255,240,250,0.5); border-color: #f0abdb; }
     </style>
 </head>
-<body>
+<body class="game-tipprennen">
     <!-- HEADER -->
     <div id="page-header">
         <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400 flex items-center gap-1.5">
@@ -510,7 +511,6 @@
         </div>
     </div>
 
-    <!-- TABS -->
     <div id="game-tabs">
         <a href="index.html" class="tab-link">
             <i data-lucide="home" class="w-4 h-4"></i> Home
@@ -1844,6 +1844,12 @@
         })();
 
         lucide.createIcons();
-    </script>
+    
+
+        if (window.ui) {
+            ui.setHandlers({ toggleTheme });
+        }
+
+</script>
 </body>
 </html>
