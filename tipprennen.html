@@ -423,7 +423,7 @@
         /* ── Mobile-only ── */
         .mobile-only { display: none !important; }
         @media (max-width: 900px) { .mobile-only { display: inline-flex !important; } }
-        .hidden-xs { } @media (max-width: 400px) { .hidden-xs { display: none !important; } }
+        @media (max-width: 400px) { .hidden-xs { display: none !important; } }
 
         /* ── Toast ── */
         #toast-container { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column-reverse; align-items: center; gap: 8px; z-index: 9999; pointer-events: none; }
@@ -491,6 +491,9 @@
             <i data-lucide="paw-print" class="w-5 h-5 text-indigo-400"></i> Wolfle
         </h1>
         <div class="flex items-center gap-1.5">
+            <button id="theme-btn" onclick="toggleTheme()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Design wechseln">
+                <i data-lucide="sun" class="w-4 h-4"></i>
+            </button>
             <button id="sound-btn" onclick="toggleSound()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Ton">
                 <i data-lucide="volume-2" class="w-4 h-4"></i>
             </button>
@@ -500,9 +503,6 @@
             <button onclick="window.trOpenFriendsModal()" class="relative text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Freunde">
                 <i data-lucide="users" class="w-4 h-4"></i>
                 <span id="tr-invite-badge" style="display:none" class="absolute"></span>
-            </button>
-            <button id="theme-btn" onclick="toggleTheme()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Design wechseln">
-                <i data-lucide="sun" class="w-4 h-4"></i>
             </button>
             <button id="login-header-btn" onclick="window.openLoginModal()" title="Anmelden" class="flex items-center gap-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white px-2 py-1.5 rounded-lg border border-slate-600 transition-all">
                 <span id="login-header-avatar">👤</span>

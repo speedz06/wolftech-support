@@ -48,7 +48,9 @@
 
         /* Header */
         #page-header {
-            display: flex; align-items: center; justify-content: space-between;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             padding: max(10px, env(safe-area-inset-top)) 16px 8px;
             border-bottom: 1px solid #1e293b;
             flex-shrink: 0;
@@ -316,9 +318,9 @@
 </head>
 <body class="game-stadtlandfluss">
     <!-- HEADER -->
-    <div id="slf-header">
-        <h1 class="text-xl font-bold flex items-center gap-1.5" style="color:#4ade80;">
-            <i data-lucide="globe" class="w-5 h-5"></i> Wolfle
+    <div id="page-header">
+        <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400 flex items-center gap-1.5">
+            <i data-lucide="paw-print" class="w-5 h-5 text-indigo-400"></i> Wolfle
         </h1>
         <div class="flex items-center gap-1.5">
             <button onclick="ui.toggleTheme()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Design wechseln">
