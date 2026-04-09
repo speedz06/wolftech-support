@@ -419,6 +419,69 @@
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 999px; }
+
+        /* ── Mobile-only ── */
+        .mobile-only { display: none !important; }
+        @media (max-width: 900px) { .mobile-only { display: inline-flex !important; } }
+        .hidden-xs { } @media (max-width: 400px) { .hidden-xs { display: none !important; } }
+
+        /* ── Toast ── */
+        #toast-container { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column-reverse; align-items: center; gap: 8px; z-index: 9999; pointer-events: none; }
+        .tr-toast { padding: 10px 20px; border-radius: 12px; font-size: 0.82rem; font-weight: 600; color: #fff; max-width: 320px; text-align: center; opacity: 0; transform: translateY(8px); transition: opacity 0.25s, transform 0.25s; }
+        .tr-toast.show { opacity: 1; transform: translateY(0); }
+        .tr-toast.success { background: #16a34a; }
+        .tr-toast.error   { background: #dc2626; }
+        .tr-toast.info    { background: #0891b2; }
+
+        /* ── Modal backdrop ── */
+        .tr-modal { position: fixed; inset: 0; background: rgba(2,6,23,0.8); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 16px; backdrop-filter: blur(4px); }
+        .tr-modal-card { background: #0f172a; border: 1px solid #1e293b; border-radius: 20px; padding: 24px; width: 100%; max-width: 380px; max-height: 86dvh; overflow-y: auto; }
+        .tr-modal-title { font-size: 1.1rem; font-weight: 800; color: #f8fafc; display: flex; align-items: center; gap: 8px; margin-bottom: 20px; }
+
+        /* ── Avatar grid ── */
+        .avatar-grid { display: grid; grid-template-columns: repeat(6,1fr); gap: 6px; margin-bottom: 12px; }
+        .avatar-btn { font-size: 1.4rem; background: rgba(30,41,59,0.5); border: 2px solid transparent; border-radius: 10px; padding: 4px; cursor: pointer; transition: border-color 0.12s; aspect-ratio: 1; }
+        .avatar-btn:hover { border-color: #475569; }
+        .avatar-btn.selected { border-color: #22d3ee; background: rgba(34,211,238,0.1); }
+
+        /* ── Invite badge ── */
+        #tr-invite-badge { position: absolute; top: -4px; right: -4px; background: #eab308; color: #0f172a; font-size: 9px; font-weight: 800; border-radius: 9999px; width: 15px; height: 15px; align-items: center; justify-content: center; line-height: 1; }
+
+        /* ── Room status bar ── */
+        #room-bar { background: rgba(15,23,42,0.95); border-bottom: 1px solid #1e293b; padding: 5px 14px; flex-shrink: 0; align-items: center; gap: 8px; flex-wrap: wrap; }
+        #room-bar .rb-code { font-family: monospace; font-weight: 800; color: #22d3ee; letter-spacing: 0.08em; }
+        #room-bar .rb-btn { font-size: 0.7rem; padding: 3px 9px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; transition: background 0.12s; }
+
+        /* ── Multiplayer lobby in start screen ── */
+        #mp-lobby { background: rgba(30,41,59,0.35); border: 1px solid #1e293b; border-radius: 14px; padding: 14px; width: 100%; max-width: 400px; }
+        .mp-player-chip { display: inline-flex; align-items: center; gap: 4px; background: rgba(30,41,59,0.6); border: 1px solid #334155; border-radius: 8px; padding: 3px 8px; font-size: 0.72rem; font-weight: 600; margin: 2px; }
+
+        /* ── Multiplayer results ── */
+        .mp-rank-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid rgba(30,41,59,0.6); }
+        .mp-rank-row:last-child { border-bottom: none; }
+        .mp-rank-num { font-weight: 800; font-size: 1rem; min-width: 22px; }
+
+        /* ── Light mode overrides ── */
+        html.light .tr-modal-card { background: #f1f5f9; border-color: #cbd5e1; color: #1e293b; }
+        html.light #room-bar { background: #f1f5f9; border-color: #cbd5e1; }
+        html.light #mp-lobby { background: rgba(241,245,249,0.6); border-color: #cbd5e1; }
+        html.light .mp-player-chip { background: rgba(203,213,225,0.5); border-color: #cbd5e1; color: #1e293b; }
+        html.light .avatar-btn { background: rgba(203,213,225,0.4); }
+
+        /* ── Retro mode overrides ── */
+        html.retro .tr-modal-card { background: #001a00 !important; border-color: #00ff41 !important; color: #00ff41; }
+        html.retro #room-bar { background: #000 !important; border-color: #00ff41 !important; }
+        html.retro #mp-lobby { background: #001a00; border-color: #00ff41; }
+        html.retro .mp-player-chip { background: #001a00; border-color: #00ff41; color: #00ff41; }
+
+        /* ── Ocean mode overrides ── */
+        html.ocean .tr-modal-card { background: #05101f; border-color: #1d4e6e; }
+        html.ocean #room-bar { background: rgba(5,16,31,0.95); border-color: #1d4e6e; }
+
+        /* ── Pastel mode overrides ── */
+        html.pastel .tr-modal-card { background: #fce7f3; border-color: #f0abdb; color: #4a1d52; }
+        html.pastel #room-bar { background: rgba(255,240,250,0.97); border-color: #f0abdb; }
+        html.pastel #mp-lobby { background: rgba(255,240,250,0.5); border-color: #f0abdb; }
     </style>
 </head>
 <body class="game-tipprennen">
@@ -428,12 +491,23 @@
             <i data-lucide="paw-print" class="w-5 h-5 text-indigo-400"></i> Wolfle
         </h1>
         <div class="flex items-center gap-1.5">
-            <button id="theme-btn" onclick="ui.toggleTheme()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Design wechseln">
+            <button id="sound-btn" onclick="toggleSound()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Ton">
+                <i data-lucide="volume-2" class="w-4 h-4"></i>
+            </button>
+            <button id="haptic-btn" onclick="toggleHaptic()" class="mobile-only text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Vibration">
+                <i data-lucide="smartphone" class="w-4 h-4"></i>
+            </button>
+            <button onclick="window.trOpenFriendsModal()" class="relative text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Freunde">
+                <i data-lucide="users" class="w-4 h-4"></i>
+                <span id="tr-invite-badge" style="display:none" class="absolute"></span>
+            </button>
+            <button id="theme-btn" onclick="toggleTheme()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Design wechseln">
                 <i data-lucide="sun" class="w-4 h-4"></i>
             </button>
-            <a href="index.html" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Zurück">
-                <i data-lucide="home" class="w-4 h-4"></i>
-            </a>
+            <button id="login-header-btn" onclick="window.openLoginModal()" title="Anmelden" class="flex items-center gap-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white px-2 py-1.5 rounded-lg border border-slate-600 transition-all">
+                <span id="login-header-avatar">👤</span>
+                <span id="login-header-label" class="hidden-xs">Anmelden</span>
+            </button>
         </div>
     </div>
 
@@ -464,11 +538,20 @@
         </a>
     </div>
 
+    <!-- ROOM STATUS BAR -->
+    <div id="room-bar" style="display:none" class="flex">
+        <span class="text-xs text-slate-400">Raum:</span>
+        <span class="rb-code text-sm" id="room-bar-code"></span>
+        <span id="room-bar-players" class="flex-1 text-xs text-slate-400"></span>
+        <button onclick="window.trOpenInviteModal()" class="rb-btn bg-yellow-600 hover:bg-yellow-500 text-white ml-auto">Einladen</button>
+        <button onclick="window.trLeaveRoom()" class="rb-btn bg-slate-700 hover:bg-slate-600 text-slate-300 ml-1">Verlassen</button>
+    </div>
+
     <!-- GAME CONTENT -->
     <div id="game-area">
 
         <!-- Start screen -->
-        <div id="start-screen" class="flex flex-col items-center gap-4">
+        <div id="start-screen" class="flex flex-col items-center gap-4 w-full" style="max-width:440px">
             <div class="text-center mb-2">
                 <h2 class="text-2xl font-extrabold mb-1" style="background: linear-gradient(135deg, #22d3ee, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Tipp-Rennen</h2>
                 <p class="text-slate-400 text-sm">Tippe den Text so schnell und fehlerfrei wie möglich!</p>
@@ -479,8 +562,53 @@
                 <button class="diff-pill" data-diff="hard">Schwer</button>
             </div>
             <button class="btn-primary" id="start-btn">
-                <i data-lucide="play" class="w-5 h-5"></i> Rennen starten
+                <i data-lucide="play" class="w-5 h-5"></i> Solo spielen
             </button>
+
+            <!-- Divider -->
+            <div class="flex items-center gap-3 w-full">
+                <div class="flex-1 h-px bg-slate-700"></div>
+                <span class="text-slate-500 text-xs font-semibold uppercase tracking-wider">Mehrspieler</span>
+                <div class="flex-1 h-px bg-slate-700"></div>
+            </div>
+
+            <!-- Multiplayer: not logged in -->
+            <div id="mp-login-prompt" class="hidden text-center">
+                <p class="text-slate-400 text-sm mb-3">Melde dich an um gegen Freunde zu spielen!</p>
+                <button onclick="window.openLoginModal()" class="btn-primary" style="background:linear-gradient(135deg,#4f46e5,#6366f1)">
+                    <i data-lucide="log-in" class="w-4 h-4"></i> Anmelden
+                </button>
+            </div>
+
+            <!-- Multiplayer: logged in, no room -->
+            <div id="mp-create-join" class="hidden w-full flex flex-col gap-2">
+                <button onclick="window.trCreateRoom()" class="btn-primary w-full justify-center" style="background:linear-gradient(135deg,#0e7490,#06b6d4)">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i> Raum erstellen
+                </button>
+                <div class="flex gap-2">
+                    <input id="tr-join-code" type="text" maxlength="8" placeholder="Raum-Code..."
+                        class="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white uppercase tracking-widest outline-none"
+                        onkeydown="if(event.key==='Enter')window.trJoinRoom()"
+                        oninput="this.value=this.value.toUpperCase()">
+                    <button onclick="window.trJoinRoom()" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
+                        Beitreten
+                    </button>
+                </div>
+            </div>
+
+            <!-- Multiplayer: in room lobby -->
+            <div id="mp-lobby" class="hidden w-full">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="text-xs text-slate-400">Raum-Code</div>
+                    <div class="font-mono font-bold text-cyan-400 text-lg tracking-widest" id="lobby-code"></div>
+                </div>
+                <div class="text-xs text-slate-400 mb-2">Spieler</div>
+                <div id="lobby-players" class="flex flex-wrap gap-1 mb-4"></div>
+                <div id="lobby-waiting-msg" class="text-slate-500 text-xs text-center mb-3">Warte auf den Host...</div>
+                <button id="lobby-start-btn" style="display:none" onclick="window.trHostStartRace()" class="btn-primary w-full justify-center">
+                    <i data-lucide="flag" class="w-4 h-4"></i> Rennen starten
+                </button>
+            </div>
         </div>
 
         <!-- Race screen (hidden by default) -->
@@ -501,21 +629,8 @@
                 </div>
             </div>
 
-            <!-- Race track -->
-            <div id="race-track">
-                <div class="racer-row">
-                    <span class="racer-label">Du</span>
-                    <div class="racer-track">
-                        <span class="racer-car player" id="player-car">🚗</span>
-                    </div>
-                </div>
-                <div class="racer-row">
-                    <span class="racer-label">Bot</span>
-                    <div class="racer-track">
-                        <span class="racer-car" id="bot-car">🤖</span>
-                    </div>
-                </div>
-            </div>
+            <!-- Race track (populated dynamically) -->
+            <div id="race-track"></div>
 
             <!-- Progress bar -->
             <div id="progress-bar-wrap">
@@ -536,8 +651,9 @@
 
         <!-- Results screen (hidden by default) -->
         <div id="results-screen" class="hidden flex flex-col items-center gap-5">
+            <!-- Solo results -->
             <div id="results-panel">
-                <h2>Ergebnis</h2>
+                <h2 id="results-title">Ergebnis</h2>
                 <div class="result-row">
                     <span class="result-label">Geschwindigkeit</span>
                     <span class="result-value highlight" id="result-wpm">0 WPM</span>
@@ -559,43 +675,295 @@
                     <span class="result-value" id="result-errors">0</span>
                 </div>
             </div>
-            <button class="btn-primary" id="restart-btn">
-                <i data-lucide="rotate-ccw" class="w-5 h-5"></i> Nochmal spielen
+            <!-- Multiplayer rankings (shown additionally when in room) -->
+            <div id="mp-results-panel" class="hidden" style="background:rgba(15,23,42,0.8);border:1px solid #1e293b;border-radius:16px;padding:20px;max-width:420px;width:100%">
+                <div class="text-sm font-bold text-slate-300 mb-3 flex items-center gap-2"><i data-lucide="trophy" class="w-4 h-4 text-yellow-400"></i> Rangliste</div>
+                <div id="mp-results-list"></div>
+            </div>
+            <div class="flex gap-3 flex-wrap justify-center">
+                <button class="btn-primary" id="restart-btn">
+                    <i data-lucide="rotate-ccw" class="w-5 h-5"></i> Nochmal spielen
+                </button>
+                <button id="back-to-lobby-btn" class="hidden btn-primary" style="background:linear-gradient(135deg,#1e293b,#334155)" onclick="window.trReturnToLobby()">
+                    <i data-lucide="users" class="w-5 h-5"></i> Zurück zur Lobby
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST CONTAINER -->
+    <div id="toast-container"></div>
+
+    <!-- LOGIN MODAL -->
+    <div id="login-modal" class="tr-modal hidden" onclick="if(event.target===this)window.closeLoginModal()">
+        <div class="tr-modal-card">
+            <div class="flex justify-between items-center mb-5">
+                <div class="tr-modal-title">🔑 Anmelden</div>
+                <button onclick="window.closeLoginModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div id="login-form-section">
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Nutzername</label>
+                <input id="login-name-input" type="text" maxlength="15" placeholder="Name eingeben..."
+                    class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white mb-3">
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">PIN (optional)</label>
+                <input id="login-pin-input" type="password" maxlength="8" placeholder="PIN (optional)..."
+                    class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white mb-4">
+                <div id="login-error" class="hidden text-red-400 text-xs mb-3 text-center"></div>
+                <button id="login-submit-btn" onclick="window.doLogin()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors mb-2">Anmelden / Registrieren</button>
+                <button onclick="window.openGuestFlow()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 py-2 rounded-xl text-sm transition-colors">👤 Als Gast spielen</button>
+            </div>
+            <div id="login-loggedin-section" class="hidden text-center">
+                <div id="login-welcome-avatar" class="text-5xl mb-1 cursor-pointer" onclick="window.toggleLoginAvatarGrid()" title="Avatar ändern">🐺</div>
+                <div class="text-xs text-slate-500 mb-2">Tippe zum Ändern</div>
+                <div id="login-avatar-grid" class="avatar-grid hidden mb-3"></div>
+                <button id="login-avatar-save-btn" onclick="window.saveLoginAvatar()" class="hidden w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-xl text-sm font-semibold transition-colors mb-3">Avatar speichern</button>
+                <div class="text-lg font-bold text-white mb-1" id="login-welcome-name"></div>
+                <div class="text-xs text-slate-400 mb-4">Erfolgreich angemeldet</div>
+                <button onclick="window.doLogout()" class="w-full bg-red-900/40 hover:bg-red-900/60 border border-red-800/40 text-red-400 py-2 rounded-xl text-sm transition-colors">Abmelden</button>
+                <button onclick="window.closeLoginModal()" class="w-full mt-2 bg-slate-700 hover:bg-slate-600 text-slate-300 py-2 rounded-xl text-sm transition-colors">Schließen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FRIENDS MODAL -->
+    <div id="friends-modal" class="tr-modal hidden" onclick="if(event.target===this)window.trCloseFriendsModal()">
+        <div class="tr-modal-card">
+            <div class="flex justify-between items-center mb-4">
+                <div class="tr-modal-title"><i data-lucide="users" class="w-5 h-5"></i> Freunde</div>
+                <button onclick="window.trCloseFriendsModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <!-- Incoming invites -->
+            <div id="tr-invites-section" style="display:none" class="mb-4">
+                <div class="text-xs font-semibold text-yellow-400 uppercase tracking-wider mb-2 flex items-center gap-1"><i data-lucide="bell" class="w-3 h-3"></i> Einladungen</div>
+                <div id="tr-invites-list"></div>
+            </div>
+            <!-- Public rooms -->
+            <button onclick="window.trTogglePublicRooms()" class="w-full flex items-center justify-between bg-slate-700/50 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl text-sm mb-3 transition-colors">
+                <span class="flex items-center gap-2"><i data-lucide="globe" class="w-4 h-4 text-cyan-400"></i> Offene Räume</span>
+                <i data-lucide="chevron-down" class="w-4 h-4"></i>
             </button>
+            <div id="tr-public-rooms" style="display:none" class="mb-4">
+                <div id="tr-public-rooms-list"><div class="text-slate-500 italic text-sm">Lädt...</div></div>
+            </div>
+            <!-- Search -->
+            <div class="flex gap-2 mb-2">
+                <input id="tr-friend-search" type="text" placeholder="Spieler suchen..." maxlength="20"
+                    class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white outline-none"
+                    onkeydown="if(event.key==='Enter')window.trSearchFriends()">
+                <button onclick="window.trSearchFriends()" class="bg-yellow-600 hover:bg-yellow-500 text-white px-3 py-2 rounded-lg transition-colors"><i data-lucide="search" class="w-4 h-4"></i></button>
+            </div>
+            <div id="tr-friend-search-results" class="mb-4"></div>
+            <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Meine Freunde</div>
+            <div id="tr-friends-list"><div class="text-slate-500 italic text-sm">Keine Freunde. Suche nach Spielern!</div></div>
+        </div>
+    </div>
+
+    <!-- INVITE FRIENDS TO ROOM MODAL -->
+    <div id="invite-modal" class="tr-modal hidden" onclick="if(event.target===this)window.trCloseInviteModal()">
+        <div class="tr-modal-card">
+            <div class="flex justify-between items-center mb-4">
+                <div class="tr-modal-title"><i data-lucide="user-plus" class="w-5 h-5"></i> Freunde einladen</div>
+                <button onclick="window.trCloseInviteModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="bg-slate-700/40 rounded-lg px-3 py-2 text-xs text-slate-400 mb-4 font-mono">Raum: <span id="invite-modal-code" class="text-white font-bold"></span></div>
+            <div id="invite-friends-list"><div class="text-slate-500 italic text-sm">Lädt...</div></div>
         </div>
     </div>
 
     <script>
-        // ── Theme support ──
+        // ── Theme ──
         const themes = ['', 'light', 'retro', 'ocean', 'pastel'];
         let themeIndex = themes.indexOf(localStorage.getItem('wolfle-theme') || '');
         if (themeIndex < 0) themeIndex = 0;
         if (themes[themeIndex]) document.documentElement.className = themes[themeIndex];
-
         function toggleTheme() {
             themeIndex = (themeIndex + 1) % themes.length;
             document.documentElement.className = themes[themeIndex];
             localStorage.setItem('wolfle-theme', themes[themeIndex]);
         }
 
+        // ── Toast ──
+        function showToast(msg, type = 'info') {
+            const c = document.getElementById('toast-container');
+            if (!c) return;
+            const t = document.createElement('div');
+            t.className = `tr-toast ${type}`;
+            t.textContent = msg;
+            c.appendChild(t);
+            requestAnimationFrame(() => t.classList.add('show'));
+            setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 3200);
+        }
 
+        // ── Sound ──
         let soundEnabled = localStorage.getItem('wolfle_sound') !== 'false';
-        let hapticEnabled = localStorage.getItem('wolfle_haptic') !== 'false';
+        let audioCtx = null;
+        function getAudioCtx() {
+            if (!audioCtx) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){} }
+            return audioCtx;
+        }
+        function playTone(freq, type, dur, vol = 0.2) {
+            if (!soundEnabled) return;
+            try {
+                const ctx = getAudioCtx(); if (!ctx) return;
+                const osc = ctx.createOscillator(), gain = ctx.createGain();
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.type = type; osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                gain.gain.setValueAtTime(vol, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+                osc.start(); osc.stop(ctx.currentTime + dur);
+            } catch(e) {}
+        }
+        function updateSoundBtn() {
+            const btn = document.getElementById('sound-btn');
+            if (btn) { btn.innerHTML = `<i data-lucide="${soundEnabled ? 'volume-2' : 'volume-x'}" class="w-4 h-4"></i>`; lucide.createIcons(); }
+        }
         function toggleSound() {
             soundEnabled = !soundEnabled;
-            localStorage.setItem('wolfle_sound', String(soundEnabled));
-            const btn = document.getElementById('sound-btn');
-            if (btn) { btn.innerHTML = `<i data-lucide="${soundEnabled ? 'volume-2' : 'volume-x'}" class="w-4 h-4"></i>`; lucide.createIcons({ nodes: [btn] }); }
+            localStorage.setItem('wolfle_sound', soundEnabled);
+            updateSoundBtn();
+            if (soundEnabled) playTone(523, 'sine', 0.15);
+        }
+        function playWinSound() { [523,659,784,1047].forEach((f,i) => setTimeout(() => playTone(f,'sine',0.35), i*100)); }
+        function playTypeTone(ok) { playTone(ok ? 880 : 220, ok ? 'sine' : 'sawtooth', 0.05, 0.1); }
+
+        // ── Haptic ──
+        let hapticEnabled = localStorage.getItem('wolfle_haptic') === 'true';
+        function triggerHaptic(ms) { if (!hapticEnabled) return; try { navigator.vibrate(ms); } catch(e){} }
+        function updateHapticBtn() {
+            const btn = document.getElementById('haptic-btn');
+            if (btn) { btn.innerHTML = `<i data-lucide="${hapticEnabled ? 'vibrate' : 'smartphone'}" class="w-4 h-4"></i>`; lucide.createIcons(); }
         }
         function toggleHaptic() {
             hapticEnabled = !hapticEnabled;
-            localStorage.setItem('wolfle_haptic', String(hapticEnabled));
-            const btn = document.getElementById('haptic-btn');
-            if (btn) { btn.innerHTML = `<i data-lucide="${hapticEnabled ? 'smartphone' : 'smartphone-nfc'}" class="w-4 h-4"></i>`; lucide.createIcons({ nodes: [btn] }); }
+            localStorage.setItem('wolfle_haptic', hapticEnabled);
+            updateHapticBtn();
+            if (hapticEnabled) triggerHaptic(20);
         }
-        function openLoginModal() {
-            alert('Login kommt bald!');
+
+        // ── Auth helpers (localStorage) ──
+        function getPlayerName() { return localStorage.getItem('wolfle_user_name') || ''; }
+        function isLoggedIn() { return localStorage.getItem('wolfle_logged_in') === '1'; }
+        function updateLoginHeader() {
+            const name = getPlayerName(), avatar = localStorage.getItem('wolfle_avatar') || '👤';
+            const btn = document.getElementById('login-header-btn');
+            const label = document.getElementById('login-header-label');
+            const av = document.getElementById('login-header-avatar');
+            if (!btn) return;
+            if (isLoggedIn() && name) {
+                label.textContent = name; av.textContent = avatar;
+                btn.classList.replace('border-slate-600', 'border-indigo-500/50');
+            } else {
+                label.textContent = 'Anmelden'; av.textContent = '👤';
+                btn.classList.replace('border-indigo-500/50', 'border-slate-600');
+            }
         }
+
+        // ── Multiplayer state ──
+        let currentRoomCode = null;
+        let isHost = false;
+        let multiplayerGameStarted = false;
+        let roomPlayers = {};
+        let progressInterval = null;
+        let _pendingInvites = {};
+        let inviteUnsubscribe = null;
+        let roomUnsubscribe = null;
+
+        // ── Update multiplayer UI ──
+        function updateMpStartUI() {
+            const loggedIn = isLoggedIn();
+            const inRoom = !!currentRoomCode;
+            document.getElementById('mp-login-prompt').classList.toggle('hidden', loggedIn);
+            document.getElementById('mp-create-join').classList.toggle('hidden', !loggedIn || inRoom);
+            document.getElementById('mp-lobby').classList.toggle('hidden', !inRoom);
+        }
+
+        function updateLobbyUI(data) {
+            const players = Object.values(data.players || {});
+            const myName = getPlayerName();
+            document.getElementById('lobby-code').textContent = currentRoomCode;
+            document.getElementById('lobby-players').innerHTML = players.map(p =>
+                `<span class="mp-player-chip" style="${p.name === myName ? 'border-color:#22d3ee;color:#22d3ee' : ''}">${p.avatar || '🐺'} ${p.name}</span>`
+            ).join('');
+            const startBtn = document.getElementById('lobby-start-btn');
+            const waitMsg = document.getElementById('lobby-waiting-msg');
+            if (isHost) {
+                waitMsg.style.display = 'none';
+                startBtn.style.display = players.length >= 2 ? 'flex' : 'none';
+                if (players.length < 2) {
+                    waitMsg.textContent = 'Warte auf Mitspieler…';
+                    waitMsg.style.display = 'block';
+                }
+            } else {
+                startBtn.style.display = 'none';
+                waitMsg.textContent = 'Warte auf den Host…';
+                waitMsg.style.display = 'block';
+            }
+            // Room bar
+            const bar = document.getElementById('room-bar');
+            bar.style.display = 'flex';
+            document.getElementById('room-bar-code').textContent = currentRoomCode;
+            document.getElementById('room-bar-players').textContent = `${players.length} Spieler`;
+        }
+
+        // Called by onSnapshot when room data changes
+        window.trHandleRoomUpdate = function(data) {
+            if (!data) return;
+            roomPlayers = data.players || {};
+            if (data.status === 'waiting') {
+                updateLobbyUI(data);
+                // Update car positions on track if visible
+                if (!$raceScreen.classList.contains('hidden')) {
+                    updateRacerCars(roomPlayers);
+                }
+            } else if (data.status === 'playing' && !multiplayerGameStarted) {
+                multiplayerGameStarted = true;
+                updateLobbyUI(data);
+                startMultiplayerGame(data.text || '', data.difficulty || difficulty, data.players || {});
+            } else if (data.status === 'playing') {
+                updateRacerCars(data.players || {});
+            }
+            lucide.createIcons();
+        };
+
+        // ── Race track rendering ──
+        function renderRaceTrack(isMultiplayer, players) {
+            const track = document.getElementById('race-track');
+            if (!isMultiplayer) {
+                track.innerHTML = `
+                    <div class="racer-row">
+                        <span class="racer-label">Du</span>
+                        <div class="racer-track"><span class="racer-car player" id="car-player">🚗</span></div>
+                    </div>
+                    <div class="racer-row">
+                        <span class="racer-label">Bot</span>
+                        <div class="racer-track"><span class="racer-car" id="car-bot">🤖</span></div>
+                    </div>`;
+            } else {
+                const myName = getPlayerName();
+                track.innerHTML = Object.values(players).map(p => {
+                    const isMe = p.name === myName;
+                    const avatar = p.avatar || (isMe ? '🚗' : '🚙');
+                    const carId = isMe ? 'car-player' : `car-${CSS.escape(p.name)}`;
+                    return `<div class="racer-row">
+                        <span class="racer-label" style="${isMe ? 'color:#22d3ee' : ''}" title="${p.name}">${isMe ? 'Du' : p.name.substring(0,7)}</span>
+                        <div class="racer-track"><span class="racer-car ${isMe ? 'player' : ''}" id="${carId}">${avatar}</span></div>
+                    </div>`;
+                }).join('');
+            }
+        }
+
+        function updateRacerCars(players) {
+            const myName = getPlayerName();
+            Object.values(players).forEach(p => {
+                const id = p.name === myName ? 'car-player' : `car-${CSS.escape(p.name)}`;
+                const car = document.getElementById(id);
+                if (car) {
+                    const pct = (p.progress || 0) * 100;
+                    car.style.left = `calc(${pct}% - ${pct * 0.24}px)`;
+                }
+            });
+        }
+
         // ── Text pools by difficulty ──
         const texts = {
             easy: [
@@ -645,8 +1013,6 @@
         const $wpm           = document.getElementById('wpm-display');
         const $accuracy      = document.getElementById('accuracy-display');
         const $time          = document.getElementById('time-display');
-        const $playerCar     = document.getElementById('player-car');
-        const $botCar        = document.getElementById('bot-car');
         const $startBtn      = document.getElementById('start-btn');
         const $restartBtn    = document.getElementById('restart-btn');
 
@@ -733,31 +1099,27 @@
         function updateProgress() {
             const pct = (charIndex / currentText.length) * 100;
             $progressBar.style.width = pct + '%';
-            // Car position: leave room for the emoji width (~24px)
-            $playerCar.style.left = `calc(${pct}% - ${pct * 0.24}px)`;
+            const car = document.getElementById('car-player');
+            if (car) car.style.left = `calc(${pct}% - ${pct * 0.24}px)`;
         }
 
-        // ── Bot racer ──
+        // ── Bot racer (solo only) ──
         function startBot() {
             const [minWPM, maxWPM] = botSpeeds[difficulty];
             const botWPM = minWPM + Math.random() * (maxWPM - minWPM);
-            // chars per second = (wpm * 5) / 60
             const cps = (botWPM * 5) / 60;
             botProgress = 0;
-
             botInterval = setInterval(() => {
-                // Add some variance per tick
                 const variance = 0.7 + Math.random() * 0.6;
                 botProgress += cps * 0.1 * variance;
                 if (botProgress >= currentText.length) {
                     botProgress = currentText.length;
-                    clearInterval(botInterval);
-                    botInterval = null;
-                    // If player hasn't finished, bot wins — end game
+                    clearInterval(botInterval); botInterval = null;
                     if (gameActive) endGame();
                 }
                 const pct = (botProgress / currentText.length) * 100;
-                $botCar.style.left = `calc(${pct}% - ${pct * 0.24}px)`;
+                const botCar = document.getElementById('car-bot');
+                if (botCar) botCar.style.left = `calc(${pct}% - ${pct * 0.24}px)`;
             }, 100);
         }
 
@@ -787,27 +1149,31 @@
             tick();
         }
 
-        // ── Start game ──
+        // ── Start solo game ──
         function startGame() {
-            // Pick a random text
             const pool = texts[difficulty];
             currentText = pool[Math.floor(Math.random() * pool.length)];
-            charIndex = 0;
-            errors = 0;
-            totalKeystrokes = 0;
-            startTime = null;
-            botProgress = 0;
-            gameActive = false;
+            _startRace(false, {});
+        }
 
-            // Reset UI
+        // ── Start multiplayer game (called by trHandleRoomUpdate) ──
+        function startMultiplayerGame(text, diff, players) {
+            currentText = text;
+            if (diff) difficulty = diff;
+            _startRace(true, players);
+        }
+
+        function _startRace(isMultiplayer, players) {
+            charIndex = 0; errors = 0; totalKeystrokes = 0;
+            startTime = null; botProgress = 0; gameActive = false;
+
             $typingInput.value = '';
             $progressBar.style.width = '0%';
-            $playerCar.style.left = '0';
-            $botCar.style.left = '0';
             $wpm.textContent = '0';
             $accuracy.textContent = '100%';
             $time.textContent = '0s';
 
+            renderRaceTrack(isMultiplayer, players);
             renderText(currentText);
             showScreen($raceScreen);
 
@@ -815,49 +1181,65 @@
                 gameActive = true;
                 startTime = Date.now();
                 timerInterval = setInterval(updateStats, 200);
-                startBot();
+                if (!isMultiplayer) {
+                    startBot();
+                } else {
+                    // Sync progress every 800ms
+                    progressInterval = setInterval(() => {
+                        if (!gameActive || !currentRoomCode) return;
+                        const pct = currentText.length ? charIndex / currentText.length : 0;
+                        window.trSyncProgress(pct, calcWPM(), false);
+                    }, 800);
+                }
             });
         }
 
         // ── End game ──
         function endGame() {
             gameActive = false;
-            clearInterval(timerInterval);
-            timerInterval = null;
+            clearInterval(timerInterval); timerInterval = null;
             if (botInterval) { clearInterval(botInterval); botInterval = null; }
+            if (progressInterval) { clearInterval(progressInterval); progressInterval = null; }
 
             const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
             const finalWPM = calcWPM();
             const finalAcc = calcAccuracy();
 
-            // Populate results
             document.getElementById('result-wpm').textContent = finalWPM + ' WPM';
             document.getElementById('result-accuracy').textContent = finalAcc + '%';
             document.getElementById('result-time').textContent = elapsed + 's';
             document.getElementById('result-chars').textContent = charIndex + ' / ' + currentText.length;
             document.getElementById('result-errors').textContent = errors;
 
+            const inRoom = !!currentRoomCode;
+            document.getElementById('results-title').textContent = inRoom ? '🏁 Dein Ergebnis' : 'Ergebnis';
+            document.getElementById('back-to-lobby-btn').classList.toggle('hidden', !inRoom);
+
+            if (inRoom) {
+                window.trSyncProgress(1, finalWPM, true);
+                playWinSound();
+                // Show mp results panel and listen for others
+                document.getElementById('mp-results-panel').classList.remove('hidden');
+                window.trShowMpResults();
+            } else {
+                document.getElementById('mp-results-panel').classList.add('hidden');
+                if (charIndex >= currentText.length) playWinSound();
+            }
+
             showScreen($resultsScreen);
             lucide.createIcons();
+            triggerHaptic([30, 20, 30]);
         }
 
         // ── Typing handler ──
         $typingInput.addEventListener('input', () => {
             if (!gameActive) return;
-
             const val = $typingInput.value;
             const spans = $textContent.querySelectorAll('.char');
-
-            // Process each character the user has typed so far
-            // We track charIndex = how far confirmed correct chars go
-            // The input field mirrors the full typed string
             const newLen = val.length;
-
-            // We allow the user to type ahead; we evaluate char-by-char
-            // Reset charIndex to match input length evaluation
+            const prevIndex = charIndex;
             charIndex = 0;
             let currentErrors = 0;
-
             for (let i = 0; i < newLen && i < currentText.length; i++) {
                 if (val[i] === currentText[i]) {
                     spans[i].removeAttribute('data-err');
@@ -868,31 +1250,599 @@
                     charIndex = i + 1;
                 }
             }
-
             totalKeystrokes = newLen;
             errors = currentErrors;
-
+            if (charIndex > prevIndex) { playTypeTone(currentErrors === 0); triggerHaptic(6); }
             updateChars();
             updateProgress();
             updateStats();
-
-            // Check if finished
-            if (charIndex >= currentText.length) {
-                endGame();
-            }
+            if (charIndex >= currentText.length) endGame();
         });
 
-        // Prevent paste
         $typingInput.addEventListener('paste', e => e.preventDefault());
 
         // ── Button handlers ──
         $startBtn.addEventListener('click', startGame);
         $restartBtn.addEventListener('click', () => {
+            multiplayerGameStarted = false;
             showScreen($startScreen);
+            updateMpStartUI();
             lucide.createIcons();
         });
 
-        // Initialize Lucide icons
+        // ── Init ──
+        updateSoundBtn();
+        updateHapticBtn();
+        updateLoginHeader();
+        updateMpStartUI();
+
+        // Dynamic imports for Firebase (auth, friends, multiplayer)
+        (async () => {
+            const appMod = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js');
+            const fsMod  = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
+
+            const FB_APP_ID = 'wolfle-v1';
+            const FB_CONFIG = {
+                apiKey: "AIzaSyDTPO-01gusabZGy-TthEWZWntwct6LrEQ",
+                authDomain: "wolfle.firebaseapp.com",
+                projectId: "wolfle",
+                storageBucket: "wolfle.firebasestorage.app",
+                messagingSenderId: "286289741614",
+                appId: "1:286289741614:web:14e5faad1616fe75755cbf"
+            };
+            const ROOM_COL = 'tr_rooms';
+            const AVATARS = ['🐺','🦊','🐻','🦁','🐯','🐸','🐧','🦅','🦋','🐙','🦄','🐬','🌟','🔥','💎','🌈','🍀','⚡'];
+
+            let db = null;
+            let selectedAvatar = localStorage.getItem('wolfle_avatar') || '🐺';
+            let _loginSelectedAvatar = selectedAvatar;
+
+            async function ensureDB() {
+                if (db) return db;
+                if (!getPlayerName()) return null;
+                try {
+                    const apps = appMod.getApps();
+                    const app = apps.length ? apps[0] : appMod.initializeApp(FB_CONFIG);
+                    db = fsMod.getFirestore(app);
+                    return db;
+                } catch(e) { return null; }
+            }
+
+            function docRef(...path) {
+                return fsMod.doc(db, 'artifacts', FB_APP_ID, 'public', 'data', ...path);
+            }
+            function colRef(...path) {
+                return fsMod.collection(db, 'artifacts', FB_APP_ID, 'public', 'data', ...path);
+            }
+
+            function hashPin(pin) {
+                let h = 0;
+                for (let i = 0; i < pin.length; i++) h = (Math.imul(31, h) + pin.charCodeAt(i)) | 0;
+                return h.toString(36);
+            }
+
+            // ══ LOGIN FUNCTIONS ══
+            window.openLoginModal = () => {
+                const form = document.getElementById('login-form-section');
+                const loggedSection = document.getElementById('login-loggedin-section');
+                const modal = document.getElementById('login-modal');
+                if (isLoggedIn()) {
+                    const name = getPlayerName(), avatar = localStorage.getItem('wolfle_avatar') || '🐺';
+                    _loginSelectedAvatar = avatar;
+                    document.getElementById('login-welcome-name').textContent = name;
+                    document.getElementById('login-welcome-avatar').textContent = avatar;
+                    document.getElementById('login-avatar-grid').classList.add('hidden');
+                    document.getElementById('login-avatar-save-btn').classList.add('hidden');
+                    form.classList.add('hidden'); loggedSection.classList.remove('hidden');
+                } else {
+                    document.getElementById('login-name-input').value = '';
+                    document.getElementById('login-pin-input').value = '';
+                    document.getElementById('login-error').classList.add('hidden');
+                    form.classList.remove('hidden'); loggedSection.classList.add('hidden');
+                }
+                modal.classList.remove('hidden');
+                lucide.createIcons();
+            };
+
+            window.closeLoginModal = () => {
+                document.getElementById('login-modal').classList.add('hidden');
+            };
+
+            window.doLogin = async () => {
+                const nameInput = document.getElementById('login-name-input');
+                const pinInput  = document.getElementById('login-pin-input');
+                const errorEl   = document.getElementById('login-error');
+                const btn       = document.getElementById('login-submit-btn');
+                const name = nameInput.value.trim();
+                if (!name) { errorEl.textContent = 'Bitte einen Namen eingeben.'; errorEl.classList.remove('hidden'); return; }
+                const pin = pinInput.value;
+                errorEl.classList.add('hidden');
+                btn.disabled = true; btn.textContent = 'Laden…';
+                const reset = () => { btn.disabled = false; btn.textContent = 'Anmelden / Registrieren'; };
+                try {
+                    const firestore = await ensureDB();
+                    if (firestore) {
+                        const snap = await fsMod.getDoc(docRef('users', name));
+                        if (snap.exists()) {
+                            const ud = snap.data();
+                            if (ud.pinHash) {
+                                if (!pin) { errorEl.textContent = 'Bitte PIN eingeben.'; errorEl.classList.remove('hidden'); reset(); return; }
+                                if (hashPin(pin) !== ud.pinHash) { errorEl.textContent = 'Falscher PIN.'; errorEl.classList.remove('hidden'); reset(); return; }
+                            }
+                            if (ud.avatar) { selectedAvatar = ud.avatar; localStorage.setItem('wolfle_avatar', ud.avatar); }
+                        } else {
+                            const pinHash = pin ? hashPin(pin) : null;
+                            await fsMod.setDoc(docRef('users', name), { name, avatar: selectedAvatar || '🐺', pinHash: pinHash || null, createdAt: Date.now() });
+                        }
+                    }
+                } catch(e) {
+                    const savedPin = localStorage.getItem('wolfle_account_pin_' + name);
+                    if (savedPin && pin && hashPin(pin) !== savedPin) { errorEl.textContent = 'Falscher PIN.'; errorEl.classList.remove('hidden'); reset(); return; }
+                    if (!savedPin && pin) localStorage.setItem('wolfle_account_pin_' + name, hashPin(pin));
+                }
+                localStorage.setItem('wolfle_user_name', name);
+                localStorage.setItem('wolfle_logged_in', '1');
+                localStorage.removeItem('wolfle_is_guest');
+                updateLoginHeader();
+                updateMpStartUI();
+                window.closeLoginModal();
+                showToast(`Willkommen, ${name}! 👋`, 'success');
+                trSubscribeInvites(name);
+                reset();
+            };
+
+            window.doLogout = () => {
+                if (currentRoomCode) window.trLeaveRoom();
+                localStorage.removeItem('wolfle_logged_in');
+                localStorage.removeItem('wolfle_user_name');
+                localStorage.removeItem('wolfle_avatar');
+                selectedAvatar = '🐺';
+                updateLoginHeader();
+                updateMpStartUI();
+                window.closeLoginModal();
+                showToast('Abgemeldet', 'info');
+            };
+
+            window.openGuestFlow = () => {
+                const g = 'Gast_' + Math.floor(Math.random() * 9000 + 1000);
+                localStorage.setItem('wolfle_user_name', g);
+                localStorage.setItem('wolfle_logged_in', '1');
+                localStorage.setItem('wolfle_is_guest', '1');
+                updateLoginHeader();
+                updateMpStartUI();
+                window.closeLoginModal();
+                showToast(`Willkommen, ${g}!`, 'success');
+            };
+
+            window.toggleLoginAvatarGrid = () => {
+                const grid = document.getElementById('login-avatar-grid');
+                const saveBtn = document.getElementById('login-avatar-save-btn');
+                const open = grid.classList.toggle('hidden');
+                saveBtn.classList.toggle('hidden', open);
+                if (!open) {
+                    grid.innerHTML = AVATARS.map(a =>
+                        `<button class="avatar-btn${a===_loginSelectedAvatar?' selected':''}" onclick="window.selectLoginAvatar('${a}')">${a}</button>`
+                    ).join('');
+                }
+            };
+
+            window.selectLoginAvatar = (a) => {
+                _loginSelectedAvatar = a;
+                document.getElementById('login-welcome-avatar').textContent = a;
+                document.querySelectorAll('#login-avatar-grid .avatar-btn').forEach(b => b.classList.toggle('selected', b.textContent === a));
+            };
+
+            window.saveLoginAvatar = async () => {
+                const name = getPlayerName();
+                localStorage.setItem('wolfle_avatar', _loginSelectedAvatar);
+                selectedAvatar = _loginSelectedAvatar;
+                updateLoginHeader();
+                try {
+                    const firestore = await ensureDB();
+                    if (firestore && name) await fsMod.setDoc(docRef('users', name), { avatar: _loginSelectedAvatar }, { merge: true });
+                } catch(e) {}
+                showToast('Avatar gespeichert! ✓', 'success');
+            };
+
+            // ══ FRIENDS FUNCTIONS ══
+            window.trOpenFriendsModal = () => {
+                const modal = document.getElementById('friends-modal');
+                modal.classList.remove('hidden');
+                trRenderInvites();
+                trLoadFriends();
+                lucide.createIcons();
+            };
+            window.trCloseFriendsModal = () => {
+                document.getElementById('friends-modal').classList.add('hidden');
+            };
+            window.trTogglePublicRooms = () => {
+                const el = document.getElementById('tr-public-rooms');
+                const shown = el.style.display !== 'none';
+                el.style.display = shown ? 'none' : 'block';
+                if (!shown) trLoadPublicRooms();
+                lucide.createIcons();
+            };
+
+            async function trLoadFriends() {
+                const list = document.getElementById('tr-friends-list');
+                const myName = getPlayerName();
+                if (!myName) { list.innerHTML = '<div class="text-slate-500 italic text-sm">Erst anmelden!</div>'; return; }
+                try {
+                    const firestore = await ensureDB(); if (!firestore) return;
+                    const snap = await fsMod.getDoc(docRef('users', myName));
+                    const friends = snap.exists() ? (snap.data().friends || []) : [];
+                    if (!friends.length) { list.innerHTML = '<div class="text-slate-500 italic text-sm">Keine Freunde. Suche nach Spielern!</div>'; return; }
+                    const data = await Promise.all(friends.map(async f => {
+                        const s = await fsMod.getDoc(docRef('users', f));
+                        return { name: f, avatar: s.exists() ? (s.data().avatar || '🐺') : '🐺' };
+                    }));
+                    list.innerHTML = data.map(f => `
+                        <div class="flex items-center justify-between bg-slate-700/50 p-2 rounded-lg mb-1">
+                            <span class="flex items-center gap-2"><span class="text-lg">${f.avatar}</span><span class="text-sm text-white font-medium">${f.name}</span></span>
+                            <div class="flex gap-1">
+                                <button onclick="window.trSendInviteFromList('${f.name.replace(/'/g,"\\'")}',this)" class="text-yellow-400 hover:text-yellow-300 p-1.5 rounded-lg" title="Einladen"><i data-lucide="send" class="w-4 h-4"></i></button>
+                                <button onclick="window.trRemoveFriend('${f.name.replace(/'/g,"\\'")}') " class="text-slate-400 hover:text-red-400 p-1.5 rounded-lg" title="Entfernen"><i data-lucide="user-minus" class="w-4 h-4"></i></button>
+                            </div>
+                        </div>`).join('');
+                    lucide.createIcons();
+                } catch(e) { list.innerHTML = '<div class="text-slate-500 italic text-sm">Fehler beim Laden</div>'; }
+            }
+
+            async function trLoadPublicRooms() {
+                const list = document.getElementById('tr-public-rooms-list');
+                try {
+                    const firestore = await ensureDB(); if (!firestore) { list.innerHTML = '<div class="text-slate-500 italic text-sm">Nicht verfügbar</div>'; return; }
+                    const snap = await fsMod.getDocs(colRef(ROOM_COL));
+                    const rooms = [];
+                    const now = Date.now();
+                    snap.forEach(d => {
+                        const data = d.data();
+                        const pc = Object.keys(data.players || {}).length;
+                        if (!pc || (data.createdAt && now - data.createdAt > 30 * 60000)) { fsMod.deleteDoc(d.ref).catch(()=>{}); return; }
+                        if (!data.isPrivate && data.status === 'waiting') rooms.push({ code: d.id, ...data });
+                    });
+                    if (!rooms.length) { list.innerHTML = '<div class="text-slate-500 italic text-sm">Keine offenen Räume</div>'; return; }
+                    list.innerHTML = rooms.map(r => {
+                        const pc = Object.keys(r.players || {}).length;
+                        return `<div class="flex items-center justify-between bg-slate-700/50 p-2.5 rounded-xl mb-1">
+                            <div><div class="text-sm text-white font-semibold font-mono">${r.code}</div>
+                            <div class="text-xs text-slate-400">🏁 Tipp-Rennen · ${pc} Spieler</div></div>
+                            <button onclick="window.trJoinRoom('${r.code}')" class="text-xs bg-cyan-700 hover:bg-cyan-600 text-white px-3 py-1.5 rounded-lg font-semibold">Beitreten</button>
+                        </div>`;
+                    }).join('');
+                } catch(e) { list.innerHTML = '<div class="text-slate-500 italic text-sm">Fehler</div>'; }
+            }
+
+            window.trSearchFriends = async () => {
+                const input = document.getElementById('tr-friend-search');
+                const q = (input?.value || '').trim();
+                const results = document.getElementById('tr-friend-search-results');
+                if (!q) return;
+                const myName = getPlayerName();
+                try {
+                    const firestore = await ensureDB(); if (!firestore) return;
+                    const snap = await fsMod.getDoc(docRef('users', q));
+                    if (!snap.exists() || q === myName) { results.innerHTML = '<div class="text-slate-500 italic text-sm">Nicht gefunden</div>'; return; }
+                    const u = snap.data();
+                    results.innerHTML = `<div class="flex items-center justify-between bg-slate-700/50 p-2 rounded-lg">
+                        <span class="flex items-center gap-2"><span class="text-lg">${u.avatar||'🐺'}</span><span class="text-sm text-white">${q}</span></span>
+                        <button onclick="window.trAddFriend('${q.replace(/'/g,"\\'")}') " class="text-xs bg-green-600 hover:bg-green-500 text-white px-2 py-1 rounded-lg">Hinzufügen</button>
+                    </div>`;
+                } catch(e) { results.innerHTML = '<div class="text-slate-500 italic text-sm">Fehler</div>'; }
+            };
+
+            window.trAddFriend = async (fname) => {
+                const myName = getPlayerName();
+                const firestore = await ensureDB(); if (!firestore) return;
+                await fsMod.updateDoc(docRef('users', myName), { friends: fsMod.arrayUnion(fname) });
+                await fsMod.updateDoc(docRef('users', fname), { friends: fsMod.arrayUnion(myName) });
+                showToast(`${fname} als Freund hinzugefügt!`, 'success');
+                trLoadFriends();
+            };
+
+            window.trRemoveFriend = async (fname) => {
+                const myName = getPlayerName();
+                const firestore = await ensureDB(); if (!firestore) return;
+                await fsMod.updateDoc(docRef('users', myName), { friends: fsMod.arrayRemove(fname) });
+                showToast(`${fname} entfernt`, 'info');
+                trLoadFriends();
+            };
+
+            // ══ INVITE FUNCTIONS ══
+            window.trOpenInviteModal = async () => {
+                if (!currentRoomCode) return;
+                const modal = document.getElementById('invite-modal');
+                modal.classList.remove('hidden');
+                document.getElementById('invite-modal-code').textContent = currentRoomCode;
+                const list = document.getElementById('invite-friends-list');
+                const myName = getPlayerName();
+                try {
+                    const firestore = await ensureDB();
+                    const snap = await fsMod.getDoc(docRef('users', myName));
+                    const friends = snap.exists() ? (snap.data().friends || []) : [];
+                    if (!friends.length) { list.innerHTML = '<div class="text-slate-500 italic text-sm">Keine Freunde. Füge erst Freunde hinzu!</div>'; return; }
+                    list.innerHTML = friends.map(f => `
+                        <div class="flex items-center justify-between bg-slate-700/50 p-2 rounded-lg mb-1">
+                            <span class="text-sm text-white">${f}</span>
+                            <button onclick="window.trSendInvite('${f.replace(/'/g,"\\'")}',this)" class="text-xs bg-yellow-600 hover:bg-yellow-500 text-white px-2 py-1 rounded-lg flex items-center gap-1"><i data-lucide="send" class="w-3 h-3"></i> Einladen</button>
+                        </div>`).join('');
+                } catch(e) { list.innerHTML = '<div class="text-slate-500 italic text-sm">Fehler</div>'; }
+                lucide.createIcons();
+            };
+
+            window.trCloseInviteModal = () => {
+                document.getElementById('invite-modal').classList.add('hidden');
+            };
+
+            window.trSendInvite = async (toName, btn) => {
+                const myName = getPlayerName(), code = currentRoomCode;
+                if (!myName || !code) { showToast('Erst Raum erstellen!', 'error'); return; }
+                if (btn) { btn.disabled = true; btn.innerHTML = '✓'; btn.style.color = '#4ade80'; }
+                try {
+                    const firestore = await ensureDB();
+                    const key = `${Date.now()}_${Math.random().toString(36).substr(2,4)}`;
+                    await fsMod.updateDoc(docRef('users', toName), {
+                        [`invites.${key}`]: { code, game: 'tipprennen', from: myName, createdAt: Date.now() }
+                    });
+                    showToast(`Einladung an ${toName} gesendet!`, 'success');
+                } catch(e) { if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="send" class="w-3 h-3"></i> Einladen'; lucide.createIcons(); } }
+            };
+
+            window.trSendInviteFromList = async (name, btn) => {
+                if (!currentRoomCode) { showToast('Erst Raum erstellen!', 'error'); return; }
+                window.trSendInvite(name, btn);
+            };
+
+            function trRenderInvites() {
+                const section = document.getElementById('tr-invites-section');
+                const list = document.getElementById('tr-invites-list');
+                if (!section || !list) return;
+                const keys = Object.keys(_pendingInvites || {});
+                section.style.display = keys.length ? 'block' : 'none';
+                list.innerHTML = keys.map(k => {
+                    const inv = _pendingInvites[k];
+                    return `<div class="flex items-center justify-between bg-yellow-900/30 border border-yellow-600/30 p-2.5 rounded-xl mb-1">
+                        <div><div class="text-sm text-white font-semibold">🎮 ${inv.from}</div>
+                        <div class="text-xs text-yellow-400">🏁 Tipp-Rennen · <span class="font-mono">${inv.code}</span></div></div>
+                        <div class="flex gap-1">
+                            <button onclick="window.trAcceptInvite('${k}','${inv.code}')" class="text-xs bg-green-600 hover:bg-green-500 text-white px-2 py-1.5 rounded-lg font-semibold">Beitreten</button>
+                            <button onclick="window.trDeclineInvite('${k}')" class="text-xs bg-slate-600 hover:bg-slate-500 text-white px-2 py-1.5 rounded-lg">✕</button>
+                        </div>
+                    </div>`;
+                }).join('');
+                const badge = document.getElementById('tr-invite-badge');
+                if (badge) { badge.textContent = keys.length || ''; badge.style.display = keys.length ? 'flex' : 'none'; }
+            }
+
+            window.trAcceptInvite = async (key, code) => {
+                const myName = getPlayerName();
+                try {
+                    const firestore = await ensureDB();
+                    if (firestore) await fsMod.updateDoc(docRef('users', myName), { [`invites.${key}`]: fsMod.deleteField() });
+                } catch(e) {}
+                window.trCloseFriendsModal();
+                window.trJoinRoom(code);
+            };
+
+            window.trDeclineInvite = async (key) => {
+                const myName = getPlayerName();
+                delete _pendingInvites[key];
+                try {
+                    const firestore = await ensureDB();
+                    if (firestore) await fsMod.updateDoc(docRef('users', myName), { [`invites.${key}`]: fsMod.deleteField() });
+                } catch(e) {}
+                trRenderInvites();
+            };
+
+            async function trSubscribeInvites(myName) {
+                if (!myName || localStorage.getItem('wolfle_is_guest') === '1') return;
+                if (inviteUnsubscribe) inviteUnsubscribe();
+                try {
+                    const firestore = await ensureDB(); if (!firestore) return;
+                    inviteUnsubscribe = fsMod.onSnapshot(docRef('users', myName), snap => {
+                        if (!snap.exists()) return;
+                        const newInvites = snap.data().invites || {};
+                        const newKeys = Object.keys(newInvites).filter(k => !_pendingInvites[k]);
+                        newKeys.forEach(k => {
+                            const inv = newInvites[k];
+                            showToast(`🎮 ${inv.from} lädt dich ein!`, 'success');
+                        });
+                        _pendingInvites = newInvites;
+                        trRenderInvites();
+                    });
+                } catch(e) {}
+            }
+
+            // ══ ROOM / MULTIPLAYER FUNCTIONS ══
+            window.trCreateRoom = async () => {
+                const name = getPlayerName();
+                if (!name) { showToast('Erst anmelden!', 'error'); return; }
+                const firestore = await ensureDB(); if (!firestore) { showToast('Verbindungsfehler', 'error'); return; }
+                const code = Math.random().toString(36).substring(2,7).toUpperCase();
+                const avatar = localStorage.getItem('wolfle_avatar') || '🐺';
+                await fsMod.setDoc(docRef(ROOM_COL, code), {
+                    gameType: 'tipprennen', isPrivate: false, hostName: name,
+                    createdAt: Date.now(), lastActivity: Date.now(),
+                    status: 'waiting', text: null, difficulty: difficulty,
+                    players: { [name]: { name, avatar, progress: 0, wpm: 0, finished: false } }
+                });
+                currentRoomCode = code; isHost = true; multiplayerGameStarted = false;
+                localStorage.setItem('wolfle_active_tr_room', code);
+                trListenRoom(code);
+                updateMpStartUI();
+                showToast(`Raum erstellt: ${code}`, 'success');
+            };
+
+            window.trJoinRoom = async (codeOverride) => {
+                const name = getPlayerName();
+                if (!name) { showToast('Erst anmelden!', 'error'); return; }
+                const firestore = await ensureDB(); if (!firestore) { showToast('Verbindungsfehler', 'error'); return; }
+                const input = document.getElementById('tr-join-code');
+                const code = (codeOverride || (input ? input.value : '') || '').toUpperCase().trim();
+                if (!code) { showToast('Code eingeben!', 'error'); return; }
+                const snap = await fsMod.getDoc(docRef(ROOM_COL, code));
+                if (!snap.exists()) { showToast('Raum nicht gefunden!', 'error'); return; }
+                const data = snap.data();
+                if (data.status === 'playing') { showToast('Spiel bereits gestartet!', 'error'); return; }
+                const avatar = localStorage.getItem('wolfle_avatar') || '🐺';
+                await fsMod.setDoc(docRef(ROOM_COL, code),
+                    { players: { [name]: { name, avatar, progress: 0, wpm: 0, finished: false } }, lastActivity: Date.now() },
+                    { merge: true });
+                currentRoomCode = code; isHost = data.hostName === name; multiplayerGameStarted = false;
+                localStorage.setItem('wolfle_active_tr_room', code);
+                trListenRoom(code);
+                updateMpStartUI();
+                if (input) input.value = '';
+                showToast(`Raum beigetreten: ${code}`, 'success');
+                window.trCloseFriendsModal();
+            };
+
+            window.trLeaveRoom = async () => {
+                const code = currentRoomCode;
+                if (!code) return;
+                if (progressInterval) { clearInterval(progressInterval); progressInterval = null; }
+                if (roomUnsubscribe) { roomUnsubscribe(); roomUnsubscribe = null; }
+                const name = getPlayerName();
+                const firestore = await ensureDB();
+                if (firestore && name) {
+                    try {
+                        await fsMod.updateDoc(docRef(ROOM_COL, code), { [`players.${name}`]: fsMod.deleteField(), lastActivity: Date.now() });
+                        // Clean up empty rooms
+                        const s = await fsMod.getDoc(docRef(ROOM_COL, code));
+                        if (s.exists() && !Object.keys(s.data().players || {}).length) {
+                            await fsMod.deleteDoc(docRef(ROOM_COL, code));
+                        }
+                    } catch(e) {}
+                }
+                currentRoomCode = null; isHost = false; multiplayerGameStarted = false;
+                localStorage.removeItem('wolfle_active_tr_room');
+                document.getElementById('room-bar').style.display = 'none';
+                if (!$raceScreen.classList.contains('hidden') || !$resultsScreen.classList.contains('hidden')) {
+                    showScreen($startScreen);
+                }
+                updateMpStartUI();
+                showToast('Raum verlassen', 'info');
+                lucide.createIcons();
+            };
+
+            // Fast cleanup on page leave
+            function trLeaveRoomQuick() {
+                const code = currentRoomCode, name = getPlayerName();
+                if (!code || !name || !db) return;
+                fsMod.updateDoc(docRef(ROOM_COL, code), { [`players.${name}`]: fsMod.deleteField() }).catch(()=>{});
+                localStorage.removeItem('wolfle_active_tr_room');
+                currentRoomCode = null;
+            }
+            window.addEventListener('pagehide', trLeaveRoomQuick);
+            window.addEventListener('beforeunload', trLeaveRoomQuick);
+
+            async function trListenRoom(code) {
+                const firestore = await ensureDB(); if (!firestore) return;
+                if (roomUnsubscribe) roomUnsubscribe();
+                roomUnsubscribe = fsMod.onSnapshot(docRef(ROOM_COL, code), snap => {
+                    if (!snap.exists()) {
+                        showToast('Raum wurde geschlossen', 'error');
+                        currentRoomCode = null; isHost = false;
+                        document.getElementById('room-bar').style.display = 'none';
+                        updateMpStartUI();
+                        if (!$raceScreen.classList.contains('hidden')) showScreen($startScreen);
+                        return;
+                    }
+                    window.trHandleRoomUpdate(snap.data());
+                });
+            }
+
+            window.trHostStartRace = async () => {
+                if (!currentRoomCode || !isHost) return;
+                const pool = texts[difficulty];
+                const text = pool[Math.floor(Math.random() * pool.length)];
+                const firestore = await ensureDB(); if (!firestore) return;
+                await fsMod.updateDoc(docRef(ROOM_COL, currentRoomCode), {
+                    status: 'playing', text, difficulty, startedAt: Date.now(), lastActivity: Date.now()
+                });
+            };
+
+            window.trSyncProgress = async (pct, wpm, finished) => {
+                if (!currentRoomCode) return;
+                const name = getPlayerName();
+                const firestore = await ensureDB(); if (!firestore) return;
+                try {
+                    await fsMod.updateDoc(docRef(ROOM_COL, currentRoomCode), {
+                        [`players.${name}.progress`]: pct,
+                        [`players.${name}.wpm`]: wpm,
+                        [`players.${name}.finished`]: finished,
+                        ...(finished ? { [`players.${name}.finishedAt`]: Date.now() } : {}),
+                        lastActivity: Date.now()
+                    });
+                } catch(e) {}
+            };
+
+            window.trReturnToLobby = async () => {
+                if (!currentRoomCode) { showScreen($startScreen); updateMpStartUI(); return; }
+                multiplayerGameStarted = false;
+                // Reset player state in room
+                const name = getPlayerName(), firestore = await ensureDB();
+                if (firestore && name) {
+                    try {
+                        const avatar = localStorage.getItem('wolfle_avatar') || '🐺';
+                        await fsMod.updateDoc(docRef(ROOM_COL, currentRoomCode), {
+                            [`players.${name}`]: { name, avatar, progress: 0, wpm: 0, finished: false },
+                            lastActivity: Date.now()
+                        });
+                        // If all players returned, reset room to waiting
+                        const snap = await fsMod.getDoc(docRef(ROOM_COL, currentRoomCode));
+                        if (snap.exists()) {
+                            const players = snap.data().players || {};
+                            const allReady = Object.values(players).every(p => !p.finished);
+                            if (allReady) {
+                                await fsMod.updateDoc(docRef(ROOM_COL, currentRoomCode), { status: 'waiting', text: null });
+                            }
+                        }
+                    } catch(e) {}
+                }
+                showScreen($startScreen);
+                updateMpStartUI();
+                lucide.createIcons();
+            };
+
+            window.trShowMpResults = async () => {
+                const list = document.getElementById('mp-results-list');
+                if (!list || !currentRoomCode) return;
+                // Listen to room for live results updates
+                const firestore = await ensureDB(); if (!firestore) return;
+                fsMod.onSnapshot(docRef(ROOM_COL, currentRoomCode), snap => {
+                    if (!snap.exists()) return;
+                    const players = Object.values(snap.data().players || {});
+                    const sorted = players.sort((a, b) => {
+                        if (a.finished && !b.finished) return -1;
+                        if (!a.finished && b.finished) return 1;
+                        if (a.finished && b.finished) return (a.finishedAt||0) - (b.finishedAt||0);
+                        return (b.wpm||0) - (a.wpm||0);
+                    });
+                    const medals = ['🥇','🥈','🥉'];
+                    const myName = getPlayerName();
+                    list.innerHTML = sorted.map((p, i) => {
+                        const isMe = p.name === myName;
+                        return `<div class="mp-rank-row">
+                            <span class="mp-rank-num">${medals[i] || `${i+1}.`}</span>
+                            <span class="text-base">${p.avatar || '🐺'}</span>
+                            <span class="text-sm font-semibold flex-1" style="${isMe ? 'color:#22d3ee' : 'color:#e2e8f0'}">${p.name}${isMe ? ' (Du)' : ''}</span>
+                            <span class="text-sm font-bold text-cyan-400">${p.wpm || 0} WPM</span>
+                            <span class="text-xs text-slate-400">${p.finished ? '✓' : '…'}</span>
+                        </div>`;
+                    }).join('');
+                    lucide.createIcons();
+                });
+            };
+
+            // ── Auto-init on load ──
+            if (isLoggedIn() && getPlayerName()) {
+                trSubscribeInvites(getPlayerName());
+                const savedRoom = localStorage.getItem('wolfle_active_tr_room');
+                if (savedRoom) window.trJoinRoom(savedRoom);
+            }
+        })();
+
         lucide.createIcons();
     
 
