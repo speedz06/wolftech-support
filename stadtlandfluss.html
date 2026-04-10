@@ -335,9 +335,9 @@
             <button onclick="slfOpenFriends()" class="relative text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Freunde">
                 <i data-lucide="users" class="w-4 h-4"></i>
             </button>
-            <button id="slf-login-btn" onclick="ui.openLogin()" title="Anmelden" class="flex items-center gap-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white px-2 py-1.5 rounded-lg border border-slate-600 transition-all">
-                <span id="slf-avatar">🐺</span>
-                <span id="slf-name-label" class="hidden-xs">Anmelden</span>
+            <button id="login-header-btn" onclick="ui.openLogin()" title="Anmelden" class="flex items-center gap-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white px-2 py-1.5 rounded-lg border border-slate-600 transition-all">
+                <span id="login-header-avatar">🐺</span>
+                <span id="login-header-label" class="hidden-xs">Anmelden</span>
             </button>
         </div>
     </div>
@@ -503,8 +503,25 @@
                 <button onclick="slfDoLogin()" class="w-full bg-green-600 hover:bg-green-500 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors mb-2">Anmelden / Registrieren</button>
                 <button onclick="slfGuestLogin()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 py-2 rounded-xl text-sm transition-colors">👤 Als Gast spielen</button>
             </div>
+            <div id="slf-guest-form" class="hidden">
+                <div class="flex items-center gap-2 mb-5">
+                    <button onclick="slfShowLoginForm()" class="text-slate-400 hover:text-white"><i data-lucide="arrow-left" class="w-4 h-4"></i></button>
+                    <h3 class="text-base font-semibold text-white">Als Gast spielen</h3>
+                </div>
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Dein Name</label>
+                <input id="slf-guest-name" type="text" maxlength="15" placeholder="Name eingeben..."
+                    class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white mb-3">
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Dein Avatar</label>
+                <div class="text-center mb-3"><div id="slf-guest-avatar-preview" class="text-5xl">🐺</div></div>
+                <div id="slf-guest-avatar-grid" class="avatar-grid mb-4"></div>
+                <div id="slf-guest-error" class="hidden text-red-400 text-xs mb-3 text-center"></div>
+                <button onclick="slfConfirmGuest()" class="w-full bg-slate-700 hover:bg-slate-600 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors">Weiter spielen</button>
+            </div>
             <div id="slf-login-loggedin" class="hidden text-center">
-                <div id="slf-login-avatar-display" class="text-5xl mb-2">🐺</div>
+                <div id="slf-login-avatar-display" class="text-5xl mb-1 cursor-pointer" onclick="slfToggleAvatarGrid()" title="Avatar ändern">🐺</div>
+                <div class="text-xs text-slate-500 mb-2">Tippe zum Ändern</div>
+                <div id="slf-login-avatar-grid" class="avatar-grid hidden mb-3"></div>
+                <button id="slf-avatar-save-btn" onclick="slfSaveAvatar()" class="hidden w-full bg-green-600 hover:bg-green-500 text-white py-2 rounded-xl text-sm font-semibold transition-colors mb-3">Avatar speichern</button>
                 <div class="text-lg font-bold text-white mb-1" id="slf-login-welcome"></div>
                 <div class="text-xs text-slate-400 mb-4">Angemeldet</div>
                 <button onclick="slfDoLogout()" class="w-full bg-red-900/40 hover:bg-red-900/60 border border-red-800/40 text-red-400 py-2 rounded-xl text-sm transition-colors mb-2">Abmelden</button>
@@ -568,7 +585,9 @@
                 m.style.display = 'flex';
                 // Show correct section based on login state
                 const form = document.getElementById('slf-login-form');
+                const guestForm = document.getElementById('slf-guest-form');
                 const loggedInSection = document.getElementById('slf-login-loggedin');
+                if (guestForm) guestForm.classList.add('hidden');
                 if (form) form.classList.toggle('hidden', loggedIn);
                 if (loggedInSection) loggedInSection.classList.toggle('hidden', !loggedIn);
                 if (loggedIn) {
@@ -1151,9 +1170,17 @@
         const loggedIn = localStorage.getItem('wolfle_logged_in') === '1';
         const name = localStorage.getItem('wolfle_user_name') || '';
         const avatar = localStorage.getItem('wolfle_avatar') || '🐺';
-        document.getElementById('login-header-avatar').textContent = avatar;
-        document.getElementById('login-header-label').textContent = loggedIn ? name : 'Anmelden';
-        if (name) document.getElementById('slf-name-input').value = name;
+        const avatarEl = document.getElementById('login-header-avatar');
+        const labelEl = document.getElementById('login-header-label');
+        const btnEl = document.getElementById('login-header-btn');
+        if (avatarEl) avatarEl.textContent = avatar;
+        if (labelEl) labelEl.textContent = (loggedIn && name) ? name : 'Anmelden';
+        if (btnEl) {
+            btnEl.classList.toggle('border-indigo-500/50', loggedIn && !!name);
+            btnEl.classList.toggle('border-slate-600', !loggedIn || !name);
+        }
+        const nameInput = document.getElementById('slf-name-input');
+        if (name && nameInput) nameInput.value = name;
     }
 
     window.slfOpenLogin = () => {
@@ -1182,6 +1209,12 @@
         const modal = document.getElementById('slf-login-modal');
         modal.classList.add('hidden');
         modal.style.display = '';
+        // Reset guest form so it's hidden next time the modal opens
+        document.getElementById('slf-guest-form')?.classList.add('hidden');
+        document.getElementById('slf-login-form')?.classList.remove('hidden');
+        // Collapse avatar editor in logged-in section
+        document.getElementById('slf-login-avatar-grid')?.classList.add('hidden');
+        document.getElementById('slf-avatar-save-btn')?.classList.add('hidden');
     };
 
     window.slfDoLogin = async () => {
@@ -1215,14 +1248,90 @@
         loadSlfLeaderboard();
     };
 
+    const AVATARS = ['🐺','🦊','🐻','🦁','🐯','🐸','🐧','🦅','🦋','🐙','🦄','🐬','🌟','🔥','💎','🌈','🍀','⚡'];
+    let slfGuestAvatar = '🐺';
+    let slfEditAvatar = '🐺';
+
     window.slfGuestLogin = () => {
-        const name = document.getElementById('slf-login-name').value.trim() || 'Gast';
+        const loginForm = document.getElementById('slf-login-form');
+        const guestForm = document.getElementById('slf-guest-form');
+        loginForm.classList.add('hidden');
+        guestForm.classList.remove('hidden');
+        const existingName = localStorage.getItem('wolfle_user_name') || '';
+        const nameInput = document.getElementById('slf-guest-name');
+        if (nameInput) nameInput.value = existingName;
+        document.getElementById('slf-guest-error').classList.add('hidden');
+        slfGuestAvatar = localStorage.getItem('wolfle_avatar') || '🐺';
+        document.getElementById('slf-guest-avatar-preview').textContent = slfGuestAvatar;
+        const grid = document.getElementById('slf-guest-avatar-grid');
+        grid.innerHTML = AVATARS.map(a =>
+            `<button class="avatar-btn${a === slfGuestAvatar ? ' selected' : ''}" onclick="slfSelectGuestAvatar('${a}')">${a}</button>`
+        ).join('');
+        lucide.createIcons();
+    };
+
+    window.slfShowLoginForm = () => {
+        document.getElementById('slf-login-form').classList.remove('hidden');
+        document.getElementById('slf-guest-form').classList.add('hidden');
+    };
+
+    window.slfSelectGuestAvatar = (a) => {
+        slfGuestAvatar = a;
+        document.getElementById('slf-guest-avatar-preview').textContent = a;
+        document.querySelectorAll('#slf-guest-avatar-grid .avatar-btn').forEach(b => b.classList.toggle('selected', b.textContent === a));
+    };
+
+    window.slfConfirmGuest = () => {
+        const nameInput = document.getElementById('slf-guest-name');
+        const errEl = document.getElementById('slf-guest-error');
+        const name = nameInput.value.trim();
+        if (!name) { errEl.textContent = 'Bitte einen Namen eingeben.'; errEl.classList.remove('hidden'); return; }
+        errEl.classList.add('hidden');
         localStorage.setItem('wolfle_user_name', name);
+        localStorage.setItem('wolfle_avatar', slfGuestAvatar);
         localStorage.setItem('wolfle_is_guest', '1');
         localStorage.setItem('wolfle_logged_in', '1');
         document.getElementById('slf-name-input').value = name;
         updateLoginHeader();
         slfCloseLogin();
+        showToast(`Willkommen, ${name}!`);
+    };
+
+    window.slfToggleAvatarGrid = () => {
+        const grid = document.getElementById('slf-login-avatar-grid');
+        const saveBtn = document.getElementById('slf-avatar-save-btn');
+        const isHidden = grid.classList.contains('hidden');
+        if (isHidden) {
+            slfEditAvatar = localStorage.getItem('wolfle_avatar') || '🐺';
+            grid.innerHTML = AVATARS.map(a =>
+                `<button class="avatar-btn${a === slfEditAvatar ? ' selected' : ''}" onclick="slfSelectEditAvatar('${a}')">${a}</button>`
+            ).join('');
+            grid.classList.remove('hidden');
+            saveBtn.classList.remove('hidden');
+        } else {
+            grid.classList.add('hidden');
+            saveBtn.classList.add('hidden');
+        }
+    };
+
+    window.slfSelectEditAvatar = (a) => {
+        slfEditAvatar = a;
+        document.getElementById('slf-login-avatar-display').textContent = a;
+        document.querySelectorAll('#slf-login-avatar-grid .avatar-btn').forEach(b => b.classList.toggle('selected', b.textContent === a));
+    };
+
+    window.slfSaveAvatar = async () => {
+        localStorage.setItem('wolfle_avatar', slfEditAvatar);
+        updateLoginHeader();
+        document.getElementById('slf-login-avatar-grid').classList.add('hidden');
+        document.getElementById('slf-avatar-save-btn').classList.add('hidden');
+        const name = localStorage.getItem('wolfle_user_name');
+        if (name && localStorage.getItem('wolfle_is_guest') !== '1') {
+            try {
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', name), { avatar: slfEditAvatar });
+            } catch(e) {}
+        }
+        showToast('Avatar gespeichert!');
     };
 
     window.slfDoLogout = () => {
