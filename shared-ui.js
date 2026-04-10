@@ -56,7 +56,9 @@
 
   function defaultOpenLogin() {
     const modal = document.getElementById('login-modal');
-    if (modal) modal.classList.remove('hidden');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
   }
 
   const ui = {
