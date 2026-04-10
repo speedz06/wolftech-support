@@ -600,6 +600,43 @@
             }
         });
     }
+
+    // Profile modal functions — available before module loads
+    var AVATARS = ['🐺','🦊','🐻','🦁','🐯','🐸','🐧','🦅','🦋','🐙','🦄','🐬','🌟','🔥','💎','🌈','🍀','⚡'];
+    var slfEditAvatar = '🐺';
+
+    window.slfCloseLogin = () => {
+        const modal = document.getElementById('slf-login-modal');
+        modal.classList.add('hidden');
+        modal.style.display = '';
+        document.getElementById('slf-guest-form')?.classList.add('hidden');
+        document.getElementById('slf-login-form')?.classList.remove('hidden');
+        document.getElementById('slf-login-avatar-grid')?.classList.add('hidden');
+        document.getElementById('slf-avatar-save-btn')?.classList.add('hidden');
+    };
+
+    window.slfToggleAvatarGrid = () => {
+        const grid = document.getElementById('slf-login-avatar-grid');
+        const saveBtn = document.getElementById('slf-avatar-save-btn');
+        const isHidden = grid.classList.contains('hidden');
+        if (isHidden) {
+            slfEditAvatar = localStorage.getItem('wolfle_avatar') || '🐺';
+            grid.innerHTML = AVATARS.map(a =>
+                `<button class="avatar-btn${a === slfEditAvatar ? ' selected' : ''}" onclick="slfSelectEditAvatar('${a}')">${a}</button>`
+            ).join('');
+            grid.classList.remove('hidden');
+            saveBtn.classList.remove('hidden');
+        } else {
+            grid.classList.add('hidden');
+            saveBtn.classList.add('hidden');
+        }
+    };
+
+    window.slfSelectEditAvatar = (a) => {
+        slfEditAvatar = a;
+        document.getElementById('slf-login-avatar-display').textContent = a;
+        document.querySelectorAll('#slf-login-avatar-grid .avatar-btn').forEach(b => b.classList.toggle('selected', b.textContent === a));
+    };
 </script>
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -1205,18 +1242,6 @@
         lucide.createIcons();
     };
 
-    window.slfCloseLogin = () => {
-        const modal = document.getElementById('slf-login-modal');
-        modal.classList.add('hidden');
-        modal.style.display = '';
-        // Reset guest form so it's hidden next time the modal opens
-        document.getElementById('slf-guest-form')?.classList.add('hidden');
-        document.getElementById('slf-login-form')?.classList.remove('hidden');
-        // Collapse avatar editor in logged-in section
-        document.getElementById('slf-login-avatar-grid')?.classList.add('hidden');
-        document.getElementById('slf-avatar-save-btn')?.classList.add('hidden');
-    };
-
     window.slfDoLogin = async () => {
         const name = document.getElementById('slf-login-name').value.trim();
         const pin = document.getElementById('slf-login-pin').value;
@@ -1248,9 +1273,7 @@
         loadSlfLeaderboard();
     };
 
-    const AVATARS = ['🐺','🦊','🐻','🦁','🐯','🐸','🐧','🦅','🦋','🐙','🦄','🐬','🌟','🔥','💎','🌈','🍀','⚡'];
     let slfGuestAvatar = '🐺';
-    let slfEditAvatar = '🐺';
 
     window.slfGuestLogin = () => {
         const loginForm = document.getElementById('slf-login-form');
@@ -1295,29 +1318,6 @@
         updateLoginHeader();
         slfCloseLogin();
         showToast(`Willkommen, ${name}!`);
-    };
-
-    window.slfToggleAvatarGrid = () => {
-        const grid = document.getElementById('slf-login-avatar-grid');
-        const saveBtn = document.getElementById('slf-avatar-save-btn');
-        const isHidden = grid.classList.contains('hidden');
-        if (isHidden) {
-            slfEditAvatar = localStorage.getItem('wolfle_avatar') || '🐺';
-            grid.innerHTML = AVATARS.map(a =>
-                `<button class="avatar-btn${a === slfEditAvatar ? ' selected' : ''}" onclick="slfSelectEditAvatar('${a}')">${a}</button>`
-            ).join('');
-            grid.classList.remove('hidden');
-            saveBtn.classList.remove('hidden');
-        } else {
-            grid.classList.add('hidden');
-            saveBtn.classList.add('hidden');
-        }
-    };
-
-    window.slfSelectEditAvatar = (a) => {
-        slfEditAvatar = a;
-        document.getElementById('slf-login-avatar-display').textContent = a;
-        document.querySelectorAll('#slf-login-avatar-grid .avatar-btn').forEach(b => b.classList.toggle('selected', b.textContent === a));
     };
 
     window.slfSaveAvatar = async () => {
