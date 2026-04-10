@@ -98,3 +98,20 @@
   window.toggleHaptic = defaultToggleHaptics;
   window.openLoginModal = defaultOpenLogin;
 })();
+
+// Immediately update login header from localStorage so the header shows
+// the correct state before the Firebase module finishes loading.
+document.addEventListener('DOMContentLoaded', function () {
+  const loggedIn = localStorage.getItem('wolfle_logged_in') === '1';
+  const name = localStorage.getItem('wolfle_user_name') || '';
+  const avatar = localStorage.getItem('wolfle_avatar') || '🐺';
+  if (!loggedIn || !name) return;
+  const btn = document.getElementById('login-header-btn');
+  if (!btn) return;
+  const labelEl = document.getElementById('login-header-label');
+  const avatarEl = document.getElementById('login-header-avatar');
+  if (labelEl) labelEl.textContent = name;
+  if (avatarEl) avatarEl.textContent = avatar;
+  btn.classList.remove('border-slate-600');
+  btn.classList.add('border-indigo-500/50');
+});

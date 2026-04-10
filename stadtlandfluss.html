@@ -6,7 +6,7 @@
     <title>Wolfle – Stadt Land Fluss</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="shared-ui.js?v=2"></script>
+    <script src="shared-ui.js?v=3"></script>
     <style>
         * { box-sizing: border-box; }
         html { touch-action: manipulation; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
@@ -546,6 +546,13 @@
     // Run immediately (non-module) so icons and basic button stubs work before Firebase loads
     lucide.createIcons();
 
+    // Pre-fill name input from localStorage so it's ready before the module loads
+    (function() {
+        const name = localStorage.getItem('wolfle_user_name') || '';
+        const inp = document.getElementById('slf-name-input');
+        if (inp && name) inp.value = name;
+    })();
+
     // Stubs so header buttons work before the module finishes loading
     function slfOpenFriends() {
         const m = document.getElementById('slf-friends-modal');
@@ -554,8 +561,23 @@
     if (window.ui) {
         ui.setHandlers({
             openLogin: function() {
+                const loggedIn = localStorage.getItem('wolfle_logged_in') === '1';
                 const m = document.getElementById('slf-login-modal');
-                if (m) { m.classList.remove('hidden'); m.style.display = 'flex'; lucide.createIcons(); }
+                if (!m) return;
+                m.classList.remove('hidden');
+                m.style.display = 'flex';
+                // Show correct section based on login state
+                const form = document.getElementById('slf-login-form');
+                const loggedInSection = document.getElementById('slf-login-loggedin');
+                if (form) form.classList.toggle('hidden', loggedIn);
+                if (loggedInSection) loggedInSection.classList.toggle('hidden', !loggedIn);
+                if (loggedIn) {
+                    const welcome = document.getElementById('slf-login-welcome');
+                    const avatarEl = document.getElementById('slf-login-avatar-display');
+                    if (welcome) welcome.textContent = localStorage.getItem('wolfle_user_name') || '';
+                    if (avatarEl) avatarEl.textContent = localStorage.getItem('wolfle_avatar') || '🐺';
+                }
+                lucide.createIcons();
             }
         });
     }
