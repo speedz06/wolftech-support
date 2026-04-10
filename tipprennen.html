@@ -1280,6 +1280,54 @@
         updateLoginHeader();
         updateMpStartUI();
 
+        // ── Login modal (synchronous – no Firebase needed) ──
+        const AVATARS = ['🐺','🦊','🐻','🦁','🐯','🐸','🐧','🦅','🦋','🐙','🦄','🐬','🌟','🔥','💎','🌈','🍀','⚡'];
+        let _loginSelectedAvatar = localStorage.getItem('wolfle_avatar') || '🐺';
+
+        window.openLoginModal = () => {
+            const form = document.getElementById('login-form-section');
+            const loggedSection = document.getElementById('login-loggedin-section');
+            const modal = document.getElementById('login-modal');
+            if (isLoggedIn()) {
+                const name = getPlayerName(), avatar = localStorage.getItem('wolfle_avatar') || '🐺';
+                _loginSelectedAvatar = avatar;
+                document.getElementById('login-welcome-name').textContent = name;
+                document.getElementById('login-welcome-avatar').textContent = avatar;
+                document.getElementById('login-avatar-grid').classList.add('hidden');
+                document.getElementById('login-avatar-save-btn').classList.add('hidden');
+                form.classList.add('hidden'); loggedSection.classList.remove('hidden');
+            } else {
+                document.getElementById('login-name-input').value = '';
+                document.getElementById('login-pin-input').value = '';
+                document.getElementById('login-error').classList.add('hidden');
+                form.classList.remove('hidden'); loggedSection.classList.add('hidden');
+            }
+            modal.classList.remove('hidden');
+            lucide.createIcons();
+        };
+
+        window.closeLoginModal = () => {
+            document.getElementById('login-modal').classList.add('hidden');
+        };
+
+        window.toggleLoginAvatarGrid = () => {
+            const grid = document.getElementById('login-avatar-grid');
+            const saveBtn = document.getElementById('login-avatar-save-btn');
+            const open = grid.classList.toggle('hidden');
+            saveBtn.classList.toggle('hidden', open);
+            if (!open) {
+                grid.innerHTML = AVATARS.map(a =>
+                    `<button class="avatar-btn${a===_loginSelectedAvatar?' selected':''}" onclick="window.selectLoginAvatar('${a}')">${a}</button>`
+                ).join('');
+            }
+        };
+
+        window.selectLoginAvatar = (a) => {
+            _loginSelectedAvatar = a;
+            document.getElementById('login-welcome-avatar').textContent = a;
+            document.querySelectorAll('#login-avatar-grid .avatar-btn').forEach(b => b.classList.toggle('selected', b.textContent === a));
+        };
+
         // Dynamic imports for Firebase (auth, friends, multiplayer)
         (async () => {
             const appMod = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js');
@@ -1295,11 +1343,9 @@
                 appId: "1:286289741614:web:14e5faad1616fe75755cbf"
             };
             const ROOM_COL = 'tr_rooms';
-            const AVATARS = ['🐺','🦊','🐻','🦁','🐯','🐸','🐧','🦅','🦋','🐙','🦄','🐬','🌟','🔥','💎','🌈','🍀','⚡'];
 
             let db = null;
             let selectedAvatar = localStorage.getItem('wolfle_avatar') || '🐺';
-            let _loginSelectedAvatar = selectedAvatar;
 
             async function ensureDB() {
                 if (db) return db;
@@ -1326,32 +1372,6 @@
             }
 
             // ══ LOGIN FUNCTIONS ══
-            window.openLoginModal = () => {
-                const form = document.getElementById('login-form-section');
-                const loggedSection = document.getElementById('login-loggedin-section');
-                const modal = document.getElementById('login-modal');
-                if (isLoggedIn()) {
-                    const name = getPlayerName(), avatar = localStorage.getItem('wolfle_avatar') || '🐺';
-                    _loginSelectedAvatar = avatar;
-                    document.getElementById('login-welcome-name').textContent = name;
-                    document.getElementById('login-welcome-avatar').textContent = avatar;
-                    document.getElementById('login-avatar-grid').classList.add('hidden');
-                    document.getElementById('login-avatar-save-btn').classList.add('hidden');
-                    form.classList.add('hidden'); loggedSection.classList.remove('hidden');
-                } else {
-                    document.getElementById('login-name-input').value = '';
-                    document.getElementById('login-pin-input').value = '';
-                    document.getElementById('login-error').classList.add('hidden');
-                    form.classList.remove('hidden'); loggedSection.classList.add('hidden');
-                }
-                modal.classList.remove('hidden');
-                lucide.createIcons();
-            };
-
-            window.closeLoginModal = () => {
-                document.getElementById('login-modal').classList.add('hidden');
-            };
-
             window.doLogin = async () => {
                 const nameInput = document.getElementById('login-name-input');
                 const pinInput  = document.getElementById('login-pin-input');
@@ -1416,24 +1436,6 @@
                 updateMpStartUI();
                 window.closeLoginModal();
                 showToast(`Willkommen, ${g}!`, 'success');
-            };
-
-            window.toggleLoginAvatarGrid = () => {
-                const grid = document.getElementById('login-avatar-grid');
-                const saveBtn = document.getElementById('login-avatar-save-btn');
-                const open = grid.classList.toggle('hidden');
-                saveBtn.classList.toggle('hidden', open);
-                if (!open) {
-                    grid.innerHTML = AVATARS.map(a =>
-                        `<button class="avatar-btn${a===_loginSelectedAvatar?' selected':''}" onclick="window.selectLoginAvatar('${a}')">${a}</button>`
-                    ).join('');
-                }
-            };
-
-            window.selectLoginAvatar = (a) => {
-                _loginSelectedAvatar = a;
-                document.getElementById('login-welcome-avatar').textContent = a;
-                document.querySelectorAll('#login-avatar-grid .avatar-btn').forEach(b => b.classList.toggle('selected', b.textContent === a));
             };
 
             window.saveLoginAvatar = async () => {
@@ -1851,7 +1853,7 @@
     
 
         if (window.ui) {
-            ui.setHandlers({ toggleTheme });
+            ui.setHandlers({ toggleTheme, openLogin: window.openLoginModal });
         }
 
 </script>
