@@ -639,7 +639,7 @@
 
             <!-- Text to type -->
             <div id="text-display" style="position: relative;">
-                <div id="countdown-overlay" class="hidden">
+                <div id="countdown-overlay" style="display:none">
                     <span id="countdown-number">3</span>
                 </div>
                 <div id="text-content"></div>
@@ -1125,13 +1125,13 @@
 
         // ── Countdown then go ──
         function startCountdown(cb) {
-            $countdown.classList.remove('hidden');
+            $countdown.style.display = 'flex';
             $typingInput.disabled = true;
             let count = 3;
 
             const tick = () => {
                 if (count <= 0) {
-                    $countdown.classList.add('hidden');
+                    $countdown.style.display = 'none';
                     $typingInput.disabled = false;
                     $typingInput.focus();
                     cb();
