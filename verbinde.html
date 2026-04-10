@@ -972,6 +972,42 @@
         </div>
     </div>
 
+<script>
+    // Synchronous login handler – runs before Firebase module loads
+    if (window.ui) {
+        ui.setHandlers({
+            openLogin: function() {
+                const loggedIn = localStorage.getItem('wolfle_logged_in') === '1';
+                const modal = document.getElementById('login-modal');
+                if (!modal) return;
+                modal.classList.remove('hidden');
+                modal.style.display = 'flex';
+                const form = document.getElementById('login-form-section');
+                const loggedInSection = document.getElementById('login-loggedin-section');
+                if (form) form.classList.toggle('hidden', loggedIn);
+                if (loggedInSection) loggedInSection.classList.toggle('hidden', !loggedIn);
+                if (loggedIn) {
+                    const name = localStorage.getItem('wolfle_user_name') || '';
+                    const avatar = localStorage.getItem('wolfle_avatar') || '🐺';
+                    const welName = document.getElementById('login-welcome-name');
+                    const welAvatar = document.getElementById('login-welcome-avatar');
+                    if (welName) welName.textContent = name;
+                    if (welAvatar) welAvatar.textContent = avatar;
+                    const grid = document.getElementById('login-avatar-grid');
+                    const saveBtn = document.getElementById('login-avatar-save-btn');
+                    if (grid) grid.classList.add('hidden');
+                    if (saveBtn) saveBtn.classList.add('hidden');
+                }
+                lucide.createIcons();
+            }
+        });
+    }
+    window.closeLoginModal = function() {
+        const modal = document.getElementById('login-modal');
+        if (modal) { modal.classList.add('hidden'); modal.style.display = 'none'; }
+    };
+</script>
+
     <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getFirestore, collection, doc, setDoc, getDoc, getDocs, onSnapshot, updateDoc, deleteDoc, deleteField, arrayUnion, arrayRemove, query, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -2854,6 +2890,28 @@
         });
     }
     
+
+    // ── Swipe right: open leaderboard drawer ──
+    {
+        let swStartX = 0, swStartY = 0, swTracking = false;
+        document.addEventListener('touchstart', (e) => {
+            if (e.touches.length !== 1) return;
+            swStartX = e.touches[0].clientX;
+            swStartY = e.touches[0].clientY;
+            swTracking = true;
+        }, { passive: true });
+        document.addEventListener('touchend', (e) => {
+            if (!swTracking) return;
+            swTracking = false;
+            const t = e.changedTouches[0];
+            const dx = t.clientX - swStartX;
+            const dy = t.clientY - swStartY;
+            if (Math.abs(dx) < 60) return;
+            if (Math.abs(dy) / Math.abs(dx) > 0.6) return;
+            if (e.target.closest('#vb-drawer, #vb-drawer-overlay, input, select, button')) return;
+            if (dx > 0) window.vbOpenDrawer();
+        }, { passive: true });
+    }
 
     if (window.ui) {
         ui.setHandlers({
