@@ -3485,6 +3485,8 @@
         modal.style.display = 'flex';
         lucide.createIcons();
     };
+    // Register openLogin handler now that window.openLoginModal is defined
+    if (window.ui) ui.setHandlers({ openLogin: window.openLoginModal });
     window.closeLoginModal = () => {
         const modal = document.getElementById('login-modal');
         modal.classList.add('hidden');
@@ -4183,8 +4185,7 @@
         ui.setHandlers({
             toggleTheme: window.toggleTheme,
             toggleSound: window.toggleSound,
-            toggleHaptics: window.toggleHaptic,
-            openLogin: window.openLoginModal
+            toggleHaptics: window.toggleHaptic
         });
     }
 
