@@ -1128,7 +1128,6 @@
             $countdown.classList.remove('hidden');
             $typingInput.disabled = true;
             let count = 3;
-            $countdownNum.textContent = count;
 
             const tick = () => {
                 if (count <= 0) {
@@ -1139,12 +1138,12 @@
                     return;
                 }
                 $countdownNum.textContent = count;
-                // Re-trigger animation
+                // Re-trigger animation so each number pops in fresh
                 $countdownNum.style.animation = 'none';
                 void $countdownNum.offsetHeight;
                 $countdownNum.style.animation = 'countPulse 0.6s ease-in-out';
                 count--;
-                setTimeout(tick, 700);
+                setTimeout(tick, 900);
             };
             tick();
         }
@@ -1164,6 +1163,11 @@
         }
 
         function _startRace(isMultiplayer, players) {
+            // Clear any stale intervals from a previous race so they don't stack
+            if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+            if (botInterval) { clearInterval(botInterval); botInterval = null; }
+            if (progressInterval) { clearInterval(progressInterval); progressInterval = null; }
+
             charIndex = 0; errors = 0; totalKeystrokes = 0;
             startTime = null; botProgress = 0; gameActive = false;
 

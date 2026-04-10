@@ -1155,8 +1155,8 @@
 
     function hashPin(pin) {
         let h = 0;
-        for (let i = 0; i < pin.length; i++) { h = ((h << 5) - h) + pin.charCodeAt(i); h |= 0; }
-        return 'h_' + Math.abs(h).toString(36);
+        for (let i = 0; i < pin.length; i++) { h = (Math.imul(31, h) + pin.charCodeAt(i)) | 0; }
+        return h.toString(36);
     }
 
     function getWeekKey() {
