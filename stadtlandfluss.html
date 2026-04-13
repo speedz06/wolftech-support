@@ -179,6 +179,29 @@
         .swipe-hint-left { left: 2px; background: #4ade80; }
         @media (max-width: 900px) { .swipe-hint { display: block; } }
 
+        .slf-mobile-lb-btn { display: none; }
+        @media (max-width: 900px) { .slf-mobile-lb-btn { display: inline-flex; } }
+
+        #slf-lb-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(2,6,23,0.75); z-index: 92;
+            backdrop-filter: blur(4px);
+        }
+        #slf-lb-drawer {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: #0f172a; border-top: 1px solid #1e293b;
+            border-radius: 20px 20px 0 0; z-index: 93;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.32,0.72,0,1);
+            max-height: 80dvh; overflow-y: auto; padding: 20px;
+        }
+        #slf-lb-drawer.open { transform: translateY(0); }
+        #slf-lb-overlay.open { display: block; }
+        html.light #slf-lb-drawer { background: #f1f5f9; border-color: #cbd5e1; }
+        html.retro #slf-lb-drawer { background: #000; border-color: #00ff41; }
+        html.ocean #slf-lb-drawer { background: #05101f; border-color: #1d4e6e; }
+        html.pastel #slf-lb-drawer { background: #fce7f3; border-color: #f0abdb; }
+
         /* Game view */
         #slf-letter-display {
             font-size: clamp(3rem, 12vw, 6rem);
@@ -331,6 +354,9 @@
             </button>
             <button id="slf-haptic-btn" onclick="ui.toggleHaptics()" class="header-mobile-only text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Vibration">
                 <i data-lucide="smartphone" class="w-4 h-4"></i>
+            </button>
+            <button onclick="slfOpenLbDrawer()" class="slf-mobile-lb-btn text-yellow-500 hover:text-yellow-300 p-1.5 rounded-lg transition-colors" title="Bestenliste">
+                <i data-lucide="trophy" class="w-4 h-4"></i>
             </button>
             <button onclick="slfOpenFriends()" class="relative text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Freunde">
                 <i data-lucide="users" class="w-4 h-4"></i>
@@ -553,6 +579,24 @@
         </div>
     </div>
 
+    <!-- LEADERBOARD DRAWER (mobile) -->
+    <div id="slf-lb-overlay" onclick="slfCloseLbDrawer()"></div>
+    <div id="slf-lb-drawer">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <h2 style="font-size:1.1rem;font-weight:800;display:flex;align-items:center;gap:8px">
+                <i data-lucide="trophy" class="w-5 h-5" style="color:#22c55e"></i> Bestenliste
+            </h2>
+            <button onclick="slfCloseLbDrawer()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div style="display:flex;gap:4px;margin-bottom:12px;background:rgba(30,41,59,0.5);padding:3px;border-radius:8px">
+            <button id="slf-lb-m-total" onclick="slfSetLbTab('total')" style="flex:1;font-size:0.75rem;padding:6px;border-radius:6px;border:none;cursor:pointer;font-weight:600;background:#16a34a;color:white;transition:all 0.15s">Gesamt</button>
+            <button id="slf-lb-m-week" onclick="slfSetLbTab('week')" style="flex:1;font-size:0.75rem;padding:6px;border-radius:6px;border:none;cursor:pointer;font-weight:600;background:transparent;color:#64748b;transition:all 0.15s">Woche</button>
+        </div>
+        <ul id="slf-lb-mobile" class="slf-lb-list">
+            <li class="text-slate-500 italic text-sm">Lädt...</li>
+        </ul>
+    </div>
+
     <!-- TOAST -->
     <div id="slf-toast"></div>
 
@@ -636,6 +680,17 @@
         slfEditAvatar = a;
         document.getElementById('slf-login-avatar-display').textContent = a;
         document.querySelectorAll('#slf-login-avatar-grid .avatar-btn').forEach(b => b.classList.toggle('selected', b.textContent === a));
+    };
+
+    // Leaderboard drawer – stubs work before module loads; module overrides slfOpenLbDrawer to also load data
+    window.slfOpenLbDrawer = () => {
+        document.getElementById('slf-lb-drawer')?.classList.add('open');
+        document.getElementById('slf-lb-overlay')?.classList.add('open');
+        lucide.createIcons();
+    };
+    window.slfCloseLbDrawer = () => {
+        document.getElementById('slf-lb-drawer')?.classList.remove('open');
+        document.getElementById('slf-lb-overlay')?.classList.remove('open');
     };
 </script>
 <script type="module">
@@ -1357,6 +1412,13 @@
         loadSlfLeaderboard();
     };
 
+    window.slfOpenLbDrawer = () => {
+        document.getElementById('slf-lb-drawer')?.classList.add('open');
+        document.getElementById('slf-lb-overlay')?.classList.add('open');
+        loadSlfLeaderboard();
+        lucide.createIcons();
+    };
+
     async function cleanupStaleSlfRooms() {
         try {
             const STALE_MS = 10 * 60 * 1000;
@@ -1379,13 +1441,20 @@
         const listEl = document.getElementById('slf-leaderboard');
         if (!listEl) return;
 
-        // Update tab styling
+        // Update desktop tab styling
         const totalBtn = document.getElementById('slf-lb-tab-total');
         const weekBtn = document.getElementById('slf-lb-tab-week');
-        totalBtn.className = `flex-1 text-xs py-1.5 rounded-md transition-colors ${slfLbTab === 'total' ? 'bg-green-600 text-white font-semibold' : 'text-slate-400'}`;
-        weekBtn.className = `flex-1 text-xs py-1.5 rounded-md transition-colors ${slfLbTab === 'week' ? 'bg-green-600 text-white font-semibold' : 'text-slate-400'}`;
+        if (totalBtn) totalBtn.className = `flex-1 text-xs py-1.5 rounded-md transition-colors ${slfLbTab === 'total' ? 'bg-green-600 text-white font-semibold' : 'text-slate-400'}`;
+        if (weekBtn) weekBtn.className = `flex-1 text-xs py-1.5 rounded-md transition-colors ${slfLbTab === 'week' ? 'bg-green-600 text-white font-semibold' : 'text-slate-400'}`;
+        // Update mobile drawer tab styling
+        const mTotal = document.getElementById('slf-lb-m-total');
+        const mWeek = document.getElementById('slf-lb-m-week');
+        if (mTotal) { mTotal.style.background = slfLbTab === 'total' ? '#16a34a' : 'transparent'; mTotal.style.color = slfLbTab === 'total' ? 'white' : '#64748b'; }
+        if (mWeek) { mWeek.style.background = slfLbTab === 'week' ? '#16a34a' : 'transparent'; mWeek.style.color = slfLbTab === 'week' ? 'white' : '#64748b'; }
 
         listEl.innerHTML = '<li class="text-slate-500 italic text-sm">Lädt...</li>';
+        const mobileListEl = document.getElementById('slf-lb-mobile');
+        if (mobileListEl) mobileListEl.innerHTML = listEl.innerHTML;
         try {
             const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'slf_scores'));
             let d = [];
@@ -1407,8 +1476,10 @@
                     return `<li class="slf-lb-item ${isMe ? 'me' : ''}">
                         <span>${medal} ${s.name}</span><span class="slf-lb-pts">${pts}</span></li>`;
                 }).join('');
+            if (mobileListEl) mobileListEl.innerHTML = listEl.innerHTML;
         } catch(e) {
             listEl.innerHTML = '<li class="text-slate-500 italic text-sm">Fehler</li>';
+            if (mobileListEl) mobileListEl.innerHTML = listEl.innerHTML;
         }
     }
 
