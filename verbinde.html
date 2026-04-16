@@ -2181,7 +2181,7 @@
                     const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
                     const isMe = s.name.toLowerCase() === me;
                     const pts = vbLeaderboardTab === 'week' ? (s.weekScore || 0) : (s.score || 0);
-                    return `<div class="vb-lb-entry${isMe ? ' me' : ''}">
+                    return `<div class="vb-lb-entry${isMe ? ' me' : ''}" onclick="window.openPlayerProfile('${s.name.replace(/'/g,"\\'")}')}" style="cursor:pointer;">
                         <span>${medal} ${s.name}</span>
                         <span class="vb-lb-score">${pts}</span>
                     </div>`;
@@ -2216,6 +2216,76 @@
         vbLeaderboardTab = tab;
         vbUpdateTabButtons(tab);
         loadVbLeaderboard();
+    };
+
+    window.openPlayerProfile = async (name) => {
+        if (!name || name.startsWith('Gast_')) { showToast('Gäste haben kein Profil', 'info'); return; }
+        try {
+            const firestore = await getDB(); if (!firestore) return;
+            const userSnap = await getDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'users', name));
+            if (!userSnap.exists()) { showToast('Kein Profil gefunden', 'info'); return; }
+            const ud = userSnap.data();
+            const [wSnap, hmSnap, vbSnap, slfSnap, trSnap, mySnap] = await Promise.all([
+                getDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'scores',     name.toLowerCase())),
+                getDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'hm_scores',  name.toLowerCase())),
+                getDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'vb_scores',  name.toLowerCase())),
+                getDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'slf_scores', name.toLowerCase())),
+                getDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'tr_scores',  name.toLowerCase())),
+                getPlayerName() ? getDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'users', getPlayerName())) : Promise.resolve(null),
+            ]);
+            document.getElementById('vb-pp-avatar').textContent = ud.avatar || '🐺';
+            document.getElementById('vb-pp-name').textContent  = ud.name || name;
+            const statStyle = 'text-align:center;background:rgba(51,65,85,0.5);border-radius:12px;padding:10px 4px;';
+            const numStyle  = 'font-size:1.2rem;font-weight:900;color:#e2e8f0;';
+            const lblStyle  = 'font-size:0.62rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-top:2px;';
+            document.getElementById('vb-pp-stats').innerHTML = [
+                [wSnap.exists()   ? wSnap.data().score   || 0 : 0, '🟩 Wordle'],
+                [hmSnap.exists()  ? hmSnap.data().score  || 0 : 0, '💀 Hangman'],
+                [vbSnap.exists()  ? vbSnap.data().score  || 0 : 0, '🔗 Verbinde'],
+                [slfSnap.exists() ? slfSnap.data().score || 0 : 0, '🌍 SLF'],
+                [trSnap.exists()  ? trSnap.data().score  || 0 : 0, '⌨️ Tippen'],
+                [(ud.friends || []).length, '👥 Freunde'],
+            ].map(([v, l]) => `<div style="${statStyle}"><div style="${numStyle}">${v}</div><div style="${lblStyle}">${l}</div></div>`).join('');
+            const myName = getPlayerName();
+            const friendBtnEl = document.getElementById('vb-pp-friend-btn');
+            if (!myName || localStorage.getItem('wolfle_is_guest') === '1' || name.toLowerCase() === myName.toLowerCase()) {
+                friendBtnEl.innerHTML = '';
+            } else {
+                const myFriends = mySnap && mySnap.exists() ? (mySnap.data().friends || []) : [];
+                const isFriend = myFriends.some(f => f.toLowerCase() === name.toLowerCase());
+                friendBtnEl.innerHTML = isFriend
+                    ? `<button onclick="window.vbPpRemoveFriend('${name.replace(/'/g,"\\'")}')}" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;background:#334155;color:#cbd5e1;border:none;padding:8px 0;border-radius:12px;font-size:13px;cursor:pointer;"><i data-lucide="user-minus" class="w-4 h-4"></i> Freund entfernen</button>`
+                    : `<button onclick="window.vbPpAddFriend('${name.replace(/'/g,"\\'")}')}" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;background:#eab308;color:#000;border:none;padding:8px 0;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;"><i data-lucide="user-plus" class="w-4 h-4"></i> Freund hinzufügen</button>`;
+            }
+            const modal = document.getElementById('vb-pp-modal');
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
+            modal.style.removeProperty('important'); // in case
+            modal.style.cssText = 'display:flex!important';
+            lucide.createIcons();
+        } catch(e) { console.error(e); }
+    };
+    window.vbClosePlayerProfile = () => {
+        const modal = document.getElementById('vb-pp-modal');
+        modal.classList.add('hidden');
+        modal.style.cssText = 'display:none!important';
+    };
+    window.vbPpAddFriend = async (name) => {
+        const myName = getPlayerName();
+        if (!myName) return;
+        const firestore = await getDB(); if (!firestore) return;
+        await updateDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'users', myName), { friends: arrayUnion(name) });
+        await updateDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'users', name),   { friends: arrayUnion(myName) }).catch(() => {});
+        showToast(`${name} als Freund hinzugefügt!`, 'success');
+        window.openPlayerProfile(name); // refresh
+    };
+    window.vbPpRemoveFriend = async (name) => {
+        const myName = getPlayerName();
+        if (!myName) return;
+        const firestore = await getDB(); if (!firestore) return;
+        await updateDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'users', myName), { friends: arrayRemove(name) });
+        showToast(`${name} entfernt`, 'info');
+        window.openPlayerProfile(name); // refresh
     };
 
     // ── INIT ──
@@ -2639,7 +2709,7 @@
             }));
             list.innerHTML = friendData.map(f => `
                 <div class="flex items-center justify-between bg-slate-700/50 p-2 rounded-lg mb-1">
-                    <span class="flex items-center gap-2"><span class="text-lg">${f.avatar}</span><span class="text-sm text-white font-medium">${f.name}</span></span>
+                    <span class="flex items-center gap-2" onclick="window.openPlayerProfile('${f.name.replace(/'/g,"\\'")}')}" style="cursor:pointer;"><span class="text-lg">${f.avatar}</span><span class="text-sm text-white font-medium">${f.name}</span></span>
                     <div class="flex gap-1">
                         <button onclick="window.vbSendInviteFromList('${f.name.replace(/'/g,"\\'")}')" class="text-yellow-400 hover:text-yellow-300 p-1.5 rounded-lg" title="Einladen"><i data-lucide="send" class="w-4 h-4"></i></button>
                         <button onclick="window.vbRemoveFriend('${f.name.replace(/'/g,"\\'")}')" class="text-slate-400 hover:text-red-400 p-1.5 rounded-lg" title="Entfernen"><i data-lucide="user-minus" class="w-4 h-4"></i></button>
@@ -2923,5 +2993,21 @@
     }
 
 </script>
+
+<!-- PLAYER PROFILE MODAL -->
+<div id="vb-pp-modal" class="hidden fixed inset-0 bg-slate-900/80 z-[199] flex items-center justify-center p-4" style="display:none!important" onclick="if(event.target===this)window.vbClosePlayerProfile()">
+    <div class="w-full max-w-sm bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold text-white flex items-center gap-2"><i data-lucide="user" class="w-5 h-5"></i> Spielerprofil</h2>
+            <button onclick="window.vbClosePlayerProfile()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div class="text-center mb-4">
+            <div id="vb-pp-avatar" class="text-5xl mb-1">🐺</div>
+            <div id="vb-pp-name" class="text-lg font-bold text-white"></div>
+        </div>
+        <div id="vb-pp-stats" class="grid grid-cols-3 gap-2 mb-4"></div>
+        <div id="vb-pp-friend-btn"></div>
+    </div>
+</div>
 </body>
 </html>

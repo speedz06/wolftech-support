@@ -712,7 +712,7 @@
             </div>
             <div id="hm-pp-avatar" class="text-5xl mb-2">🐺</div>
             <div id="hm-pp-name" class="text-lg font-bold text-white mb-3"></div>
-            <div id="hm-pp-stats" class="grid grid-cols-4 gap-2 mb-4"></div>
+            <div id="hm-pp-stats" class="grid grid-cols-3 gap-2 mb-4"></div>
             <div id="hm-pp-friend-btn"></div>
         </div>
     </div>
@@ -1271,25 +1271,31 @@
             const userSnap = await firebaseFns.getDoc(firebaseFns.doc(firestore, 'artifacts', appId, 'public', 'data', 'users', name));
             if (!userSnap.exists()) { showToast('Kein Profil gefunden', 'info'); return; }
             const ud = userSnap.data();
-            const [scoreSnap, wScoreSnap, vbScoreSnap, myDoc] = await Promise.all([
-                firebaseFns.getDoc(firebaseFns.doc(firestore, 'artifacts', appId, 'public', 'data', 'hm_scores', name.toLowerCase())),
-                firebaseFns.getDoc(firebaseFns.doc(firestore, 'artifacts', appId, 'public', 'data', 'scores', name.toLowerCase())),
-                firebaseFns.getDoc(firebaseFns.doc(firestore, 'artifacts', appId, 'public', 'data', 'vb_scores', name.toLowerCase())),
+            const [scoreSnap, wScoreSnap, vbScoreSnap, slfScoreSnap, trScoreSnap, myDoc] = await Promise.all([
+                firebaseFns.getDoc(firebaseFns.doc(firestore, 'artifacts', appId, 'public', 'data', 'hm_scores',  name.toLowerCase())),
+                firebaseFns.getDoc(firebaseFns.doc(firestore, 'artifacts', appId, 'public', 'data', 'scores',     name.toLowerCase())),
+                firebaseFns.getDoc(firebaseFns.doc(firestore, 'artifacts', appId, 'public', 'data', 'vb_scores',  name.toLowerCase())),
+                firebaseFns.getDoc(firebaseFns.doc(firestore, 'artifacts', appId, 'public', 'data', 'slf_scores', name.toLowerCase())),
+                firebaseFns.getDoc(firebaseFns.doc(firestore, 'artifacts', appId, 'public', 'data', 'tr_scores',  name.toLowerCase())),
                 getPlayerName() ? firebaseFns.getDoc(firebaseFns.doc(firestore, 'artifacts', appId, 'public', 'data', 'users', getPlayerName())) : Promise.resolve(null),
             ]);
             const sd = scoreSnap.exists() ? scoreSnap.data() : {};
             const wsd = wScoreSnap.exists() ? wScoreSnap.data() : {};
             const vbd = vbScoreSnap.exists() ? vbScoreSnap.data() : {};
+            const slfd = slfScoreSnap.exists() ? slfScoreSnap.data() : {};
+            const trd  = trScoreSnap.exists()  ? trScoreSnap.data()  : {};
             const weekKey = getWeekKey();
             const weekScore = sd.weekKey === weekKey ? (sd.weekScore || 0) : 0;
             const friendsCount = ud.friends ? ud.friends.length : 0;
             document.getElementById('hm-pp-avatar').textContent = ud.avatar || '🐺';
             document.getElementById('hm-pp-name').textContent = ud.name || name;
             document.getElementById('hm-pp-stats').innerHTML = [
-                [wsd.score || 0, 'Wordle'],
-                [sd.score || 0, 'Hangman'],
-                [vbd.score || 0, 'Verbinde'],
-                [friendsCount, 'Freunde'],
+                [wsd.score  || 0, '🟩 Wordle'],
+                [sd.score   || 0, '💀 Hangman'],
+                [vbd.score  || 0, '🔗 Verbinde'],
+                [slfd.score || 0, '🌍 SLF'],
+                [trd.score  || 0, '⌨️ Tippen'],
+                [friendsCount, '👥 Freunde'],
             ].map(([val, lbl]) => `<div style="text-align:center;background:rgba(51,65,85,0.5);border-radius:12px;padding:10px 0;"><div style="font-size:1.3rem;font-weight:900;color:#e2e8f0;">${val}</div><div style="font-size:0.65rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-top:2px;">${lbl}</div></div>`).join('');
             const myName = getPlayerName();
             const friendBtnEl = document.getElementById('hm-pp-friend-btn');

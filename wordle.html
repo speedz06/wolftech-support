@@ -868,7 +868,7 @@
                 <div id="pp-avatar" class="text-5xl mb-1">🐺</div>
                 <div id="pp-name" class="text-lg font-bold text-white"></div>
             </div>
-            <div id="pp-stats" class="flex gap-2 mb-4"></div>
+            <div id="pp-stats" class="grid grid-cols-3 gap-2 mb-4"></div>
             <div id="pp-friend-btn"></div>
         </div>
     </div>
@@ -2140,26 +2140,32 @@
             const userSnap = await getDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'users', name));
             if (!userSnap.exists()) { showToast('Kein Profil gefunden', 'info'); return; }
             const ud = userSnap.data();
-            const [scoreSnap, hmScoreSnap, vbScoreSnap, myDoc] = await Promise.all([
-                getDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'scores', name.toLowerCase())),
-                getDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'hm_scores', name.toLowerCase())),
-                getDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'vb_scores', name.toLowerCase())),
+            const [scoreSnap, hmScoreSnap, vbScoreSnap, slfScoreSnap, trScoreSnap, myDoc] = await Promise.all([
+                getDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'scores',     name.toLowerCase())),
+                getDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'hm_scores',  name.toLowerCase())),
+                getDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'vb_scores',  name.toLowerCase())),
+                getDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'slf_scores', name.toLowerCase())),
+                getDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'tr_scores',  name.toLowerCase())),
                 getPlayerName() ? getDoc(doc(firestore, 'artifacts', appId, 'public', 'data', 'users', getPlayerName())) : Promise.resolve(null),
             ]);
             const sd = scoreSnap.exists() ? scoreSnap.data() : {};
             const hsd = hmScoreSnap.exists() ? hmScoreSnap.data() : {};
             const vbd = vbScoreSnap.exists() ? vbScoreSnap.data() : {};
+            const slfd = slfScoreSnap.exists() ? slfScoreSnap.data() : {};
+            const trd  = trScoreSnap.exists()  ? trScoreSnap.data()  : {};
             const weekKey = getWeekKey();
             const weekScore = sd.weekKey === weekKey ? (sd.weekScore || 0) : 0;
             const friendsCount = ud.friends ? ud.friends.length : 0;
             document.getElementById('pp-avatar').textContent = ud.avatar || '🐺';
             document.getElementById('pp-name').textContent = ud.name || name;
             document.getElementById('pp-stats').innerHTML = [
-                [sd.score || 0, 'Wordle'],
-                [hsd.score || 0, 'Hangman'],
-                [vbd.score || 0, 'Verbinde'],
-                [friendsCount, 'Freunde'],
-            ].map(([val, lbl]) => `<div class="stat-box flex-1 bg-slate-700/50 rounded-xl py-3"><div class="stat-num">${val}</div><div class="stat-lbl">${lbl}</div></div>`).join('');
+                [sd.score  || 0, '🟩 Wordle'],
+                [hsd.score || 0, '💀 Hangman'],
+                [vbd.score || 0, '🔗 Verbinde'],
+                [slfd.score || 0, '🌍 SLF'],
+                [trd.score  || 0, '⌨️ Tippen'],
+                [friendsCount, '👥 Freunde'],
+            ].map(([val, lbl]) => `<div style="text-align:center;background:rgba(51,65,85,0.5);border-radius:12px;padding:10px 4px;"><div style="font-size:1.2rem;font-weight:900;color:#e2e8f0;">${val}</div><div style="font-size:0.62rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-top:2px;">${lbl}</div></div>`).join('');
             // Friend button
             const myName = getPlayerName();
             const friendBtnEl = document.getElementById('pp-friend-btn');
