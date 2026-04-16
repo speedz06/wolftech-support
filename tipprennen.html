@@ -425,9 +425,7 @@
         @media (max-width: 900px) { .mobile-only { display: inline-flex !important; } }
         @media (max-width: 400px) { .hidden-xs { display: none !important; } }
 
-        /* ── Leaderboard drawer (mobile) ── */
-        .tr-mobile-lb-btn { display: none !important; }
-        @media (max-width: 900px) { .tr-mobile-lb-btn { display: inline-flex !important; } }
+        /* ── Leaderboard drawer ── */
         #tr-lb-overlay { display: none; position: fixed; inset: 0; background: rgba(2,6,23,0.75); z-index: 92; backdrop-filter: blur(4px); }
         #tr-lb-drawer { position: fixed; bottom: 0; left: 0; right: 0; background: #0f172a; border-top: 1px solid #1e293b; border-radius: 20px 20px 0 0; z-index: 93; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.32,0.72,0,1); max-height: 80dvh; overflow-y: auto; padding: 20px; }
         #tr-lb-drawer.open { transform: translateY(0); }
@@ -435,10 +433,13 @@
         .tr-lb-list { list-style: none; padding: 0; margin: 0; }
         .tr-lb-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid rgba(30,41,59,0.6); }
         .tr-lb-item:last-child { border-bottom: none; }
-        html.light #tr-lb-drawer { background: #f1f5f9; border-color: #cbd5e1; color: #1e293b; }
-        html.retro #tr-lb-drawer { background: #001a00 !important; border-color: #00ff41 !important; color: #00ff41; }
-        html.ocean #tr-lb-drawer { background: #05101f; border-color: #1d4e6e; }
-        html.pastel #tr-lb-drawer { background: #fce7f3; border-color: #f0abdb; color: #4a1d52; }
+        html.light #tr-lb-drawer, html.light #tr-lb-panel { background: #f1f5f9; border-color: #cbd5e1; color: #1e293b; }
+        html.retro #tr-lb-drawer, html.retro #tr-lb-panel { background: #001a00 !important; border-color: #00ff41 !important; color: #00ff41; }
+        html.ocean #tr-lb-drawer, html.ocean #tr-lb-panel { background: #05101f; border-color: #1d4e6e; }
+        html.pastel #tr-lb-drawer, html.pastel #tr-lb-panel { background: #fce7f3; border-color: #f0abdb; color: #4a1d52; }
+        /* Desktop leaderboard panel (shown in results screen on large screens) */
+        #tr-lb-panel { display: none; }
+        @media (min-width: 901px) { #tr-lb-panel { display: block; } }
 
         /* ── Toast ── */
         #toast-container { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column-reverse; align-items: center; gap: 8px; z-index: 9999; pointer-events: none; }
@@ -515,7 +516,7 @@
             <button id="haptic-btn" onclick="toggleHaptic()" class="mobile-only text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Vibration">
                 <i data-lucide="smartphone" class="w-4 h-4"></i>
             </button>
-            <button onclick="window.trOpenLbDrawer()" class="tr-mobile-lb-btn text-yellow-500 hover:text-yellow-300 p-1.5 rounded-lg transition-colors" title="Bestenliste">
+            <button onclick="window.trOpenLbDrawer()" class="text-yellow-500 hover:text-yellow-300 p-1.5 rounded-lg transition-colors" title="Bestenliste">
                 <i data-lucide="trophy" class="w-4 h-4"></i>
             </button>
             <button onclick="window.trOpenFriendsModal()" class="relative text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Freunde">
@@ -709,6 +710,19 @@
                 <button id="back-to-lobby-btn" class="hidden btn-primary" style="background:linear-gradient(135deg,#1e293b,#334155)" onclick="window.trReturnToLobby()">
                     <i data-lucide="users" class="w-5 h-5"></i> Zurück zur Lobby
                 </button>
+            </div>
+            <!-- Desktop leaderboard (auto-loads when race ends, hidden on mobile — use drawer there) -->
+            <div id="tr-lb-panel" style="background:rgba(15,23,42,0.8);border:1px solid #1e293b;border-radius:16px;padding:20px;width:100%;max-width:420px">
+                <div class="flex items-center gap-2 text-sm font-bold text-slate-300 mb-3">
+                    <i data-lucide="trophy" class="w-4 h-4 text-yellow-400"></i> Bestenliste
+                </div>
+                <div class="flex gap-2 mb-3">
+                    <button id="tr-lb-d-total" onclick="window.trSetLbTab('total')" class="flex-1 py-1.5 rounded-lg text-xs font-bold bg-cyan-700 text-white">Gesamt</button>
+                    <button id="tr-lb-d-week"  onclick="window.trSetLbTab('week')"  class="flex-1 py-1.5 rounded-lg text-xs font-bold bg-slate-700 text-slate-300">Diese Woche</button>
+                </div>
+                <ul id="tr-lb-desktop-list" class="tr-lb-list">
+                    <li class="text-slate-500 italic text-sm py-4 text-center">Lädt...</li>
+                </ul>
             </div>
         </div>
     </div>
@@ -1267,6 +1281,9 @@
             if (ptsEl && pts > 0) ptsEl.textContent = '+' + pts + ' Punkte';
             if (pts > 0 && typeof window.saveTrScore === 'function') window.saveTrScore(getPlayerName(), pts);
 
+            // Refresh desktop leaderboard panel in results screen
+            if (typeof window.loadTrLeaderboard === 'function') window.loadTrLeaderboard();
+
             const inRoom = !!currentRoomCode;
             document.getElementById('results-title').textContent = inRoom ? '🏁 Dein Ergebnis' : 'Ergebnis';
             document.getElementById('back-to-lobby-btn').classList.toggle('hidden', !inRoom);
@@ -1294,16 +1311,23 @@
             const spans = $textContent.querySelectorAll('.char');
             const newLen = val.length;
             const prevIndex = charIndex;
+
+            // Reset error markers
+            spans.forEach(s => s.removeAttribute('data-err'));
+
+            // charIndex = consecutive correct characters from the start.
+            // Errors past that point are still marked (for accuracy) but
+            // don't advance the progress cursor — you can't "type past" mistakes.
             charIndex = 0;
             let currentErrors = 0;
+            let foundError = false;
             for (let i = 0; i < newLen && i < currentText.length; i++) {
                 if (val[i] === currentText[i]) {
-                    spans[i].removeAttribute('data-err');
-                    charIndex = i + 1;
+                    if (!foundError) charIndex = i + 1;
                 } else {
                     spans[i].setAttribute('data-err', '1');
                     currentErrors++;
-                    charIndex = i + 1;
+                    foundError = true;
                 }
             }
             totalKeystrokes = newLen;
@@ -1312,6 +1336,7 @@
             updateChars();
             updateProgress();
             updateStats();
+            // Only finish when every character is correctly typed (no errors left)
             if (charIndex >= currentText.length) endGame();
         });
 
@@ -1546,20 +1571,34 @@
             let trLbTab = 'total';
             window.trSetLbTab = (tab) => {
                 trLbTab = tab;
-                const totalBtn = document.getElementById('tr-lb-m-total');
-                const weekBtn  = document.getElementById('tr-lb-m-week');
-                if (totalBtn) totalBtn.className = `flex-1 py-1.5 rounded-lg text-xs font-bold ${tab === 'total' ? 'bg-cyan-700 text-white' : 'bg-slate-700 text-slate-300'}`;
-                if (weekBtn)  weekBtn.className  = `flex-1 py-1.5 rounded-lg text-xs font-bold ${tab === 'week'  ? 'bg-cyan-700 text-white' : 'bg-slate-700 text-slate-300'}`;
+                const activeClass   = 'flex-1 py-1.5 rounded-lg text-xs font-bold bg-cyan-700 text-white';
+                const inactiveClass = 'flex-1 py-1.5 rounded-lg text-xs font-bold bg-slate-700 text-slate-300';
+                // sync both drawer tabs and desktop panel tabs
+                ['tr-lb-m-total', 'tr-lb-d-total'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.className = tab === 'total' ? activeClass : inactiveClass;
+                });
+                ['tr-lb-m-week', 'tr-lb-d-week'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.className = tab === 'week' ? activeClass : inactiveClass;
+                });
                 loadTrLeaderboard();
             };
 
             async function loadTrLeaderboard() {
-                const list = document.getElementById('tr-lb-mobile');
-                if (!list) return;
-                list.innerHTML = '<li class="text-slate-500 italic text-sm py-4 text-center">Lädt...</li>';
+                const lists = [
+                    document.getElementById('tr-lb-mobile'),
+                    document.getElementById('tr-lb-desktop-list'),
+                ].filter(Boolean);
+                if (!lists.length) return;
+                const loading = '<li class="text-slate-500 italic text-sm py-4 text-center">Lädt...</li>';
+                lists.forEach(l => l.innerHTML = loading);
                 try {
                     const firestore = await initDB();
-                    if (!firestore) { list.innerHTML = '<li class="text-slate-500 italic text-sm py-4 text-center">Nicht verfügbar</li>'; return; }
+                    if (!firestore) {
+                        const msg = '<li class="text-slate-500 italic text-sm py-4 text-center">Nicht verfügbar</li>';
+                        lists.forEach(l => l.innerHTML = msg); return;
+                    }
                     const snap = await fsMod.getDocs(colRef('tr_scores'));
                     const wk = getWeekKey();
                     let entries = [];
@@ -1572,10 +1611,13 @@
                     });
                     entries.sort((a, b) => b.score - a.score);
                     entries = entries.slice(0, 10);
-                    if (!entries.length) { list.innerHTML = '<li class="text-slate-500 italic text-sm py-4 text-center">Noch keine Einträge</li>'; return; }
+                    if (!entries.length) {
+                        const msg = '<li class="text-slate-500 italic text-sm py-4 text-center">Noch keine Einträge</li>';
+                        lists.forEach(l => l.innerHTML = msg); return;
+                    }
                     const medals = ['🥇','🥈','🥉'];
                     const myName = getPlayerName();
-                    list.innerHTML = entries.map((e, i) => {
+                    const html = entries.map((e, i) => {
                         const isMe = e.name === myName;
                         return `<li class="tr-lb-item">
                             <span style="font-weight:800;min-width:24px;font-size:1rem">${medals[i] || (i + 1) + '.'}</span>
@@ -1583,8 +1625,14 @@
                             <span style="font-weight:800;color:#22c55e;font-size:0.9rem">${e.score} Pkt</span>
                         </li>`;
                     }).join('');
-                } catch(e) { list.innerHTML = '<li class="text-slate-500 italic text-sm py-4 text-center">Fehler beim Laden</li>'; }
+                    lists.forEach(l => l.innerHTML = html);
+                } catch(e) {
+                    const msg = '<li class="text-slate-500 italic text-sm py-4 text-center">Fehler beim Laden</li>';
+                    lists.forEach(l => l.innerHTML = msg);
+                }
             }
+
+            window.loadTrLeaderboard = loadTrLeaderboard;
 
             window.trOpenLbDrawer = () => {
                 document.getElementById('tr-lb-drawer')?.classList.add('open');
