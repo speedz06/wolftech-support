@@ -736,6 +736,22 @@
     </aside>
     </div><!-- /#game-layout -->
 
+    <!-- PLAYER PROFILE MODAL -->
+    <div id="tr-pp-modal" class="tr-modal hidden" style="display:none" onclick="if(event.target===this)window.trClosePlayerProfile()">
+        <div class="tr-modal-card">
+            <div class="flex justify-between items-center mb-4">
+                <div class="tr-modal-title"><i data-lucide="user" class="w-5 h-5"></i> Spielerprofil</div>
+                <button onclick="window.trClosePlayerProfile()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="text-center mb-4">
+                <div id="tr-pp-avatar" class="text-5xl mb-1">🐺</div>
+                <div id="tr-pp-name" class="text-lg font-bold text-white mb-1"></div>
+            </div>
+            <div id="tr-pp-stats" class="grid grid-cols-3 gap-2 mb-4"></div>
+            <div id="tr-pp-friend-btn"></div>
+        </div>
+    </div>
+
     <!-- LEADERBOARD DRAWER (mobile) -->
     <div id="tr-lb-overlay" onclick="window.trCloseLbDrawer()"></div>
     <div id="tr-lb-drawer">
@@ -1627,7 +1643,7 @@
                     const myName = getPlayerName();
                     const html = entries.map((e, i) => {
                         const isMe = e.name === myName;
-                        return `<li class="tr-lb-item">
+                        return `<li class="tr-lb-item" style="cursor:pointer;" onclick="window.openPlayerProfile('${e.name.replace(/'/g,"\\'")}')">
                             <span style="font-weight:800;min-width:24px;font-size:1rem">${medals[i] || (i + 1) + '.'}</span>
                             <span class="flex-1 text-sm font-semibold" style="${isMe ? 'color:#22d3ee' : 'color:#e2e8f0'}">${e.name}${isMe ? ' ★' : ''}</span>
                             <span style="font-weight:800;color:#22c55e;font-size:0.9rem">${e.score} Pkt</span>
@@ -1651,6 +1667,72 @@
             window.trCloseLbDrawer = () => {
                 document.getElementById('tr-lb-drawer')?.classList.remove('open');
                 document.getElementById('tr-lb-overlay')?.classList.remove('open');
+            };
+
+            window.openPlayerProfile = async (name) => {
+                if (!name || name.startsWith('Gast_')) { showToast('Gäste haben kein Profil', 'info'); return; }
+                try {
+                    const firestore = await initDB(); if (!firestore) return;
+                    const userSnap = await fsMod.getDoc(docRef('users', name));
+                    if (!userSnap.exists()) { showToast('Kein Profil gefunden', 'info'); return; }
+                    const ud = userSnap.data();
+                    const [wSnap, hmSnap, vbSnap, slfSnap, trSnap, mySnap] = await Promise.all([
+                        fsMod.getDoc(docRef('scores',     name.toLowerCase())),
+                        fsMod.getDoc(docRef('hm_scores',  name.toLowerCase())),
+                        fsMod.getDoc(docRef('vb_scores',  name.toLowerCase())),
+                        fsMod.getDoc(docRef('slf_scores', name.toLowerCase())),
+                        fsMod.getDoc(docRef('tr_scores',  name.toLowerCase())),
+                        getPlayerName() ? fsMod.getDoc(docRef('users', getPlayerName())) : Promise.resolve(null),
+                    ]);
+                    document.getElementById('tr-pp-avatar').textContent = ud.avatar || '🐺';
+                    document.getElementById('tr-pp-name').textContent  = ud.name || name;
+                    const statStyle = 'text-align:center;background:rgba(51,65,85,0.5);border-radius:12px;padding:10px 4px;';
+                    const numStyle  = 'font-size:1.2rem;font-weight:900;color:#e2e8f0;';
+                    const lblStyle  = 'font-size:0.62rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-top:2px;';
+                    document.getElementById('tr-pp-stats').innerHTML = [
+                        [wSnap.exists()   ? wSnap.data().score   || 0 : 0, '🟩 Wordle'],
+                        [hmSnap.exists()  ? hmSnap.data().score  || 0 : 0, '💀 Hangman'],
+                        [vbSnap.exists()  ? vbSnap.data().score  || 0 : 0, '🔗 Verbinde'],
+                        [slfSnap.exists() ? slfSnap.data().score || 0 : 0, '🌍 SLF'],
+                        [trSnap.exists()  ? trSnap.data().score  || 0 : 0, '⌨️ Tippen'],
+                        [(ud.friends || []).length, '👥 Freunde'],
+                    ].map(([v, l]) => `<div style="${statStyle}"><div style="${numStyle}">${v}</div><div style="${lblStyle}">${l}</div></div>`).join('');
+                    const myName = getPlayerName();
+                    const friendBtnEl = document.getElementById('tr-pp-friend-btn');
+                    if (!myName || localStorage.getItem('wolfle_is_guest') === '1' || name.toLowerCase() === myName.toLowerCase()) {
+                        friendBtnEl.innerHTML = '';
+                    } else {
+                        const myFriends = mySnap && mySnap.exists() ? (mySnap.data().friends || []) : [];
+                        const isFriend = myFriends.some(f => f.toLowerCase() === name.toLowerCase());
+                        friendBtnEl.innerHTML = isFriend
+                            ? `<button onclick="window.trPpRemoveFriend('${name.replace(/'/g,"\\'")}')}" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;background:#334155;color:#cbd5e1;border:none;padding:8px 0;border-radius:12px;font-size:13px;cursor:pointer;"><i data-lucide="user-minus" class="w-4 h-4"></i> Freund entfernen</button>`
+                            : `<button onclick="window.trPpAddFriend('${name.replace(/'/g,"\\'")}')}" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;background:#0891b2;color:white;border:none;padding:8px 0;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;"><i data-lucide="user-plus" class="w-4 h-4"></i> Freund hinzufügen</button>`;
+                    }
+                    const modal = document.getElementById('tr-pp-modal');
+                    modal.classList.remove('hidden');
+                    modal.style.display = 'flex';
+                    lucide.createIcons();
+                } catch(e) { console.error(e); }
+            };
+            window.trClosePlayerProfile = () => {
+                const modal = document.getElementById('tr-pp-modal');
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+            };
+            window.trPpAddFriend = async (name) => {
+                const myName = getPlayerName(); if (!myName) return;
+                const firestore = await initDB(); if (!firestore) return;
+                await fsMod.updateDoc(docRef('users', myName), { friends: fsMod.arrayUnion(name) });
+                await fsMod.updateDoc(docRef('users', name),   { friends: fsMod.arrayUnion(myName) }).catch(() => {});
+                showToast(`${name} als Freund hinzugefügt!`, 'success');
+                window.openPlayerProfile(name);
+            };
+            window.trPpRemoveFriend = async (name) => {
+                const myName = getPlayerName(); if (!myName) return;
+                const firestore = await initDB(); if (!firestore) return;
+                await fsMod.updateDoc(docRef('users', myName), { friends: fsMod.arrayRemove(name) });
+                showToast(`${name} entfernt`, 'info');
+                window.openPlayerProfile(name);
             };
 
             // ══ FRIENDS FUNCTIONS ══
@@ -1687,7 +1769,7 @@
                     }));
                     list.innerHTML = data.map(f => `
                         <div class="flex items-center justify-between bg-slate-700/50 p-2 rounded-lg mb-1">
-                            <span class="flex items-center gap-2"><span class="text-lg">${f.avatar}</span><span class="text-sm text-white font-medium">${f.name}</span></span>
+                            <span class="flex items-center gap-2"><span class="text-lg">${f.avatar}</span><span class="text-sm text-white font-medium" style="cursor:pointer;" onclick="window.openPlayerProfile('${f.name.replace(/'/g,"\\'")}')}">${f.name}</span></span>
                             <div class="flex gap-1">
                                 <button onclick="window.trSendInviteFromList('${f.name.replace(/'/g,"\\'")}',this)" class="text-yellow-400 hover:text-yellow-300 p-1.5 rounded-lg" title="Einladen"><i data-lucide="send" class="w-4 h-4"></i></button>
                                 <button onclick="window.trRemoveFriend('${f.name.replace(/'/g,"\\'")}') " class="text-slate-400 hover:text-red-400 p-1.5 rounded-lg" title="Entfernen"><i data-lucide="user-minus" class="w-4 h-4"></i></button>
@@ -2041,7 +2123,7 @@
                         return `<div class="mp-rank-row">
                             <span class="mp-rank-num">${medals[i] || `${i+1}.`}</span>
                             <span class="text-base">${p.avatar || '🐺'}</span>
-                            <span class="text-sm font-semibold flex-1" style="${isMe ? 'color:#22d3ee' : 'color:#e2e8f0'}">${p.name}${isMe ? ' (Du)' : ''}</span>
+                            <span class="text-sm font-semibold flex-1" style="${isMe ? 'color:#22d3ee' : 'color:#e2e8f0'};cursor:pointer;" onclick="window.openPlayerProfile('${p.name.replace(/'/g,"\\'")}')}">${p.name}${isMe ? ' (Du)' : ''}</span>
                             <span class="text-sm font-bold text-cyan-400">${p.wpm || 0} WPM</span>
                             <span class="text-xs font-bold" style="color:#22c55e">${p.finished ? score + ' Pkt' : '…'}</span>
                         </div>`;
