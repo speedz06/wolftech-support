@@ -2181,7 +2181,7 @@
                     const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
                     const isMe = s.name.toLowerCase() === me;
                     const pts = vbLeaderboardTab === 'week' ? (s.weekScore || 0) : (s.score || 0);
-                    return `<div class="vb-lb-entry${isMe ? ' me' : ''}" onclick="window.openPlayerProfile('${s.name.replace(/'/g,"\\'")}')}" style="cursor:pointer;">
+                    return `<div class="vb-lb-entry${isMe ? ' me' : ''}" onclick="window.openPlayerProfile('${s.name.replace(/'/g,"\\'")}')" style="cursor:pointer;">
                         <span>${medal} ${s.name}</span>
                         <span class="vb-lb-score">${pts}</span>
                     </div>`;
@@ -2254,8 +2254,8 @@
                 const myFriends = mySnap && mySnap.exists() ? (mySnap.data().friends || []) : [];
                 const isFriend = myFriends.some(f => f.toLowerCase() === name.toLowerCase());
                 friendBtnEl.innerHTML = isFriend
-                    ? `<button onclick="window.vbPpRemoveFriend('${name.replace(/'/g,"\\'")}')}" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;background:#334155;color:#cbd5e1;border:none;padding:8px 0;border-radius:12px;font-size:13px;cursor:pointer;"><i data-lucide="user-minus" class="w-4 h-4"></i> Freund entfernen</button>`
-                    : `<button onclick="window.vbPpAddFriend('${name.replace(/'/g,"\\'")}')}" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;background:#eab308;color:#000;border:none;padding:8px 0;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;"><i data-lucide="user-plus" class="w-4 h-4"></i> Freund hinzufügen</button>`;
+                    ? `<button onclick="window.vbPpRemoveFriend('${name.replace(/'/g,"\\'")}')" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;background:#334155;color:#cbd5e1;border:none;padding:8px 0;border-radius:12px;font-size:13px;cursor:pointer;"><i data-lucide="user-minus" class="w-4 h-4"></i> Freund entfernen</button>`
+                    : `<button onclick="window.vbPpAddFriend('${name.replace(/'/g,"\\'")}')" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;background:#eab308;color:#000;border:none;padding:8px 0;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;"><i data-lucide="user-plus" class="w-4 h-4"></i> Freund hinzufügen</button>`;
             }
             const modal = document.getElementById('vb-pp-modal');
             modal.classList.remove('hidden');
@@ -2709,7 +2709,7 @@
             }));
             list.innerHTML = friendData.map(f => `
                 <div class="flex items-center justify-between bg-slate-700/50 p-2 rounded-lg mb-1">
-                    <span class="flex items-center gap-2" onclick="window.openPlayerProfile('${f.name.replace(/'/g,"\\'")}')}" style="cursor:pointer;"><span class="text-lg">${f.avatar}</span><span class="text-sm text-white font-medium">${f.name}</span></span>
+                    <span class="flex items-center gap-2" onclick="window.openPlayerProfile('${f.name.replace(/'/g,"\\'")}')" style="cursor:pointer;"><span class="text-lg">${f.avatar}</span><span class="text-sm text-white font-medium">${f.name}</span></span>
                     <div class="flex gap-1">
                         <button onclick="window.vbSendInviteFromList('${f.name.replace(/'/g,"\\'")}')" class="text-yellow-400 hover:text-yellow-300 p-1.5 rounded-lg" title="Einladen"><i data-lucide="send" class="w-4 h-4"></i></button>
                         <button onclick="window.vbRemoveFriend('${f.name.replace(/'/g,"\\'")}')" class="text-slate-400 hover:text-red-400 p-1.5 rounded-lg" title="Entfernen"><i data-lucide="user-minus" class="w-4 h-4"></i></button>
