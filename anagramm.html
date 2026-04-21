@@ -1,0 +1,1522 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Wolfle – Anagramm</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="shared-ui.js?v=3"></script>
+    <style>
+        * { box-sizing: border-box; }
+        html {
+            touch-action: manipulation;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        body {
+            background: radial-gradient(circle at top, #1e293b, #020617);
+            color: #f8fafc;
+            font-family: 'Inter', sans-serif;
+            height: 100dvh;
+            overflow: hidden;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            touch-action: manipulation;
+            overscroll-behavior: none;
+        }
+
+        #page-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: max(10px, env(safe-area-inset-top)) 16px 8px;
+            border-bottom: 1px solid #1e293b;
+            flex-shrink: 0;
+            background: rgba(15,23,42,0.85);
+            backdrop-filter: blur(12px);
+        }
+        #game-tabs {
+            display: flex;
+            background: #0f172a;
+            border-bottom: 1px solid #1e293b;
+            flex-shrink: 0;
+            padding: 0 12px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        #game-tabs::-webkit-scrollbar { display: none; }
+        .tab-link {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 18px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #64748b;
+            text-decoration: none;
+            border-bottom: 2px solid transparent;
+            transition: all 0.15s;
+            white-space: nowrap;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .tab-link.active { color: #fb923c; border-bottom-color: #fb923c; }
+        .tab-link:hover:not(.active) { color: #94a3b8; }
+
+        /* App layout */
+        #ag-app {
+            display: flex;
+            flex-direction: row;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+        #ag-sidebar {
+            width: 260px;
+            min-width: 260px;
+            background: rgba(15,23,42,0.6);
+            border-right: 1px solid #1e293b;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            overflow-y: auto;
+        }
+        #ag-sidebar-right {
+            width: 240px;
+            min-width: 240px;
+            background: rgba(15,23,42,0.6);
+            border-left: 1px solid #1e293b;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+        #ag-game-center {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: hidden;
+            min-width: 0;
+            padding: 10px 12px max(10px, env(safe-area-inset-bottom));
+            gap: 8px;
+        }
+
+        @media (max-width: 900px) {
+            #ag-app { flex-direction: column; }
+            #ag-sidebar { display: none !important; }
+            #ag-sidebar-right { display: none !important; }
+            #ag-game-center { overflow-y: auto; }
+        }
+
+        /* Panels */
+        .ag-panel {
+            background: rgba(30,41,59,0.6);
+            border: 1px solid #334155;
+            border-radius: 14px;
+            padding: 14px;
+        }
+        .ag-panel h3 { margin: 0 0 8px; font-size: 0.95rem; font-weight: 800; }
+
+        /* Timer ring */
+        #timer-ring-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        #timer-ring {
+            position: relative;
+            width: clamp(80px,14vw,110px);
+            height: clamp(80px,14vw,110px);
+        }
+        #timer-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+        #timer-track { fill: none; stroke: #1e293b; stroke-width: 6; }
+        #timer-fill {
+            fill: none;
+            stroke: #fb923c;
+            stroke-width: 6;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1s linear, stroke 0.5s;
+        }
+        #timer-text {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(1.2rem,3vw,1.6rem);
+            font-weight: 900;
+            color: #fb923c;
+        }
+        #timer-text.urgent { color: #ef4444; animation: urgentPulse 0.5s ease-in-out infinite; }
+        @keyframes urgentPulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+        /* Scrambled letters display */
+        #ag-letters-wrap {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            padding: 8px;
+            flex-shrink: 0;
+        }
+        .ag-letter-tile {
+            width: clamp(36px,7vw,52px);
+            height: clamp(44px,8vw,60px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(251,146,60,0.12);
+            border: 2px solid rgba(251,146,60,0.35);
+            border-radius: 10px;
+            font-size: clamp(1rem,3vw,1.4rem);
+            font-weight: 900;
+            color: #fbbf24;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.12s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .ag-letter-tile:hover { background: rgba(251,146,60,0.22); border-color: rgba(251,146,60,0.6); transform: translateY(-2px); }
+        .ag-letter-tile:active { transform: scale(0.95); }
+        .ag-letter-tile.used { opacity: 0.25; pointer-events: none; }
+
+        /* Input area */
+        #ag-input-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            max-width: 500px;
+            flex-shrink: 0;
+        }
+        #ag-current-word {
+            min-height: 52px;
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            padding: 6px;
+            background: rgba(15,23,42,0.6);
+            border: 2px solid #334155;
+            border-radius: 12px;
+            width: 100%;
+            cursor: pointer;
+        }
+        .ag-input-tile {
+            width: clamp(30px,6vw,44px);
+            height: clamp(36px,7vw,50px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(99,102,241,0.15);
+            border: 2px solid rgba(99,102,241,0.4);
+            border-radius: 8px;
+            font-size: clamp(0.9rem,2.5vw,1.2rem);
+            font-weight: 800;
+            color: #a5b4fc;
+            text-transform: uppercase;
+            animation: tileIn 0.1s ease-out;
+        }
+        @keyframes tileIn {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        #ag-input-hint {
+            font-size: 0.75rem;
+            color: #64748b;
+            text-align: center;
+        }
+
+        /* Action buttons */
+        .ag-btn-row {
+            display: flex;
+            gap: 8px;
+            width: 100%;
+            max-width: 500px;
+            flex-shrink: 0;
+        }
+        .ag-btn {
+            flex: 1;
+            padding: 10px 0;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 14px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.12s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .ag-btn:active { transform: scale(0.97); }
+        .ag-btn-submit { background: #f97316; color: white; }
+        .ag-btn-submit:hover { background: #ea580c; }
+        .ag-btn-submit:disabled { background: #334155; color: #64748b; cursor: default; transform: none; }
+        .ag-btn-clear { background: #334155; color: #cbd5e1; }
+        .ag-btn-clear:hover { background: #475569; }
+        .ag-btn-shuffle { background: rgba(99,102,241,0.2); border: 1px solid rgba(99,102,241,0.35); color: #818cf8; }
+        .ag-btn-shuffle:hover { background: rgba(99,102,241,0.3); }
+
+        /* Found words */
+        #ag-found-section {
+            flex: 1;
+            width: 100%;
+            max-width: 600px;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            overflow: hidden;
+        }
+        #ag-found-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        #ag-found-header span {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+        #ag-score-display {
+            font-size: 1rem;
+            font-weight: 900;
+            color: #fb923c;
+        }
+        #ag-found-words {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            overflow-y: auto;
+            padding: 2px;
+        }
+        .ag-found-word {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            animation: wordPop 0.3s cubic-bezier(0.34,1.56,0.64,1);
+            border: 1px solid transparent;
+        }
+        @keyframes wordPop {
+            from { transform: scale(0); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .ag-found-word.len-2 { background: rgba(100,116,139,0.3); border-color: rgba(100,116,139,0.4); color: #94a3b8; }
+        .ag-found-word.len-3 { background: rgba(20,184,166,0.15); border-color: rgba(20,184,166,0.35); color: #5eead4; }
+        .ag-found-word.len-4 { background: rgba(59,130,246,0.15); border-color: rgba(59,130,246,0.35); color: #93c5fd; }
+        .ag-found-word.len-5 { background: rgba(99,102,241,0.2); border-color: rgba(99,102,241,0.4); color: #a5b4fc; }
+        .ag-found-word.len-6 { background: rgba(168,85,247,0.2); border-color: rgba(168,85,247,0.4); color: #d8b4fe; }
+        .ag-found-word.len-7 { background: rgba(251,146,60,0.2); border-color: rgba(251,146,60,0.4); color: #fbbf24; }
+        .ag-found-word.len-8plus { background: rgba(34,197,94,0.2); border-color: rgba(34,197,94,0.4); color: #86efac; }
+
+        /* Status message */
+        #ag-status {
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-align: center;
+            min-height: 22px;
+            flex-shrink: 0;
+        }
+        #ag-status.success { color: #22c55e; }
+        #ag-status.error { color: #ef4444; }
+        #ag-status.bonus { color: #fbbf24; }
+
+        /* Game over overlay */
+        #ag-game-over {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(2,6,23,0.85);
+            z-index: 80;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            backdrop-filter: blur(6px);
+            padding: 24px;
+            text-align: center;
+        }
+        #ag-game-over.show { display: flex; }
+        .ag-go-card {
+            background: rgba(30,41,59,0.95);
+            border: 1px solid #475569;
+            border-radius: 20px;
+            padding: 28px;
+            max-width: 380px;
+            width: 100%;
+        }
+        .ag-go-card h2 { margin: 0 0 4px; font-size: 1.6rem; font-weight: 900; }
+        .ag-go-card p { margin: 0 0 16px; color: #94a3b8; font-size: 0.9rem; }
+        .ag-stat-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 20px; }
+        .ag-stat-box { background: rgba(15,23,42,0.6); border-radius: 12px; padding: 12px 8px; text-align: center; }
+        .ag-stat-box .num { font-size: 1.5rem; font-weight: 900; color: #fb923c; }
+        .ag-stat-box .lbl { font-size: 0.65rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
+        .ag-missed-words {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+        .ag-missed-word {
+            padding: 3px 10px;
+            border-radius: 99px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: rgba(51,65,85,0.6);
+            border: 1px solid #334155;
+            color: #94a3b8;
+            text-transform: uppercase;
+        }
+        .ag-btn-restart {
+            width: 100%;
+            padding: 14px;
+            border-radius: 14px;
+            background: #f97316;
+            color: white;
+            font-size: 1rem;
+            font-weight: 800;
+            border: none;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .ag-btn-restart:hover { background: #ea580c; }
+
+        /* Leaderboard */
+        .ag-lb-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 7px 10px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            transition: background 0.15s;
+            cursor: pointer;
+        }
+        .ag-lb-item:hover { background: rgba(51,65,85,0.5); }
+        .ag-lb-item.me { background: rgba(251,146,60,0.15); border: 1px solid rgba(251,146,60,0.3); }
+        .ag-lb-score { color: #fb923c; font-weight: 800; }
+
+        /* Difficulty pills */
+        #ag-difficulty-row {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            flex-shrink: 0;
+        }
+        .ag-diff-pill {
+            padding: 5px 14px;
+            border-radius: 99px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            border: 2px solid #334155;
+            background: transparent;
+            color: #94a3b8;
+            cursor: pointer;
+            transition: all 0.12s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .ag-diff-pill.active { border-color: #fb923c; background: rgba(251,146,60,0.15); color: #fb923c; }
+        .ag-diff-pill:hover:not(.active) { border-color: #475569; color: #e2e8f0; }
+
+        /* Mobile bottom row */
+        #ag-mobile-bar {
+            display: none;
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            background: rgba(15,23,42,0.95);
+            border-top: 1px solid #1e293b;
+            padding: 8px 16px max(8px,env(safe-area-inset-bottom));
+            z-index: 10;
+            gap: 10px;
+            backdrop-filter: blur(8px);
+        }
+        @media (max-width: 900px) {
+            #ag-mobile-bar { display: flex; }
+            #ag-game-center { padding-bottom: calc(60px + max(8px,env(safe-area-inset-bottom))); }
+        }
+
+        /* Login header */
+        .mobile-only { display: none !important; }
+        @media (max-width: 900px) { .mobile-only { display: inline-flex !important; } }
+
+        /* Theme overrides */
+        html.light body { background: linear-gradient(135deg, #dde3ed, #f0f4f8); color: #1e293b; }
+        html.light #page-header, html.light #game-tabs { background: #f1f5f9; border-color: #cbd5e1; }
+        html.light .tab-link { color: #94a3b8; }
+        html.light .tab-link.active { color: #c2410c; border-bottom-color: #c2410c; }
+        html.light .ag-panel { background: rgba(255,255,255,0.8); border-color: #cbd5e1; color: #1e293b; }
+        html.light .ag-letter-tile { background: rgba(251,146,60,0.1); border-color: rgba(251,146,60,0.4); color: #c2410c; }
+        html.light #ag-current-word { background: rgba(248,250,252,0.9); border-color: #cbd5e1; }
+        html.light .ag-input-tile { background: rgba(99,102,241,0.1); border-color: rgba(99,102,241,0.3); color: #4338ca; }
+        html.light .ag-btn-clear { background: #cbd5e1; color: #1e293b; }
+        html.light .ag-sidebar, html.light #ag-sidebar-right { background: rgba(241,245,249,0.95); border-color: #cbd5e1; }
+        html.light #ag-mobile-bar { background: rgba(241,245,249,0.97); border-color: #cbd5e1; }
+        html.retro body { background: #000 !important; color: #00ff41; font-family: 'Courier New', monospace !important; }
+        html.retro * { font-family: 'Courier New', monospace !important; }
+        html.retro #page-header, html.retro #game-tabs { background: #000 !important; border-color: #00ff41 !important; }
+        html.retro .tab-link { color: #007a1f; }
+        html.retro .tab-link.active { color: #00ff41; border-bottom-color: #00ff41; }
+        html.retro .ag-panel { background: #001a00 !important; border-color: #00ff41 !important; }
+        html.retro .ag-letter-tile { background: #001a00 !important; border-color: #00ff41 !important; color: #00ff41 !important; }
+        html.retro #ag-current-word { background: #001a00 !important; border-color: #00ff41 !important; }
+        html.retro .ag-input-tile { background: #003300; border-color: #00ff41; color: #00ff41; }
+        html.retro .ag-btn-submit { background: #003300 !important; border: 1px solid #00ff41 !important; color: #00ff41 !important; }
+        html.ocean body { background: radial-gradient(circle at top, #0c2340, #020d1a) !important; color: #e0f4ff; }
+        html.ocean #page-header, html.ocean #game-tabs { background: rgba(5,16,31,0.85) !important; border-color: #1d4e6e !important; }
+        html.ocean .tab-link { color: #4d89ac; }
+        html.ocean .tab-link.active { color: #38bdf8; border-bottom-color: #38bdf8; }
+        html.pastel body { background: linear-gradient(135deg, #fce7f3, #ede9fe) !important; color: #4a1d52; }
+        html.pastel #page-header, html.pastel #game-tabs { background: rgba(255,240,250,0.97) !important; border-color: #f0abdb !important; }
+        html.pastel .tab-link { color: #c084db; }
+        html.pastel .tab-link.active { color: #9333ea; border-bottom-color: #9333ea; }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 999px; }
+        button:focus, input:focus { outline: none; box-shadow: 0 0 0 2px rgba(251,146,60,0.35); }
+
+        /* Avatar grid */
+        .avatar-grid { display: grid; grid-template-columns: repeat(6,1fr); gap: 6px; }
+        .avatar-btn { width: 100%; aspect-ratio: 1; font-size: 1.4rem; border: 2px solid #334155; border-radius: 10px; background: #1e293b; cursor: pointer; transition: all 0.1s; }
+        .avatar-btn:hover { border-color: #fb923c; transform: scale(1.1); }
+        .avatar-btn.selected { border-color: #fb923c; background: rgba(251,146,60,0.2); }
+
+        /* Shake animation */
+        .ag-shake { animation: agShake 0.35s ease; }
+        @keyframes agShake {
+            0%,100%{transform:translateX(0)}
+            20%{transform:translateX(-6px)}
+            40%{transform:translateX(6px)}
+            60%{transform:translateX(-4px)}
+            80%{transform:translateX(4px)}
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <div id="page-header">
+        <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400 flex items-center gap-1.5">
+            <i data-lucide="paw-print" class="w-5 h-5 text-indigo-400"></i> Wolfle
+        </h1>
+        <div class="flex items-center gap-1.5">
+            <button id="theme-btn" onclick="ui.toggleTheme()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Design wechseln">
+                <i data-lucide="sun" class="w-4 h-4"></i>
+            </button>
+            <button id="sound-btn" onclick="ui.toggleSound()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Ton">
+                <i data-lucide="volume-2" class="w-4 h-4"></i>
+            </button>
+            <button id="haptic-btn" onclick="ui.toggleHaptics()" class="mobile-only text-slate-400 hover:text-slate-200 p-1.5 rounded-lg transition-colors" title="Vibration">
+                <i data-lucide="smartphone" class="w-4 h-4"></i>
+            </button>
+            <button id="login-header-btn" onclick="ui.openLogin()" title="Anmelden" class="flex items-center gap-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white px-2 py-1.5 rounded-lg border border-slate-600 transition-all">
+                <span id="login-header-avatar">🐺</span>
+                <span id="login-header-label">Anmelden</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- TABS -->
+    <div id="game-tabs">
+        <a href="index.html" class="tab-link"><i data-lucide="home" class="w-4 h-4"></i> Home</a>
+        <a href="wordle.html" class="tab-link"><i data-lucide="grid-2x2" class="w-4 h-4"></i> Wordle</a>
+        <a href="hangman.html" class="tab-link"><i data-lucide="skull" class="w-4 h-4"></i> Hangman</a>
+        <a href="verbinde.html" class="tab-link"><i data-lucide="link" class="w-4 h-4"></i> Verbinde</a>
+        <a href="stadtlandfluss.html" class="tab-link"><i data-lucide="globe" class="w-4 h-4"></i> SLF</a>
+        <a href="tipprennen.html" class="tab-link"><i data-lucide="keyboard" class="w-4 h-4"></i> Tippen</a>
+        <a href="anagramm.html" class="tab-link active"><i data-lucide="shuffle" class="w-4 h-4"></i> Anagramm</a>
+        <a href="quiz.html" class="tab-link"><i data-lucide="help-circle" class="w-4 h-4"></i> Quiz</a>
+    </div>
+
+    <!-- TOAST -->
+    <div id="ag-toast-container" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;z-index:9999;pointer-events:none;"></div>
+
+    <!-- GAME OVER OVERLAY -->
+    <div id="ag-game-over">
+        <div class="ag-go-card">
+            <div style="font-size:3rem;margin-bottom:8px">⏱️</div>
+            <h2>Zeit ist um!</h2>
+            <p id="ag-go-subtitle">Gut gespielt!</p>
+            <div class="ag-stat-grid">
+                <div class="ag-stat-box"><div class="num" id="ag-go-words">0</div><div class="lbl">Wörter</div></div>
+                <div class="ag-stat-box"><div class="num" id="ag-go-score">0</div><div class="lbl">Punkte</div></div>
+                <div class="ag-stat-box"><div class="num" id="ag-go-best">0</div><div class="lbl">Längstes</div></div>
+            </div>
+            <div style="font-size:0.75rem;color:#64748b;margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Verpasste Wörter</div>
+            <div class="ag-missed-words" id="ag-missed-words"></div>
+            <button class="ag-btn-restart" onclick="startGame()">Nochmal spielen</button>
+        </div>
+    </div>
+
+    <!-- ONBOARDING MODAL -->
+    <div id="onboarding-modal" class="hidden fixed inset-0 bg-slate-900/95 z-[110] flex items-center justify-center p-4">
+        <div class="w-full max-w-sm bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl">
+            <div id="onboard-choice">
+                <div class="text-center mb-6">
+                    <div class="text-5xl mb-3">🐺</div>
+                    <h2 class="text-2xl font-bold text-white mb-1">Willkommen bei Wolfle!</h2>
+                    <p class="text-sm text-slate-400">Wie möchtest du spielen?</p>
+                </div>
+                <button onclick="window.onboardChooseLogin()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl text-sm font-semibold transition-colors mb-3">🔑 Anmelden / Registrieren</button>
+                <button onclick="window.onboardChooseGuest()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white py-3 rounded-xl text-sm font-semibold transition-colors">👤 Als Gast spielen</button>
+            </div>
+            <div id="onboard-guest" class="hidden">
+                <div class="flex items-center gap-2 mb-5">
+                    <button onclick="window.onboardBack()" class="text-slate-400 hover:text-white"><i data-lucide="arrow-left" class="w-4 h-4"></i></button>
+                    <h2 class="text-lg font-bold text-white">Als Gast spielen</h2>
+                </div>
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Dein Name</label>
+                <input id="onboard-name-input" type="text" maxlength="15" placeholder="Name eingeben..."
+                    class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white mb-4 transition-colors">
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Dein Avatar</label>
+                <div class="text-center mb-3"><div id="onboard-preview-avatar" class="text-5xl">🐺</div></div>
+                <div id="onboard-avatar-grid" class="avatar-grid mb-4"></div>
+                <div id="onboard-error" class="hidden text-red-400 text-xs mb-3 text-center"></div>
+                <button id="onboard-confirm-btn" onclick="window.onboardConfirmGuest()" class="w-full bg-orange-500 hover:bg-orange-400 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors">Weiter spielen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOGIN MODAL -->
+    <div id="login-modal" class="hidden fixed inset-0 bg-slate-900/80 z-[100] flex items-center justify-center p-4" onclick="if(event.target===this)window.closeLoginModal()">
+        <div class="w-full max-w-sm bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-5">
+                <h2 class="text-xl font-bold text-white">🔑 Anmelden</h2>
+                <button onclick="window.closeLoginModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div id="login-form-section">
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Nutzername</label>
+                <input id="login-name-input" type="text" maxlength="15" placeholder="Name eingeben..."
+                    class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white mb-3">
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">PIN (optional)</label>
+                <input id="login-pin-input" type="password" maxlength="8" placeholder="PIN (optional)..."
+                    class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white mb-4">
+                <div id="login-error" class="hidden text-red-400 text-xs mb-3 text-center"></div>
+                <button id="login-submit-btn" onclick="window.doLogin()" class="w-full bg-orange-500 hover:bg-orange-400 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors mb-2">Anmelden / Registrieren</button>
+                <button onclick="window.openGuestFlow()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 py-2 rounded-xl text-sm transition-colors">👤 Als Gast spielen</button>
+            </div>
+            <div id="login-loggedin-section" class="hidden text-center">
+                <div id="login-welcome-avatar" class="text-5xl mb-1 cursor-pointer" onclick="window.toggleLoginAvatarGrid()" title="Avatar ändern">🐺</div>
+                <div class="text-xs text-slate-500 mb-2">Tippe zum Ändern</div>
+                <div id="login-avatar-grid" class="avatar-grid hidden mb-3"></div>
+                <button id="login-avatar-save-btn" onclick="window.saveLoginAvatar()" class="hidden w-full bg-orange-500 hover:bg-orange-400 text-white py-2 rounded-xl text-sm font-semibold transition-colors mb-3">Avatar speichern</button>
+                <div class="text-lg font-bold text-white mb-1" id="login-welcome-name"></div>
+                <div class="text-xs text-slate-400 mb-4">Erfolgreich angemeldet</div>
+                <button onclick="window.doLogout()" class="w-full bg-red-900/40 hover:bg-red-900/60 border border-red-800/40 text-red-400 py-2 rounded-xl text-sm transition-colors">Abmelden</button>
+                <button onclick="window.closeLoginModal()" class="w-full mt-2 bg-slate-700 hover:bg-slate-600 text-slate-300 py-2 rounded-xl text-sm transition-colors">Schließen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP -->
+    <div id="ag-app">
+
+        <!-- LEFT SIDEBAR -->
+        <div id="ag-sidebar">
+            <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Schwierigkeit</div>
+            <div class="flex flex-col gap-2">
+                <button class="ag-diff-pill active" data-diff="easy" onclick="setDifficulty('easy', this)">Leicht (7 Buchst.)</button>
+                <button class="ag-diff-pill" data-diff="medium" onclick="setDifficulty('medium', this)">Mittel (8 Buchst.)</button>
+                <button class="ag-diff-pill" data-diff="hard" onclick="setDifficulty('hard', this)">Schwer (9 Buchst.)</button>
+            </div>
+
+            <div class="ag-panel">
+                <h3 style="color:#fb923c">⏱️ Zeitlimit</h3>
+                <div class="flex gap-2 flex-wrap">
+                    <button class="ag-diff-pill active" data-time="90" onclick="setTimeLimit(90, this)">90s</button>
+                    <button class="ag-diff-pill" data-time="120" onclick="setTimeLimit(120, this)">2 Min</button>
+                    <button class="ag-diff-pill" data-time="180" onclick="setTimeLimit(180, this)">3 Min</button>
+                </div>
+            </div>
+
+            <div class="ag-panel">
+                <h3>🏆 Punkte-System</h3>
+                <div style="font-size:0.8rem;color:#94a3b8;line-height:1.6">
+                    <div>2 Buchst.: <span style="color:#94a3b8">1 Pt.</span></div>
+                    <div>3 Buchst.: <span style="color:#5eead4">2 Pkt.</span></div>
+                    <div>4 Buchst.: <span style="color:#93c5fd">4 Pkt.</span></div>
+                    <div>5 Buchst.: <span style="color:#a5b4fc">7 Pkt.</span></div>
+                    <div>6 Buchst.: <span style="color:#d8b4fe">11 Pkt.</span></div>
+                    <div>7+ Buchst.: <span style="color:#fbbf24">18+ Pkt.</span></div>
+                </div>
+            </div>
+
+            <div class="ag-panel">
+                <h3>📖 Anleitung</h3>
+                <p style="font-size:0.8rem;color:#94a3b8;line-height:1.5">Bilde so viele Wörter wie möglich aus den gegebenen Buchstaben. Jeder Buchstabe darf nur so oft verwendet werden, wie er vorkommt. Kürzere Wörter sind auch erlaubt!</p>
+            </div>
+        </div>
+
+        <!-- GAME CENTER -->
+        <div id="ag-game-center">
+            <!-- Timer + Score -->
+            <div style="display:flex;align-items:center;justify-content:space-between;width:100%;max-width:500px;flex-shrink:0;">
+                <div id="timer-ring-wrap">
+                    <div id="timer-ring">
+                        <svg id="timer-svg" viewBox="0 0 100 100">
+                            <circle id="timer-track" cx="50" cy="50" r="44"/>
+                            <circle id="timer-fill" cx="50" cy="50" r="44"/>
+                        </svg>
+                        <div id="timer-text">90</div>
+                    </div>
+                </div>
+                <div style="text-align:center">
+                    <div id="ag-score-big" style="font-size:2rem;font-weight:900;color:#fb923c;line-height:1">0</div>
+                    <div style="font-size:0.7rem;color:#64748b;text-transform:uppercase;letter-spacing:0.05em">Punkte</div>
+                </div>
+                <div style="text-align:right">
+                    <button onclick="startGame()" style="padding:8px 16px;border-radius:10px;background:#f97316;color:white;font-weight:700;font-size:0.8rem;border:none;cursor:pointer;" id="ag-start-btn">▶ Start</button>
+                    <div style="font-size:0.75rem;color:#64748b;margin-top:3px;" id="ag-words-count">0 Wörter</div>
+                </div>
+            </div>
+
+            <!-- Scrambled letters -->
+            <div id="ag-letters-wrap"></div>
+
+            <!-- Current word being built -->
+            <div id="ag-input-area">
+                <div id="ag-current-word" onclick="clearCurrentWord()" title="Klicken zum Löschen">
+                    <span id="ag-input-hint" style="color:#334155;font-size:0.8rem;">Klicke auf Buchstaben um ein Wort zu bilden...</span>
+                </div>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="ag-btn-row">
+                <button class="ag-btn ag-btn-shuffle" onclick="shuffleLetters()" title="Buchstaben mischen">
+                    <i data-lucide="shuffle" class="inline w-4 h-4 mr-1"></i> Mischen
+                </button>
+                <button class="ag-btn ag-btn-clear" onclick="clearCurrentWord()">
+                    <i data-lucide="delete" class="inline w-4 h-4 mr-1"></i> Löschen
+                </button>
+                <button class="ag-btn ag-btn-submit" id="ag-submit-btn" onclick="submitWord()" disabled>
+                    <i data-lucide="check" class="inline w-4 h-4 mr-1"></i> Eingabe
+                </button>
+            </div>
+
+            <!-- Status -->
+            <div id="ag-status"></div>
+
+            <!-- Found words -->
+            <div id="ag-found-section">
+                <div id="ag-found-header">
+                    <span>Gefundene Wörter</span>
+                    <span id="ag-score-display">0 Pkt.</span>
+                </div>
+                <div id="ag-found-words"></div>
+            </div>
+        </div>
+
+        <!-- RIGHT SIDEBAR: Leaderboard -->
+        <div id="ag-sidebar-right">
+            <h2 class="text-base font-bold flex items-center gap-2 text-slate-200" style="margin:0 0 8px;">
+                <i data-lucide="trophy" class="text-yellow-500 w-4 h-4"></i> Bestenliste
+            </h2>
+            <div class="flex gap-1 mb-3" style="background:rgba(30,41,59,0.5);padding:3px;border-radius:8px;">
+                <button onclick="window.agSetLbTab('total')" class="ag-lb-tab-total flex-1 text-xs py-1.5 rounded-md bg-orange-600 text-white font-semibold transition-colors">Gesamt</button>
+                <button onclick="window.agSetLbTab('week')" class="ag-lb-tab-week flex-1 text-xs py-1.5 rounded-md text-slate-400 transition-colors">Woche</button>
+            </div>
+            <ol id="ag-leaderboard-list" class="space-y-1 overflow-y-auto flex-1">
+                <li class="text-slate-500 italic text-sm">Lädt...</li>
+            </ol>
+        </div>
+    </div>
+
+    <!-- MOBILE BAR -->
+    <div id="ag-mobile-bar">
+        <button class="ag-btn ag-btn-shuffle flex-1" onclick="shuffleLetters()"><i data-lucide="shuffle" class="inline w-4 h-4 mr-1"></i> Mischen</button>
+        <button class="ag-btn ag-btn-clear flex-1" onclick="clearCurrentWord()"><i data-lucide="delete" class="inline w-4 h-4 mr-1"></i> Leer</button>
+        <button class="ag-btn ag-btn-submit flex-1" id="ag-submit-btn-mobile" onclick="submitWord()" disabled><i data-lucide="check" class="inline w-4 h-4 mr-1"></i> OK</button>
+    </div>
+
+<script>
+    // ── Firebase + App Logic ──
+    const appId = 'wolfle-v1';
+    const firebaseConfig = {
+        apiKey: "AIzaSyDTPO-01gusabZGy-TthEWZWntwct6LrEQ",
+        authDomain: "wolfle.firebaseapp.com",
+        projectId: "wolfle",
+        storageBucket: "wolfle.firebasestorage.app",
+        messagingSenderId: "286289741614",
+        appId: "1:286289741614:web:14e5faad1616fe75755cbf"
+    };
+    let db = null, firebaseFns = null;
+    async function ensureDB() {
+        if (db) return db;
+        const appMod = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js');
+        const storeMod = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
+        firebaseFns = storeMod;
+        const app = appMod.initializeApp(firebaseConfig);
+        db = storeMod.getFirestore(app);
+        return db;
+    }
+
+    // ── German word list for validation ──
+    // We use a large embedded word list for offline-capable validation
+    const VALID_WORDS_SET = new Set();
+    // Seed with common German words (2-9 letters)
+    const BASE_WORDS = [
+        "AB","AN","AUF","AUS","BEI","BIS","DA","DE","DER","DIE","DIN","DU","EIN","ER","ES","FÜR","GUT","HIN","ICH","IHM","IHN","IHR","IM","IN","IST","JA","JE","KAN","MAL","MAN","MIR","MIT","MIR","NUR","OB","OFT","OR","SIE","SO","UND","UNS","VOM","VON","VOR","WAS","WEG","WER","WIE","WIR","ZU","ZUM","ZUR",
+        "ACH","ALS","AMT","ARM","ART","BAD","BAR","BAU","BEI","BEN","BET","BOT","DEM","DEN","DES","EBE","EHE","EIN","EIS","ELF","EMU","ERG","ESS","FAD","FAX","FEE","FEL","FIG","FIN","FIT","FLO","FON","FOR","FOX","FUG","FUN","GAB","GAN","GAR","GAS","GAU","GAZ","GEB","GEL","GEN","GER","GIM","GOT","GOL","GUN","HAN","HAS","HAT","HEI","HEN","HET","HOC","HOR","HUB","HUL","HUN","HUT","INN","ION","JAB","JAN","JOB","JOG","JOT","KAI","KAM","KAN","KAP","KAR","KAS","KAT","KAU","KEL","KEN","KER","KIE","KIM","KIN","KOK","KOM","KON","KOP","KOR","KOT","KRA","KRE","LAB","LAD","LAG","LAK","LAM","LAP","LAR","LAT","LAU","LAW","LAX","LAZ","LEB","LED","LEE","LEH","LEI","LEM","LEN","LER","LES","LET","LEU","LIE","LIN","LIT","LOB","LOC","LOS","LOT","LOZ","LUB","LUM","LUN","LUT","MAG","MAI","MAK","MAL","MAN","MAP","MAR","MAS","MAT","MAU","MAZ","MED","MEL","MEN","MER","MES","MET","MEZ","MID","MIM","MIN","MIR","MIS","MIX","MOB","MOD","MON","MOO","MOP","MOR","MOS","MOT","MOZ","MUL","MUN","MUR","MUT","NAB","NAG","NAM","NAP","NAR","NAS","NAT","NAU","NAX","NEB","NEF","NEG","NEH","NEI","NEL","NEM","NER","NES","NET","NEU","NIL","NIP","NIT","NOB","NOC","NOD","NON","NOR","NOT","NUB","NUM","NUN","NUT","OBE","ODE","OFT","OHM","OHR","OKA","OKE","OKI","OLE","OLI","OMA","OPA","OPT","ORB","ORE","ORT","OST","OVA","OXO","PAB","PAD","PAP","PAR","PAS","PAT","PAU","PAW","PAX","PEI","PEK","PEL","PEN","PER","PES","PET","PEW","PIE","PIN","PIT","PIX","PLO","POD","POM","POP","POT","POW","PRO","PUB","PUL","PUN","PUR","PUT","RAB","RAC","RAD","RAG","RAH","RAI","RAK","RAM","RAN","RAP","RAS","RAT","RAU","RAZ","REB","RED","REF","REH","REI","REL","REM","REP","RES","RET","REU","REV","RIB","RIC","RID","RIG","RIM","RIN","RIP","RIT","ROB","ROC","ROD","ROL","ROM","RON","ROT","ROW","ROZ","RUB","RUG","RUN","RUT",
+        "ADER","AFFE","AHLE","AHNE","AKTE","ALBA","ALBE","ALGE","ALLE","ALOE","ALSO","ALTE","AMOK","AMOR","AMTS","ANBAU","ANGEL","ANGST","ANKER","ANZUG","APFEL","ARZT","ASSE","ASTE","ATEM","ATZE","AUGE","AULA","AXEL","AZUR",
+        "BAHN","BAKE","BALL","BALM","BANN","BARG","BARN","BÄRO","BASE","BAUM","BEET","BEIZ","BELL","BERG","BETT","BICH","BIENE","BIER","BILD","BILL","BINDE","BIRNE","BISS","BITT","BLATT","BLAU","BLEI","BLICK","BLIND","BLITZ","BLOCK","BLUME","BLUSE","BOCK","BODEN","BOGEN","BOJE","BOMBE","BOND","BONUS","BORD","BOTE","BOXEN","BRAND","BREI","BRIEF","BRUCH","BRUST","BUCHE","BUCHT","BUND","BURG","BUSE","BÜSE",
+        "CHOR","CLAN",
+        "DACH","DAME","DAMPF","DATUM","DAUER","DECKE","DEICH","DEPOT","DIELE","DOCHT","DORF","DORNE","DRAHT","DRAMA","DRECK","DRUCK","DUELL","DURCH","DURST",
+        "EBENE","ECHO","ECKE","EICHE","EIFER","EIMER","EISEN","ELEND","ELITE","EMAIL","ENGEL","ENKEL","ERBEN","ESSEN","ETAGE","ETHIK","EUTER",
+        "FABEL","FADEN","FAHRT","FALKE","FALLE","FALTE","FARBE","FASAN","FAUST","FEDER","FEIER","FEIND","FELGE","FERNE","FESTE","FEUER","FIGUR","FILM","FINDE","FIRMA","FISCH","FLAIR","FLECK","FLORA","FLUCH","FLUSS","FOLGE","FORUM","FRAGE","FRONT","FROST","FUCHS",
+        "GABEL","GEBEN","GEBET","GEGEN","GEIST","GENAU","GERNE","GLANZ","GLATT","GLEIS","GLIED","GNADE","GRAMM","GRIFF","GRUND","GRUSS","GUMMI","GUNST","GURKE",
+        "HAFEN","HALLE","HALME","HANDY","HARFE","HARKE","HASEN","HAUBE","HAUFE","HAUPT","HECKE","HEIDE","HELFE","HERDE","HETZE","HEXEN","HILFE","HIRSCH","HITZE","HOBEL","HONIG","HORDE","HOTEL","HUMOR","HUNDE",
+        "IDEEN","IMAGE","INNEN","INSEL",
+        "JACHT","JACKE","JAHRE","JUBEL","JUNGE","JUWEL",
+        "KABEL","KAKAO","KAMEL","KAMIN","KAMPF","KANAL","KANNE","KANTE","KARRE","KARTE","KASSE","KATZE","KEGEL","KEHLE","KEINE","KERNE","KERZE","KETTE","KIEFER","KISTE","KLAGE","KLANG","KLAUE","KLEID","KLEIN","KLIMA","KOHLE","KOMET","KOMMA","KONTO","KRAFT","KRANK","KRANZ","KRAUT","KREBS","KREIS","KREUZ","KRONE","KUGEL","KUNDE","KUNST","KURVE",
+        "LADEN","LAGER","LAMPE","LANDE","LANZE","LASER","LATTE","LAUBE","LAUCH","LAUNE","LEBEN","LEBER","LEDER","LEHRE","LEINE","LERNE","LICHT","LIEBE","LISTE","LITER","LOGIK","LUCHS","LUNGE",
+        "MACHT","MAGEN","MAGIE","MAKEL","MALER","MANGO","MANIE","MANKO","MAPPE","MARKE","MASSE","MATTE","MAUER","MEILE","MEISE","MENGE","MESSE","METER","MIETE","MILCH","MITTE","MIXER","MOBIL","MODEM","MONAT","MORAL","MOTOR","MOTTO","MULDE","MUMIE","MUSIK",
+        "NACHT","NADEL","NAGEL","NAMEN","NATUR","NEBEL","NEFFE","NEIGE","NERVE","NETTE","NETZE","NUDEL",
+        "OCHSE","OLIVE","ONKEL","OPFER","OPTIK","ORGAN","ORGEL","OSTEN","OTTER","OZEAN",
+        "PAKET","PALME","PANEL","PANIK","PANNE","PAUSE","PEDAL","PELZE","PERLE","PFAHL","PFAND","PFEIL","PFERD","PFUND","PHASE","PILOT","PILZE","PIZZA","PLANE","PLATZ","PREIS","PROBE","PUDEL","PUMPE","PUNKT","PUPPE",
+        "RACHE","RADAR","RADIO","RAMPE","RANDE","RASEN","RASSE","RAUCH","RAUPE","REGAL","REGEN","REICH","REIFE","REIHE","REISE","RENTE","RIESE","RINDE","RINNE","ROBBE","RODEL","ROHRE","ROLLE","ROMAN","ROSEN","RUDEL","RUDER","RUFEN","RUINE","RUNDE",
+        "SACHE","SAHNE","SAITE","SALAT","SALON","SAMEN","SANFT","SATIN","SAUCE","SEHEN","SEHNE","SEIDE","SEIFE","SEITE","SEKTE","SENAT","SERIE","SILBE","SINNE","SIPPE","SITTE","SOCKE","SONNE","SORGE","SPORT","STAAT","STADT","STAHL","STALL","STAMM","STAND","STARK","START","STOFF","STOLZ","STROM","STUBE","STUFE","STUHL","STURM","SUCHE","SUMME","SUPPE",
+        "TAFEL","TAKTE","TALER","TANNE","TANTE","TARIF","TASSE","TASTE","TAFEL","TEICH","TEILE","THEMA","TIGER","TINTE","TISCH","TITEL","TOAST","TORTE","TRAUM","TREUE","TROST","TROTZ","TULPE","TUMOR",
+        "ÜBUNG",
+        "VATER","VIDEO","VILLA","VIRUS","VITAL","VOGEL","VOLKE",
+        "WACHE","WACHS","WAFFE","WAGEN","WAISE","WANNE","WANZE","WARTE","WARZE","WATTE","WEBER","WEIDE","WEIHE","WELLE","WENDE","WERBE","WERKE","WESEN","WESPE","WESTE","WETTE","WIESE","WILLE","WOLKE","WOLLE","WUNDE","WURST",
+        "ZEBRA","ZECHE","ZECKE","ZEDER","ZEILE","ZELLE","ZELTE","ZIEGE","ZINSE","ZITAT","ZIVIL","ZUNGE",
+        // 5-letter words from the words.js file  
+        "ABEND","ANGEL","ANGST","ANKER","ANZUG","APFEL","AREAL","ARENA","ARMEE","ASCHE","BAUER","BIRNE","BLATT","BLICK","BLITZ","BLUME","BODEN","BOGEN","BOMBE","BRAND","BRIEF","BRUCH","BUCHE","BUCHT","DAMPF","DATUM","DAUER","DECKE","DEICH","DEPOT","DRUCK","DUELL","EBENE","EIMER","ENGEL","ENKEL","FABEL","FADEN","FAHRT","FALKE","FEDER","FEUER","FIGUR","FISCH","FLUSS","FORUM","FUCHS","GABEL","GNADE","GRIFF","GRUND","GURKE","HAFEN","HALLE","HARFE","HAUBE","HAUPT","HECKE","HEIDE","HILFE","HITZE","HOTEL","HUMOR","INSEL","JACKE","JUBEL","JUNGE","JUWEL","KABEL","KAMIN","KAMPF","KANAL","KARTE","KATZE","KEGEL","KERZE","KETTE","KISTE","KLEID","KLIMA","KOHLE","KRAFT","KRANK","KRANZ","KREUZ","KRONE","KUGEL","KUNDE","KUNST","LADEN","LAMPE","LANZE","LASER","LAUBE","LAUNE","LEBEN","LEBER","LEHRE","LIEBE","LICHT","LISTE","LUNGE","MACHT","MAGEN","MARKT","MAUER","MEILE","MEISE","MENGE","METER","MIETE","MILCH","MITTE","MONAT","MUSIK","NACHT","NADEL","NAGEL","NAMEN","NATUR","NEBEL","NERVE","NUDEL","OPFER","ORGEL","PAKET","PALME","PANIK","PAUSE","PERLE","PFEIL","PFERD","PHASE","PILOT","PIZZA","PLATZ","PREIS","PROBE","PUMPE","PUNKT","PUPPE","RACHE","RADAR","RADIO","RAMPE","RASEN","RAUCH","RAUPE","REGAL","REGEN","REICH","REIFE","REIHE","REISE","RENTE","RIESE","RODEL","ROLLE","ROMAN","ROSEN","RUDER","RUINE","RUNDE","SACHE","SAHNE","SALAT","SERIE","SILBE","SPORT","STADT","STAHL","STAND","START","STOFF","STOLZ","STROM","STUFE","STUHL","STURM","SUCHE","SUMME","SUPPE","TAFEL","TASSE","TASTE","TEICH","THEMA","TIGER","TINTE","TISCH","TITEL","TOAST","TORTE","TRAUM","TREUE","TROST","TROTZ","TUMOR","VATER","VIDEO","VIRUS","VITAL","VOGEL","WACHE","WAFFE","WAGEN","WANNE","WARTE","WATTE","WEBER","WEIDE","WELLE","WENDE","WERKE","WESEN","WESPE","WESTE","WETTE","WIESE","WILLE","WOLKE","WURST","ZEBRA","ZEILE","ZELLE","ZELTE","ZIEGE","ZINSE","ZITAT","ZUNGE"
+    ];
+    BASE_WORDS.forEach(w => VALID_WORDS_SET.add(w.toUpperCase()));
+
+    // Extra common German words for better coverage
+    const EXTRA_WORDS = [
+        "EIN","AUS","MIT","VON","BIS","AUF","BEI","NAH","OFT","GUT","ALT","NEU","ROT","BLU","GEL","GRO","HOH","GUTE","ALTE","NEUE","ROTE","GROSSE",
+        "BEIN","HAND","HAUS","KOPF","MUND","OFEN","PARK","POOL","RANG","RUND","SAFT","SALZ","SATZ","TOPF","TURM","WAHL","WALD","WELT","WOLF","WORT","ZAHL","ZEIT","BERG","BROT","GRAS","HAAR","KEKS","LOCH","MOOS","OBST","RUHE","SAND","WAND","BOOT","BUND","BURG","HALS","HEFT","HERD","HERZ","HUHN","KERN","KIND","KORB","KORN","KRUG","LOHN","NEID","PIER","RAPS","REIS","STAB","STAU","STEG","TEER","TORF","WABE",
+        "ADLER","ALARM","AREAL","ASCHE","CLOWN","CREME","EXTRA","GLANZ","GLATT","GLEIS","GLIED","GRAMM","GRIFF","GUMMI","IDEEN","IMAGE","INNEN","JACHT","KAKAO","KLAGE","KLANG","KLAUE","KLEIN","KLICK","KLOTZ","KLUFT","KNAPP","KNAST","KNICK","KOMMA","KONTO","KRAUT","KREBS","KREIS","KRIMI","KRISE","KRYPT","KUBUS","KUPEE","KUPPE","KURSE","KURVE","LACHE","LACHS","LAHME","LAIEN","LAKEN","LANGE","LASSE","LASTE","LATTE","LAUCH","LAUER","LAUGE","LAUTE","LEDER","LEERE","LEGEN","LEIHE","LEIME","LEINE","LEISE","LENKE","LESEN","LESER","LETZT","LEUTE","LINDE","LINIE","LINKE","LINKS","LINSE","LIPPE","LITER","LOBEN","LOCHE","LOGIK","LOTOS","LOTSE","LUPEN","LUXUS","LYRIK","MACHE","MAGER","MAGIE","MAILS","MAKEL","MALEN","MALUS","MANCH","MANIE","MANKO","MAPPE","MARKE","MASSE","MATHE","MEISE","MEIST","MERKE","MESSE","METRO","MEUTE","MILDE","MINZE","MISCH","MIXER","MOBIL","MODAL","MODEL","MODEM","MODER","MODUL","MODUS","MONDS","MORAL","MOTEL","MOTIV","MOTTO","MULDE","MUMIE","MUSSE","MUTIG","MUTTI","MYTHE","NABEL","NACKT","NAHER","NAHME","NASAL","NASEN","NEBEN","NEFFE","NEGER","NEIGE","NENNE","NETTE","NETZE","NEUEN","NEUER","NEUES","NICKE","NIERE","NIMMT","NIVEA","NOMAD","NORME","NOTAR","NOTEN","NOTIZ","NOVUM","NUTZE","NYMPH","OBERE","OFFEN","OKTAN","OPIUM","ORALE","ORBIT","ORDER","ORDNE","ORGAN","ORKAN","ORTEN","OTTER","PAARE","PACHT","PANEL","PANNE","PAPPE","PAPST","PARTY","PASSE","PASTA","PATEN","PAUKE","PEDAL","PEGEL","PENIS","PETZE","PFAHL","PFAND","PFOTE","PFUND","PIANO","PILZE","PINIE","PIRAT","PLANE","PLATT","POKAL","POLEN","PORNO","PORTO","POSEN","POSSE","POSTS","PRALL","PRIMA","PRINZ","PROFI","PROSA","PROST","PSALM","PUDEL","PULSE","PUSTE","PUTZE","QUALM","QUANT","QUARK","QUASI","QUAST","QUELL","QUERE","QUOTE","RAPID","RASCH","RASSE","RASTE","RATEN","RAUHE","RECHT","REDEN","REELL","REGIE","REIFE","RENNE","RESTE","REVUE","RHEIN","RINDE","RINNE","RITUS","ROBBE","ROBOT","ROHRE","ROSIG","ROSTE","ROTOR","ROUTE","RUBIN","RUDEL","RUFIN","RUHIG","RUHME","RUMPF","SACHT","SAGEN","SAITE","SALBE","SALON","SALTO","SAMEN","SANFT","SARGE","SATIN","SATTE","SAUER","SAUFE","SAUSE","SEELE","SEGEN","SEHNE","SEKTE","SELIG","SENAT","SENDE","SENKE","SERUM","SESAM","SICHT","SIEHE","SINGE","SIPPE","SITTE","SKALA","SMART","SNACK","SOCKE","SOFAR","SOGAR","SOHNE","SOLAR","SOLCH","SONST","SOSSE","SOWIE","SPALT","SPANN","SPARE","SPASS","SPEER","SPERR","SPEZI","SPION","SPITZ","SPOTT","SPRIT","SPULE","STALL","STAMM","STARK","STARR","STETS","STIER","STIFT","STILL","STOPP","STOSS","STROH","STUTE","SUCHT","SUMPF","SUPER","SURFE","TABAK","TAGEN","TAKTE","TALAR","TALER","TAPET","TARIF","TATEN","TAUFE","TAXIS","TEIGE","TEXTE","THEKE","THESE","THRON","TIMEN","TITAN","TOBEN","TONIC","TOTAL","TOTEM","TOTEN","TRAKT","TRANK","TRAUE","TREFF","TREIB","TRIFF","TRITT","TRUCK","TRUHE","TRUMP","TRUNK","TRUPP","TUBEN","TURBO","TYPEN","UFERN","UHREN","ULKIG","UMBAU","UMHER","UMWEG","UMZUG","UNART","UNFUG","UNION","UNMUT","UNTEN","UNTER","URAHN","VENEN","VENUS","VILLA","VIOLA","VIREN","VISUM","VOKAL","VOLKE","VOLLE","VORAB","VORAN","VORNE","VOTUM","WAAGE","WACHS","WACHT","WAISE","WALDE","WALZE","WANZE","WAREN","WARME","WARNE","WARUM","WARZE","WASCH","WASSE","WEBEN","WECKE","WEDEL","WEDER","WEGEN","WEHRE","WEICH","WEIHE","WEILE","WEINE","WEISE","WEISS","WELTE","WENIG","WERBE","WERFE","WERTE","WICHT","WIDER","WIDME","WIEGE","WILDE","WINDE","WINKE","WIPPE","WIRKE","WIRRE","WODKA","WOHIN","WOHNE","WOLLE","WORAN","WORTE","WRACK","WUCHS","WUCHT","WULST","XENON","YACHT","ZECHE","ZECKE","ZEDER","ZEHEN","ZEIGE","ZENIT","ZEUGE","ZIEHE","ZIERE","ZIFFE","ZIPFE","ZIRKA","ZITAR","ZITZE","ZIVIL","ZOBEL","ZONEN","ZORNE","ZOTEN","ZUCHT","ZUCKE","ZUDEM","ZUPFE","ZURUF","ZUSAG","ZUVOR","ZWANG","ZWECK","ZWERG","ZWICK","ZWING","ZWIST","ZYSTE"
+    ];
+    EXTRA_WORDS.forEach(w => VALID_WORDS_SET.add(w.toUpperCase()));
+
+    // ── Game Config ──
+    // Source words for generating anagram puzzles (grouped by letter count)
+    const SOURCE_WORDS = {
+        easy: [
+            "ABENDROT","GEBIRGES","FLEISSIG","SCHULTER","STRICKST","FRUHLING","BAUMWOLLE","TANZMUSIK","BLUMENVASE","REGENWALD","WORTSCHATZ","TIERSTIMME","STADTPLAN","MONDBEBEN","KINDHEIT","LERNZEIT","SPIELEND","WANDLUNG","SCHULHEFT","BERGPFAD","MORGENROT","WALDLICHT","TAGESZEIT","BUCHSEITE","RAUMFAHRT","KIRCHTURM","GASTHAUS","STERNBILD","EISBLOCK","ZEITRAUM"
+        ],
+        medium: [
+            "STREIFLICHT","MONDSCHEIN","WALDGEIST","FRUHSTUCK","KINDERSPIEL","TIERGEHEGE","SCHULPAUSE","BUCHSTABEN","BLUMENGARTEN","ZEITENWENDE","BERGWANDERN","TRAUMWOLKE","STADTMITTE","LERNGRUPPE","ABENDESSEN","TANZFIGUREN","SPIELWIESE","NATURPFAD","WALDKINDER","MEERESSTRAND","STERNSCHNUPPE","SCHREIBTISCH","REISEBERICHT","MUSIKSTUNDE","GARTENHAUS","WINTERMÄRCHEN","FARBPALETTE","WELTREISE","BRÜCKENBAU","GEWITTERREGEN"
+        ],
+        hard: [
+            "FRUHLINGSGEFUHL","BERGWANDERUNG","MONDLICHTREFLEX","TRAUMLANDSCHAFT","KINDERZEICHNUNG","WERKZEUGKASTEN","SONNENUHR","GARTENFESTIVAL","WALDPFADWANDERN","SCHULAUSFLUGORT","ZEITGEISTWANDEL","BUCHHANDLUNG","MUSIKINSTRUMENT","FARBSTIFTMALEREI","NATURSCHUTZGEBIET","STRANDSPAZIERGANG","WINTERLANDSCHAFT","SOMMERFRISCHE","HERBSTBLATTER","FRUHJAHRSMUDE"
+        ]
+    };
+
+    let difficulty = 'easy';
+    let timeLimitSetting = 90;
+    let gameActive = false;
+    let timeLeft = 0;
+    let timerIntervalId = null;
+    let score = 0;
+    let foundWords = new Set();
+    let currentLetters = []; // array of letter objects {char, id, used}
+    let currentInput = []; // array of {char, tileId}
+    let allPossibleWords = [];
+    let longestFound = 0;
+
+    // ── Sound ──
+    let soundEnabled = localStorage.getItem('wolfle_sound') !== 'false';
+    let hapticEnabled = localStorage.getItem('wolfle_haptic') === 'true';
+    let audioCtx = null;
+
+    function getAudioCtx() {
+        if (!audioCtx) try { audioCtx = new (window.AudioContext||window.webkitAudioContext)(); } catch(e){}
+        return audioCtx;
+    }
+    document.addEventListener('pointerdown', () => getAudioCtx(), { once: true });
+
+    function playTone(freq, type, dur, vol=0.2) {
+        if (!soundEnabled) return;
+        try {
+            const ctx = getAudioCtx(); if (!ctx) return;
+            const osc = ctx.createOscillator(), gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.type = type; osc.frequency.setValueAtTime(freq, ctx.currentTime);
+            gain.gain.setValueAtTime(vol, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+dur);
+            osc.start(); osc.stop(ctx.currentTime+dur);
+        } catch(e){}
+    }
+    function playSuccess() { [523,659,784].forEach((f,i)=>setTimeout(()=>playTone(f,'sine',0.2),i*80)); }
+    function playError() { playTone(220,'sawtooth',0.15,0.15); }
+    function playTileClick() { playTone(660,'sine',0.05,0.1); }
+
+    function haptic(style) {
+        if (!hapticEnabled) return;
+        try { navigator.vibrate(style === 'correct' ? [15,20,15] : style === 'error' ? 25 : 10); } catch(e){}
+    }
+
+    function updateSoundBtn() {
+        const icon = soundEnabled ? 'volume-2' : 'volume-x';
+        const btn = document.getElementById('sound-btn');
+        if (btn) { btn.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4"></i>`; lucide.createIcons(); }
+    }
+    function updateHapticBtn() {
+        const icon = hapticEnabled ? 'vibrate' : 'smartphone';
+        const btn = document.getElementById('haptic-btn');
+        if (btn) { btn.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4"></i>`; lucide.createIcons(); }
+    }
+
+    function showToast(msg, type='info') {
+        const c = document.getElementById('ag-toast-container');
+        const colors = { success:'border-green-500/50', error:'border-red-500/50', info:'border-blue-500/50', warning:'border-yellow-500/50' };
+        const t = document.createElement('div');
+        t.className = `px-4 py-2 rounded-full border shadow-lg text-sm bg-slate-800 text-white ${colors[type]||'border-slate-600'}`;
+        t.textContent = msg; c.appendChild(t);
+        setTimeout(() => t.remove(), 2500);
+    }
+
+    function setStatus(msg, type='') {
+        const el = document.getElementById('ag-status');
+        el.textContent = msg;
+        el.className = 'ag-status ' + type;
+        if (msg) setTimeout(() => { if (el.textContent === msg) { el.textContent = ''; el.className = 'ag-status'; } }, 2000);
+    }
+
+    // ── Scoring ──
+    function getPoints(len) {
+        if (len <= 2) return 1;
+        if (len === 3) return 2;
+        if (len === 4) return 4;
+        if (len === 5) return 7;
+        if (len === 6) return 11;
+        if (len === 7) return 18;
+        return 18 + (len - 7) * 8;
+    }
+
+    function getLenClass(len) {
+        if (len <= 2) return 'len-2';
+        if (len === 3) return 'len-3';
+        if (len === 4) return 'len-4';
+        if (len === 5) return 'len-5';
+        if (len === 6) return 'len-6';
+        if (len === 7) return 'len-7';
+        return 'len-8plus';
+    }
+
+    // ── Puzzle Generation ──
+    function pickSourceWord() {
+        const pool = SOURCE_WORDS[difficulty];
+        return pool[Math.floor(Math.random() * pool.length)].toUpperCase();
+    }
+
+    function canFormFrom(word, availableLetters) {
+        const counts = {};
+        availableLetters.forEach(l => counts[l] = (counts[l]||0) + 1);
+        for (const ch of word) {
+            if (!counts[ch]) return false;
+            counts[ch]--;
+        }
+        return true;
+    }
+
+    function findAllValidWords(letters) {
+        const possible = [];
+        const letterArr = letters.map(l => l.char);
+        for (const word of VALID_WORDS_SET) {
+            if (word.length < 2) continue;
+            if (canFormFrom(word, letterArr)) possible.push(word);
+        }
+        return possible.sort((a,b) => b.length - a.length || a.localeCompare(b));
+    }
+
+    function generatePuzzle() {
+        const source = pickSourceWord();
+        // Take a specific number of unique letters
+        const targetLen = difficulty === 'easy' ? 7 : difficulty === 'medium' ? 8 : 9;
+        const uniqueChars = [...new Set(source.split(''))];
+        const chars = uniqueChars.slice(0, targetLen);
+        // If not enough unique chars, pad from source
+        while (chars.length < targetLen && source.length > chars.length) {
+            const extra = source.charAt(chars.length);
+            if (!chars.includes(extra)) chars.push(extra);
+            else chars.push(source.charAt(Math.floor(Math.random() * source.length)));
+        }
+        return chars.slice(0, targetLen);
+    }
+
+    // ── Game State ──
+    function setDifficulty(diff, btn) {
+        difficulty = diff;
+        document.querySelectorAll('[data-diff]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    }
+
+    function setTimeLimit(seconds, btn) {
+        timeLimitSetting = seconds;
+        document.querySelectorAll('[data-time]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    }
+
+    function startGame() {
+        clearInterval(timerIntervalId);
+        score = 0;
+        foundWords = new Set();
+        longestFound = 0;
+        currentInput = [];
+        gameActive = true;
+
+        document.getElementById('ag-game-over').classList.remove('show');
+        document.getElementById('ag-found-words').innerHTML = '';
+        document.getElementById('ag-start-btn').textContent = '↺ Neu';
+        updateScoreDisplay();
+
+        // Generate puzzle
+        const chars = generatePuzzle();
+        currentLetters = chars.map((ch, i) => ({ char: ch, id: i, used: false }));
+
+        renderLetters();
+        renderCurrentWord();
+        updateSubmitBtn();
+        setStatus('');
+
+        allPossibleWords = findAllValidWords(currentLetters);
+
+        // Start timer
+        timeLeft = timeLimitSetting;
+        updateTimerRing();
+        timerIntervalId = setInterval(() => {
+            timeLeft--;
+            updateTimerRing();
+            if (timeLeft <= 0) {
+                clearInterval(timerIntervalId);
+                endGame();
+            }
+        }, 1000);
+
+        // Focus hint
+        document.getElementById('ag-words-count').textContent = `0 / ${allPossibleWords.length} möglich`;
+    }
+
+    function endGame() {
+        gameActive = false;
+        clearInterval(timerIntervalId);
+
+        // Show game over
+        document.getElementById('ag-go-words').textContent = foundWords.size;
+        document.getElementById('ag-go-score').textContent = score;
+        document.getElementById('ag-go-best').textContent = longestFound;
+
+        const rate = allPossibleWords.length > 0 ? Math.round(foundWords.size / allPossibleWords.length * 100) : 0;
+        document.getElementById('ag-go-subtitle').textContent = rate >= 80 ? '🌟 Ausgezeichnet!' : rate >= 50 ? '👏 Gut gespielt!' : rate >= 25 ? '🙂 Weiter so!' : '💪 Beim nächsten Mal besser!';
+
+        // Show missed words (top 15)
+        const missed = allPossibleWords.filter(w => !foundWords.has(w)).slice(0, 15);
+        document.getElementById('ag-missed-words').innerHTML = missed.map(w =>
+            `<span class="ag-missed-word">${w.toLowerCase()}</span>`
+        ).join('') || '<span style="color:#64748b;font-size:0.8rem;font-style:italic">Alle gefunden! 🎉</span>';
+
+        document.getElementById('ag-game-over').classList.add('show');
+
+        // Save score
+        saveScore(score);
+    }
+
+    function renderLetters() {
+        const wrap = document.getElementById('ag-letters-wrap');
+        wrap.innerHTML = '';
+        currentLetters.forEach((lt, i) => {
+            const tile = document.createElement('button');
+            tile.className = 'ag-letter-tile' + (lt.used ? ' used' : '');
+            tile.textContent = lt.char;
+            tile.dataset.id = i;
+            tile.addEventListener('click', () => selectLetter(i));
+            tile.addEventListener('touchstart', (e) => { e.preventDefault(); selectLetter(i); }, { passive: false });
+            wrap.appendChild(tile);
+        });
+    }
+
+    function selectLetter(id) {
+        if (!gameActive) return;
+        const lt = currentLetters[id];
+        if (lt.used) return;
+        lt.used = true;
+        currentInput.push({ char: lt.char, tileId: id });
+        playTileClick();
+        haptic('tap');
+        renderLetters();
+        renderCurrentWord();
+        updateSubmitBtn();
+    }
+
+    function renderCurrentWord() {
+        const wrap = document.getElementById('ag-current-word');
+        const hint = document.getElementById('ag-input-hint');
+        if (currentInput.length === 0) {
+            hint.style.display = '';
+            wrap.innerHTML = '';
+            wrap.appendChild(hint);
+            return;
+        }
+        hint.style.display = 'none';
+        wrap.innerHTML = '';
+        currentInput.forEach((item, i) => {
+            const tile = document.createElement('div');
+            tile.className = 'ag-input-tile';
+            tile.textContent = item.char;
+            tile.title = 'Klicken zum Entfernen';
+            tile.onclick = () => removeInputLetter(i);
+            wrap.appendChild(tile);
+        });
+    }
+
+    function removeInputLetter(idx) {
+        const removed = currentInput.splice(idx, 1)[0];
+        currentLetters[removed.tileId].used = false;
+        playTileClick();
+        renderLetters();
+        renderCurrentWord();
+        updateSubmitBtn();
+    }
+
+    function clearCurrentWord() {
+        currentInput.forEach(item => { currentLetters[item.tileId].used = false; });
+        currentInput = [];
+        renderLetters();
+        renderCurrentWord();
+        updateSubmitBtn();
+    }
+
+    function shuffleLetters() {
+        // Don't shuffle used letters positions
+        const freeIndices = currentLetters.map((lt, i) => lt.used ? null : i).filter(i => i !== null);
+        for (let i = freeIndices.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [currentLetters[freeIndices[i]], currentLetters[freeIndices[j]]] = [currentLetters[freeIndices[j]], currentLetters[freeIndices[i]]];
+            // Update tileId references in currentInput
+            currentInput.forEach(inp => {
+                if (inp.tileId === freeIndices[i]) inp.tileId = freeIndices[j];
+                else if (inp.tileId === freeIndices[j]) inp.tileId = freeIndices[i];
+            });
+        }
+        playTileClick();
+        renderLetters();
+    }
+
+    function updateSubmitBtn() {
+        const disabled = currentInput.length < 2;
+        document.getElementById('ag-submit-btn').disabled = disabled;
+        const mobileBtn = document.getElementById('ag-submit-btn-mobile');
+        if (mobileBtn) mobileBtn.disabled = disabled;
+    }
+
+    function submitWord() {
+        if (!gameActive || currentInput.length < 2) return;
+        const word = currentInput.map(i => i.char).join('').toUpperCase();
+
+        if (foundWords.has(word)) {
+            setStatus('Bereits gefunden!', 'error');
+            playError(); haptic('error');
+            shakeInput();
+            return;
+        }
+
+        if (!VALID_WORDS_SET.has(word)) {
+            setStatus('Kein gültiges deutsches Wort!', 'error');
+            playError(); haptic('error');
+            shakeInput();
+            return;
+        }
+
+        // Valid!
+        foundWords.add(word);
+        const pts = getPoints(word.length);
+        score += pts;
+        if (word.length > longestFound) longestFound = word.length;
+
+        playSuccess(); haptic('correct');
+
+        // Add to found words display
+        const tag = document.createElement('div');
+        tag.className = `ag-found-word ${getLenClass(word.length)}`;
+        tag.textContent = word.toLowerCase() + ' +' + pts;
+        document.getElementById('ag-found-words').prepend(tag);
+
+        updateScoreDisplay();
+        clearCurrentWord();
+        document.getElementById('ag-words-count').textContent = `${foundWords.size} / ${allPossibleWords.length} möglich`;
+
+        // Status message
+        const bonuses = ['👏 Gut!', '🔥 Super!', '⚡ Stark!', '🌟 Brillant!'];
+        const msg = pts >= 18 ? '🏆 Mega-Wort!' : pts >= 11 ? '🌟 Brillant!' : pts >= 7 ? '⚡ Super!' : bonuses[Math.floor(Math.random()*bonuses.length)];
+        setStatus(`${msg} +${pts} Punkte`, 'success');
+    }
+
+    function shakeInput() {
+        const wrap = document.getElementById('ag-current-word');
+        wrap.classList.add('ag-shake');
+        setTimeout(() => wrap.classList.remove('ag-shake'), 400);
+    }
+
+    function updateScoreDisplay() {
+        document.getElementById('ag-score-big').textContent = score;
+        document.getElementById('ag-score-display').textContent = `${score} Pkt.`;
+    }
+
+    // ── Timer Ring ──
+    const CIRCUMFERENCE = 2 * Math.PI * 44; // r=44
+    function updateTimerRing() {
+        const fill = document.getElementById('timer-fill');
+        const text = document.getElementById('timer-text');
+        fill.style.strokeDasharray = CIRCUMFERENCE;
+        const pct = Math.max(0, timeLeft / timeLimitSetting);
+        fill.style.strokeDashoffset = CIRCUMFERENCE * (1 - pct);
+        fill.style.stroke = timeLeft <= 15 ? '#ef4444' : timeLeft <= 30 ? '#eab308' : '#fb923c';
+        text.textContent = timeLeft;
+        text.className = timeLeft <= 15 ? 'urgent' : '';
+    }
+
+    // ── Leaderboard ──
+    let agLbTab = 'total';
+
+    window.agSetLbTab = (tab) => {
+        agLbTab = tab;
+        loadLeaderboard();
+    };
+
+    function getWeekKey() {
+        const d = new Date();
+        const start = new Date(d.getFullYear(), 0, 1);
+        const week = Math.ceil(((d - start) / 86400000 + start.getDay() + 1) / 7);
+        return `${d.getFullYear()}-W${String(week).padStart(2, '0')}`;
+    }
+
+    async function saveScore(pts) {
+        if (!pts) return;
+        const name = localStorage.getItem('wolfle_user_name') || '';
+        if (!name || localStorage.getItem('wolfle_logged_in') !== '1') return;
+        if (localStorage.getItem('wolfle_is_guest') === '1') return;
+        try {
+            const firestore = await ensureDB();
+            const ref = firebaseFns.doc(firestore, 'artifacts', appId, 'public', 'data', 'ag_scores', name.toLowerCase());
+            const snap = await firebaseFns.getDoc(ref);
+            const existing = snap.exists() ? snap.data() : {};
+            const weekKey = getWeekKey();
+            const total = (existing.score || 0) + pts;
+            const weekScore = (existing.weekKey === weekKey ? (existing.weekScore || 0) : 0) + pts;
+            await firebaseFns.setDoc(ref, { name, score: total, weekScore, weekKey }, { merge: true });
+            loadLeaderboard();
+        } catch(e) {}
+    }
+
+    async function loadLeaderboard() {
+        const listEl = document.getElementById('ag-leaderboard-list');
+        if (!listEl) return;
+
+        const totalBtn = document.querySelector('.ag-lb-tab-total');
+        const weekBtn = document.querySelector('.ag-lb-tab-week');
+        if (totalBtn) {
+            totalBtn.className = `ag-lb-tab-total flex-1 text-xs py-1.5 rounded-md transition-colors ${agLbTab === 'total' ? 'bg-orange-600 text-white font-semibold' : 'text-slate-400'}`;
+            weekBtn.className = `ag-lb-tab-week flex-1 text-xs py-1.5 rounded-md transition-colors ${agLbTab === 'week' ? 'bg-orange-600 text-white font-semibold' : 'text-slate-400'}`;
+        }
+
+        listEl.innerHTML = '<li class="text-slate-500 italic text-sm">Lädt...</li>';
+        try {
+            const firestore = await ensureDB();
+            const snap = await firebaseFns.getDocs(firebaseFns.collection(firestore, 'artifacts', appId, 'public', 'data', 'ag_scores'));
+            let d = [];
+            snap.forEach(doc => { if (doc.data().score) d.push(doc.data()); });
+            const weekKey = getWeekKey();
+            if (agLbTab === 'week') {
+                d = d.filter(s => s.weekKey === weekKey && (s.weekScore||0) > 0);
+                d.sort((a,b) => (b.weekScore||0) - (a.weekScore||0));
+            } else {
+                d.sort((a,b) => b.score - a.score);
+            }
+            const me = (localStorage.getItem('wolfle_user_name') || '').toLowerCase();
+            listEl.innerHTML = d.length === 0
+                ? '<li class="text-slate-500 italic text-sm">Noch keine Einträge</li>'
+                : d.slice(0, 10).map((s,i) => {
+                    const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}.`;
+                    const isMe = s.name.toLowerCase() === me;
+                    const pts = agLbTab === 'week' ? (s.weekScore||0) : s.score;
+                    return `<li class="ag-lb-item${isMe?' me':''}">
+                        <span>${medal} ${s.name}</span><span class="ag-lb-score">${pts}</span></li>`;
+                }).join('');
+        } catch(e) {
+            listEl.innerHTML = '<li class="text-slate-500 italic text-sm">Nicht verfügbar</li>';
+        }
+    }
+
+    // ── Auth ──
+    const AVATARS = ['🐺','🦊','🐻','🦁','🐯','🐸','🐧','🦅','🦋','🐙','🦄','🐬','🌟','🔥','💎','🌈','🍀','⚡'];
+    let onboardAvatar = '🐺';
+
+    function updateLoginHeader() {
+        const loggedIn = localStorage.getItem('wolfle_logged_in') === '1';
+        const name = localStorage.getItem('wolfle_user_name') || '';
+        const avatar = localStorage.getItem('wolfle_avatar') || '🐺';
+        const btn = document.getElementById('login-header-btn');
+        const label = document.getElementById('login-header-label');
+        const av = document.getElementById('login-header-avatar');
+        if (!btn) return;
+        if (loggedIn && name) { label.textContent = name; av.textContent = avatar; btn.style.borderColor = 'rgba(99,102,241,0.5)'; }
+        else { label.textContent = 'Anmelden'; av.textContent = '🐺'; btn.style.borderColor = ''; }
+    }
+
+    function hashPin(pin) {
+        let h = 0;
+        for (let i = 0; i < pin.length; i++) h = (Math.imul(31, h) + pin.charCodeAt(i)) | 0;
+        return h.toString(36);
+    }
+
+    window.openLoginModal = () => {
+        const loggedIn = localStorage.getItem('wolfle_logged_in') === '1';
+        const form = document.getElementById('login-form-section');
+        const loggedInSection = document.getElementById('login-loggedin-section');
+        if (loggedIn) {
+            const name = localStorage.getItem('wolfle_user_name') || '';
+            const avatar = localStorage.getItem('wolfle_avatar') || '🐺';
+            document.getElementById('login-welcome-name').textContent = name;
+            document.getElementById('login-welcome-avatar').textContent = avatar;
+            document.getElementById('login-avatar-grid').classList.add('hidden');
+            document.getElementById('login-avatar-save-btn').classList.add('hidden');
+            form.classList.add('hidden'); loggedInSection.classList.remove('hidden');
+        } else {
+            form.classList.remove('hidden'); loggedInSection.classList.add('hidden');
+        }
+        const modal = document.getElementById('login-modal');
+        modal.classList.remove('hidden'); modal.style.display = 'flex';
+        lucide.createIcons();
+    };
+    window.closeLoginModal = () => {
+        document.getElementById('login-modal').classList.add('hidden');
+        document.getElementById('login-modal').style.display = 'none';
+    };
+    window.openGuestFlow = () => {
+        window.closeLoginModal();
+        document.getElementById('onboarding-modal').classList.remove('hidden');
+        window.onboardChooseGuest();
+    };
+
+    let _loginSelectedAvatar = localStorage.getItem('wolfle_avatar') || '🐺';
+    window.toggleLoginAvatarGrid = () => {
+        const grid = document.getElementById('login-avatar-grid');
+        const saveBtn = document.getElementById('login-avatar-save-btn');
+        const open = grid.classList.toggle('hidden');
+        saveBtn.classList.toggle('hidden', open);
+        if (!open) grid.innerHTML = AVATARS.map(a =>
+            `<button class="avatar-btn${a===_loginSelectedAvatar?' selected':''}" onclick="window.selectLoginAvatar('${a}')">${a}</button>`
+        ).join('');
+    };
+    window.selectLoginAvatar = (a) => {
+        _loginSelectedAvatar = a;
+        document.getElementById('login-welcome-avatar').textContent = a;
+        document.querySelectorAll('#login-avatar-grid .avatar-btn').forEach(b => b.classList.toggle('selected', b.textContent === a));
+    };
+    window.saveLoginAvatar = async () => {
+        const name = localStorage.getItem('wolfle_user_name') || '';
+        localStorage.setItem('wolfle_avatar', _loginSelectedAvatar);
+        updateLoginHeader();
+        try {
+            const firestore = await ensureDB();
+            if (firestore && name) await firebaseFns.setDoc(firebaseFns.doc(firestore,'artifacts',appId,'public','data','users',name), { avatar: _loginSelectedAvatar }, { merge: true });
+        } catch(e) {}
+        document.getElementById('login-avatar-grid').classList.add('hidden');
+        document.getElementById('login-avatar-save-btn').classList.add('hidden');
+        showToast('Avatar gespeichert ✓', 'success');
+    };
+    window.doLogin = async () => {
+        const nameInput = document.getElementById('login-name-input');
+        const pinInput = document.getElementById('login-pin-input');
+        const errorEl = document.getElementById('login-error');
+        const submitBtn = document.getElementById('login-submit-btn');
+        const name = nameInput.value.trim();
+        if (!name) { errorEl.textContent = 'Bitte Namen eingeben.'; errorEl.classList.remove('hidden'); return; }
+        const pin = pinInput.value;
+        errorEl.classList.add('hidden');
+        if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Laden...'; }
+        const reset = () => { if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Anmelden / Registrieren'; } };
+        try {
+            const firestore = await ensureDB();
+            const snap = await firebaseFns.getDoc(firebaseFns.doc(firestore,'artifacts',appId,'public','data','users',name));
+            if (snap.exists()) {
+                const ud = snap.data();
+                if (ud.pinHash) {
+                    if (!pin) { errorEl.textContent = 'Bitte PIN eingeben.'; errorEl.classList.remove('hidden'); reset(); return; }
+                    if (hashPin(pin) !== ud.pinHash) { errorEl.textContent = 'Falscher PIN.'; errorEl.classList.remove('hidden'); reset(); return; }
+                }
+                if (ud.avatar) localStorage.setItem('wolfle_avatar', ud.avatar);
+            } else {
+                const ph = pin ? hashPin(pin) : null;
+                await firebaseFns.setDoc(firebaseFns.doc(firestore,'artifacts',appId,'public','data','users',name), { name, avatar: '🐺', pinHash: ph, createdAt: Date.now() });
+            }
+        } catch(e) {}
+        localStorage.setItem('wolfle_user_name', name);
+        localStorage.setItem('wolfle_logged_in', '1');
+        localStorage.removeItem('wolfle_is_guest');
+        updateLoginHeader();
+        window.closeLoginModal();
+        showToast(`Willkommen, ${name}! 👋`, 'success');
+        reset();
+        loadLeaderboard();
+    };
+    window.doLogout = () => {
+        localStorage.removeItem('wolfle_logged_in');
+        localStorage.removeItem('wolfle_user_name');
+        localStorage.removeItem('wolfle_avatar');
+        localStorage.setItem('wolfle_is_guest', '1');
+        updateLoginHeader();
+        window.closeLoginModal();
+        showToast('Abgemeldet', 'info');
+    };
+
+    // Onboarding
+    function buildOnboardAvatarGrid() {
+        const grid = document.getElementById('onboard-avatar-grid');
+        if (!grid) return;
+        grid.innerHTML = AVATARS.map(a =>
+            `<button class="avatar-btn${a===onboardAvatar?' selected':''}" onclick="window.selectOnboardAvatar('${a}')">${a}</button>`
+        ).join('');
+    }
+    window.selectOnboardAvatar = (a) => {
+        onboardAvatar = a;
+        document.getElementById('onboard-preview-avatar').textContent = a;
+        document.querySelectorAll('#onboard-avatar-grid .avatar-btn').forEach(b => b.classList.toggle('selected', b.textContent === a));
+    };
+    window.onboardBack = () => {
+        document.getElementById('onboard-choice').classList.remove('hidden');
+        document.getElementById('onboard-guest').classList.add('hidden');
+    };
+    window.onboardChooseGuest = () => {
+        document.getElementById('onboard-choice').classList.add('hidden');
+        document.getElementById('onboard-guest').classList.remove('hidden');
+        buildOnboardAvatarGrid();
+        document.getElementById('onboard-name-input').focus();
+    };
+    window.onboardChooseLogin = () => {
+        document.getElementById('onboarding-modal').classList.add('hidden');
+        window.openLoginModal();
+    };
+    window.onboardConfirmGuest = async () => {
+        const name = document.getElementById('onboard-name-input').value.trim();
+        const errEl = document.getElementById('onboard-error');
+        const btn = document.getElementById('onboard-confirm-btn');
+        if (!name) { errEl.textContent = 'Bitte Namen eingeben.'; errEl.classList.remove('hidden'); return; }
+        errEl.classList.add('hidden');
+        if (btn) { btn.disabled = true; btn.textContent = 'Prüfen...'; }
+        try {
+            const firestore = await ensureDB();
+            const snap = await firebaseFns.getDoc(firebaseFns.doc(firestore,'artifacts',appId,'public','data','users',name));
+            if (snap.exists()) { errEl.textContent = 'Name vergeben – bitte einloggen.'; errEl.classList.remove('hidden'); if (btn) { btn.disabled = false; btn.textContent = 'Weiter spielen'; } return; }
+        } catch(e) {}
+        if (btn) { btn.disabled = false; btn.textContent = 'Weiter spielen'; }
+        localStorage.setItem('wolfle_user_name', name);
+        localStorage.setItem('wolfle_avatar', onboardAvatar);
+        localStorage.setItem('wolfle_logged_in', '1');
+        localStorage.setItem('wolfle_is_guest', '1');
+        localStorage.removeItem('wolfle_stats');
+        updateLoginHeader();
+        document.getElementById('onboarding-modal').classList.add('hidden');
+    };
+
+    // ── Theme ──
+    const THEMES = ['dark','light','retro','ocean','pastel'];
+    function applyTheme(theme) {
+        THEMES.forEach(t => document.documentElement.classList.remove(t));
+        if (theme && theme !== 'dark') document.documentElement.classList.add(theme);
+        const icon = (theme === 'light' || theme === 'pastel') ? 'moon' : 'sun';
+        const btn = document.getElementById('theme-btn');
+        if (btn) { btn.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4"></i>`; lucide.createIcons(); }
+    }
+    function toggleTheme() {
+        const cur = localStorage.getItem('wolfle_theme') || 'dark';
+        const next = THEMES[(THEMES.indexOf(cur) + 1) % THEMES.length];
+        localStorage.setItem('wolfle_theme', next);
+        applyTheme(next);
+    }
+    function toggleSound() {
+        soundEnabled = !soundEnabled;
+        localStorage.setItem('wolfle_sound', soundEnabled);
+        updateSoundBtn();
+        if (soundEnabled) playTone(523,'sine',0.15);
+    }
+    function toggleHaptic() {
+        hapticEnabled = !hapticEnabled;
+        localStorage.setItem('wolfle_haptic', hapticEnabled);
+        updateHapticBtn();
+        if (hapticEnabled) try { navigator.vibrate(20); } catch(e) {}
+    }
+
+    // Keyboard support
+    document.addEventListener('keydown', (e) => {
+        if (document.activeElement && ['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
+        if (!gameActive) return;
+        if (e.key === 'Enter') submitWord();
+        else if (e.key === 'Backspace') {
+            if (currentInput.length > 0) removeInputLetter(currentInput.length - 1);
+        } else if (e.key === ' ') { e.preventDefault(); shuffleLetters(); }
+        else if (/^[a-zA-ZäöüÄÖÜ]$/u.test(e.key)) {
+            const ch = e.key.toUpperCase();
+            const idx = currentLetters.findIndex(lt => !lt.used && lt.char === ch);
+            if (idx !== -1) selectLetter(idx);
+        }
+    });
+
+    // Touch: prevent zoom
+    let lastTouchEnd = 0;
+    document.addEventListener('touchstart', e => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
+    document.addEventListener('touchend', e => {
+        const now = Date.now();
+        if (now - lastTouchEnd <= 300) e.preventDefault();
+        lastTouchEnd = now;
+    }, { passive: false });
+    document.addEventListener('gesturestart', e => e.preventDefault());
+
+    // ── INIT ──
+    applyTheme(localStorage.getItem('wolfle_theme') || 'dark');
+    updateSoundBtn();
+    updateHapticBtn();
+    updateLoginHeader();
+    lucide.createIcons();
+
+    // Timer ring init
+    document.getElementById('timer-fill').style.strokeDasharray = CIRCUMFERENCE;
+    document.getElementById('timer-fill').style.strokeDashoffset = 0;
+    document.getElementById('timer-text').textContent = timeLimitSetting;
+
+    // Load leaderboard if logged in
+    if (localStorage.getItem('wolfle_user_name')) {
+        ensureDB().then(() => loadLeaderboard()).catch(() => {});
+    }
+
+    // Show onboarding if not logged in
+    if (localStorage.getItem('wolfle_logged_in') !== '1') {
+        localStorage.setItem('wolfle_is_guest', '1');
+        window.openOnboarding = () => {
+            document.getElementById('onboarding-modal').classList.remove('hidden');
+            document.getElementById('onboard-choice').classList.remove('hidden');
+            document.getElementById('onboard-guest').classList.add('hidden');
+            lucide.createIcons();
+        };
+        window.openOnboarding();
+    }
+
+    // Register shared-ui handlers
+    if (window.ui) {
+        ui.setHandlers({
+            toggleTheme,
+            toggleSound,
+            toggleHaptics: toggleHaptic,
+            openLogin: window.openLoginModal
+        });
+    }
+</script>
+</body>
+</html>
