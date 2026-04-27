@@ -686,7 +686,7 @@
 
             <!-- Current word being built -->
             <div id="ag-input-area">
-                <div id="ag-current-word" onclick="clearCurrentWord()" title="Klicken zum Löschen">
+                <div id="ag-current-word" title="Buchstaben anklicken zum Entfernen">
                     <span id="ag-input-hint" style="color:#334155;font-size:0.8rem;">Klicke auf Buchstaben um ein Wort zu bilden...</span>
                 </div>
             </div>
@@ -938,17 +938,20 @@
 
     function generatePuzzle() {
         const source = pickSourceWord();
-        // Take a specific number of unique letters
         const targetLen = difficulty === 'easy' ? 7 : difficulty === 'medium' ? 8 : 9;
-        const uniqueChars = [...new Set(source.split(''))];
-        const chars = uniqueChars.slice(0, targetLen);
-        // If not enough unique chars, pad from source
-        while (chars.length < targetLen && source.length > chars.length) {
-            const extra = source.charAt(chars.length);
-            if (!chars.includes(extra)) chars.push(extra);
-            else chars.push(source.charAt(Math.floor(Math.random() * source.length)));
+        // Split source into individual characters (repetitions allowed)
+        const allChars = source.split('').filter(c => /[A-Z]/.test(c));
+        // Shuffle them
+        for (let i = allChars.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [allChars[i], allChars[j]] = [allChars[j], allChars[i]];
         }
-        return chars.slice(0, targetLen);
+        // Take exactly targetLen, cycling if source is shorter
+        const result = [];
+        for (let i = 0; i < targetLen; i++) {
+            result.push(allChars[i % allChars.length]);
+        }
+        return result;
     }
 
     // ── Game State ──
@@ -979,11 +982,9 @@
 
         // Generate puzzle
         const chars = generatePuzzle();
-        currentLetters = chars.map((ch, i) => ({ char: ch, id: i, used: false }));
+        currentLetters = chars.map((ch) => ({ char: ch, used: false }));
 
-        renderLetters();
-        renderCurrentWord();
-        updateSubmitBtn();
+        renderAll();
         setStatus('');
 
         allPossibleWords = findAllValidWords(currentLetters);
@@ -1028,85 +1029,113 @@
         saveScore(score);
     }
 
+    // currentLetters: array of { char, used }
+    // currentInput:  array of { char, pos } where pos = index in currentLetters
+
     function renderLetters() {
         const wrap = document.getElementById('ag-letters-wrap');
         wrap.innerHTML = '';
-        currentLetters.forEach((lt, i) => {
+        currentLetters.forEach((lt, pos) => {
             const tile = document.createElement('button');
             tile.className = 'ag-letter-tile' + (lt.used ? ' used' : '');
             tile.textContent = lt.char;
-            tile.dataset.id = i;
-            tile.addEventListener('click', () => selectLetter(i));
-            tile.addEventListener('touchstart', (e) => { e.preventDefault(); selectLetter(i); }, { passive: false });
+            tile.disabled = lt.used;
+            ;(function(p) {
+                tile.addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    selectLetter(p);
+                });
+                // Fallback for devices without Pointer Events
+                tile.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                });
+            })(pos);
             wrap.appendChild(tile);
         });
     }
 
-    function selectLetter(id) {
+    function selectLetter(pos) {
         if (!gameActive) return;
-        const lt = currentLetters[id];
-        if (lt.used) return;
-        lt.used = true;
-        currentInput.push({ char: lt.char, tileId: id });
+        if (currentLetters[pos].used) return;
+        currentLetters[pos].used = true;
+        currentInput.push({ char: currentLetters[pos].char, pos });
         playTileClick();
         haptic('tap');
-        renderLetters();
-        renderCurrentWord();
-        updateSubmitBtn();
+        renderAll();
     }
 
     function renderCurrentWord() {
         const wrap = document.getElementById('ag-current-word');
-        const hint = document.getElementById('ag-input-hint');
+        wrap.innerHTML = '';
         if (currentInput.length === 0) {
-            hint.style.display = '';
-            wrap.innerHTML = '';
+            const hint = document.createElement('span');
+            hint.style.cssText = 'color:#475569;font-size:0.8rem;pointer-events:none;';
+            hint.textContent = 'Buchstaben anklicken, um ein Wort zu bilden\u2026';
             wrap.appendChild(hint);
             return;
         }
-        hint.style.display = 'none';
-        wrap.innerHTML = '';
-        currentInput.forEach((item, i) => {
+        // Capture length at render time so removal indices stay correct
+        const len = currentInput.length;
+        for (let i = 0; i < len; i++) {
+            const item = currentInput[i];
             const tile = document.createElement('div');
             tile.className = 'ag-input-tile';
             tile.textContent = item.char;
-            tile.title = 'Klicken zum Entfernen';
-            tile.onclick = () => removeInputLetter(i);
+            tile.title = 'Zum Entfernen klicken';
+            tile.style.cursor = 'pointer';
+            ;(function(idx) {
+                tile.addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    removeInputLetter(idx);
+                });
+            })(i);
             wrap.appendChild(tile);
-        });
+        }
+    }
+
+    // Render letters + word in one call to avoid double-render race
+    function renderAll() {
+        renderLetters();
+        renderCurrentWord();
+        updateSubmitBtn();
     }
 
     function removeInputLetter(idx) {
         const removed = currentInput.splice(idx, 1)[0];
-        currentLetters[removed.tileId].used = false;
+        currentLetters[removed.pos].used = false;
         playTileClick();
-        renderLetters();
-        renderCurrentWord();
-        updateSubmitBtn();
+        renderAll();
     }
 
     function clearCurrentWord() {
-        currentInput.forEach(item => { currentLetters[item.tileId].used = false; });
+        currentInput.forEach(item => { currentLetters[item.pos].used = false; });
         currentInput = [];
-        renderLetters();
-        renderCurrentWord();
-        updateSubmitBtn();
+        renderAll();
     }
 
     function shuffleLetters() {
-        // Don't shuffle used letters positions
-        const freeIndices = currentLetters.map((lt, i) => lt.used ? null : i).filter(i => i !== null);
-        for (let i = freeIndices.length - 1; i > 0; i--) {
+        // Collect positions that are NOT used
+        const freePositions = currentLetters
+            .map((lt, i) => lt.used ? null : i)
+            .filter(i => i !== null);
+
+        // Fisher-Yates shuffle on free slots only
+        for (let i = freePositions.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
-            [currentLetters[freeIndices[i]], currentLetters[freeIndices[j]]] = [currentLetters[freeIndices[j]], currentLetters[freeIndices[i]]];
-            // Update tileId references in currentInput
+            const pi = freePositions[i], pj = freePositions[j];
+            // Swap the letter objects at these positions
+            [currentLetters[pi], currentLetters[pj]] = [currentLetters[pj], currentLetters[pi]];
+            // Fix up pos references in currentInput (shouldn't be needed since
+            // we only shuffle free/unused slots, but kept for safety)
             currentInput.forEach(inp => {
-                if (inp.tileId === freeIndices[i]) inp.tileId = freeIndices[j];
-                else if (inp.tileId === freeIndices[j]) inp.tileId = freeIndices[i];
+                if (inp.pos === pi) inp.pos = pj;
+                else if (inp.pos === pj) inp.pos = pi;
             });
         }
         playTileClick();
-        renderLetters();
+        renderLetters(); // only letters need re-rendering here
     }
 
     function updateSubmitBtn() {
