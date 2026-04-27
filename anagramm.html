@@ -553,7 +553,7 @@
                 <div class="ag-stat-box"><div class="num" id="ag-go-score">0</div><div class="lbl">Punkte</div></div>
                 <div class="ag-stat-box"><div class="num" id="ag-go-best">0</div><div class="lbl">Längstes</div></div>
             </div>
-            <div style="font-size:0.75rem;color:#64748b;margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Verpasste Wörter</div>
+            <div style="font-size:0.75rem;color:#64748b;margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Deine Wörter</div>
             <div class="ag-missed-words" id="ag-missed-words"></div>
             <button class="ag-btn-restart" onclick="startGame()">Nochmal spielen</button>
         </div>
@@ -761,10 +761,12 @@
         return db;
     }
 
-    // ── German word list for validation ──
-    // We use a large embedded word list for offline-capable validation
+    // ── German word validation ──
+    // Strategy: check the hardcoded set first (instant), fall back to Wiktionary API
+    // so ANY valid German word the player can form gets accepted.
     const VALID_WORDS_SET = new Set();
-    // Seed with common German words (2-9 letters)
+
+    // ~2500 common German words covering 2-9 letters
     const BASE_WORDS = [
         "AB","AN","AUF","AUS","BEI","BIS","DA","DE","DER","DIE","DIN","DU","EIN","ER","ES","FÜR","GUT","HIN","ICH","IHM","IHN","IHR","IM","IN","IST","JA","JE","KAN","MAL","MAN","MIR","MIT","MIR","NUR","OB","OFT","OR","SIE","SO","UND","UNS","VOM","VON","VOR","WAS","WEG","WER","WIE","WIR","ZU","ZUM","ZUR",
         "ACH","ALS","AMT","ARM","ART","BAD","BAR","BAU","BEI","BEN","BET","BOT","DEM","DEN","DES","EBE","EHE","EIN","EIS","ELF","EMU","ERG","ESS","FAD","FAX","FEE","FEL","FIG","FIN","FIT","FLO","FON","FOR","FOX","FUG","FUN","GAB","GAN","GAR","GAS","GAU","GAZ","GEB","GEL","GEN","GER","GIM","GOT","GOL","GUN","HAN","HAS","HAT","HEI","HEN","HET","HOC","HOR","HUB","HUL","HUN","HUT","INN","ION","JAB","JAN","JOB","JOG","JOT","KAI","KAM","KAN","KAP","KAR","KAS","KAT","KAU","KEL","KEN","KER","KIE","KIM","KIN","KOK","KOM","KON","KOP","KOR","KOT","KRA","KRE","LAB","LAD","LAG","LAK","LAM","LAP","LAR","LAT","LAU","LAW","LAX","LAZ","LEB","LED","LEE","LEH","LEI","LEM","LEN","LER","LES","LET","LEU","LIE","LIN","LIT","LOB","LOC","LOS","LOT","LOZ","LUB","LUM","LUN","LUT","MAG","MAI","MAK","MAL","MAN","MAP","MAR","MAS","MAT","MAU","MAZ","MED","MEL","MEN","MER","MES","MET","MEZ","MID","MIM","MIN","MIR","MIS","MIX","MOB","MOD","MON","MOO","MOP","MOR","MOS","MOT","MOZ","MUL","MUN","MUR","MUT","NAB","NAG","NAM","NAP","NAR","NAS","NAT","NAU","NAX","NEB","NEF","NEG","NEH","NEI","NEL","NEM","NER","NES","NET","NEU","NIL","NIP","NIT","NOB","NOC","NOD","NON","NOR","NOT","NUB","NUM","NUN","NUT","OBE","ODE","OFT","OHM","OHR","OKA","OKE","OKI","OLE","OLI","OMA","OPA","OPT","ORB","ORE","ORT","OST","OVA","OXO","PAB","PAD","PAP","PAR","PAS","PAT","PAU","PAW","PAX","PEI","PEK","PEL","PEN","PER","PES","PET","PEW","PIE","PIN","PIT","PIX","PLO","POD","POM","POP","POT","POW","PRO","PUB","PUL","PUN","PUR","PUT","RAB","RAC","RAD","RAG","RAH","RAI","RAK","RAM","RAN","RAP","RAS","RAT","RAU","RAZ","REB","RED","REF","REH","REI","REL","REM","REP","RES","RET","REU","REV","RIB","RIC","RID","RIG","RIM","RIN","RIP","RIT","ROB","ROC","ROD","ROL","ROM","RON","ROT","ROW","ROZ","RUB","RUG","RUN","RUT",
@@ -1002,7 +1004,7 @@
         }, 1000);
 
         // Focus hint
-        document.getElementById('ag-words-count').textContent = `0 / ${allPossibleWords.length} möglich`;
+        document.getElementById('ag-words-count').textContent = `0 gefunden`;
     }
 
     function endGame() {
@@ -1017,11 +1019,11 @@
         const rate = allPossibleWords.length > 0 ? Math.round(foundWords.size / allPossibleWords.length * 100) : 0;
         document.getElementById('ag-go-subtitle').textContent = rate >= 80 ? '🌟 Ausgezeichnet!' : rate >= 50 ? '👏 Gut gespielt!' : rate >= 25 ? '🙂 Weiter so!' : '💪 Beim nächsten Mal besser!';
 
-        // Show missed words (top 15)
-        const missed = allPossibleWords.filter(w => !foundWords.has(w)).slice(0, 15);
-        document.getElementById('ag-missed-words').innerHTML = missed.map(w =>
-            `<span class="ag-missed-word">${w.toLowerCase()}</span>`
-        ).join('') || '<span style="color:#64748b;font-size:0.8rem;font-style:italic">Alle gefunden! 🎉</span>';
+        // Show words found by the player
+        const foundArr = [...foundWords].sort((a,b) => b.length - a.length);
+        document.getElementById('ag-missed-words').innerHTML = foundArr.length
+            ? foundArr.map(w => `<span class="ag-missed-word">${w.toLowerCase()}</span>`).join('')
+            : '<span style="color:#64748b;font-size:0.8rem;font-style:italic">Keine Wörter gefunden</span>';
 
         document.getElementById('ag-game-over').classList.add('show');
 
@@ -1145,7 +1147,36 @@
         if (mobileBtn) mobileBtn.disabled = disabled;
     }
 
-    function submitWord() {
+    // Cache of validated words (true = valid German word, false = invalid)
+    const wordValidationCache = new Map();
+
+    async function isValidGermanWord(word) {
+        const w = word.toUpperCase();
+        // 1. Check local known-good set first (instant)
+        if (VALID_WORDS_SET.has(w)) return true;
+        // 2. Check cache
+        if (wordValidationCache.has(w)) return wordValidationCache.get(w);
+        // 3. Check Wiktionary API
+        try {
+            const res = await fetch(
+                `https://de.wiktionary.org/w/api.php?action=query&origin=*&format=json&titles=${encodeURIComponent(word.toLowerCase())}&prop=info`,
+                { signal: AbortSignal.timeout(3000) }
+            );
+            const data = await res.json();
+            const pages = data?.query?.pages || {};
+            const page = Object.values(pages)[0];
+            // If page id is negative, it doesn't exist
+            const valid = page && page.pageid > 0;
+            wordValidationCache.set(w, valid);
+            if (valid) VALID_WORDS_SET.add(w); // cache in local set too
+            return valid;
+        } catch(e) {
+            // On network error, fall back to local set only
+            return false;
+        }
+    }
+
+    async function submitWord() {
         if (!gameActive || currentInput.length < 2) return;
         const word = currentInput.map(i => i.char).join('').toUpperCase();
 
@@ -1156,8 +1187,19 @@
             return;
         }
 
-        if (!VALID_WORDS_SET.has(word)) {
-            setStatus('Kein gültiges deutsches Wort!', 'error');
+        // Show checking state
+        setStatus('Prüfe…', '');
+        document.getElementById('ag-submit-btn').disabled = true;
+        const mobileBtn = document.getElementById('ag-submit-btn-mobile');
+        if (mobileBtn) mobileBtn.disabled = true;
+
+        const valid = await isValidGermanWord(word);
+
+        // Re-enable button
+        updateSubmitBtn();
+
+        if (!valid) {
+            setStatus('Kein deutsches Wort!', 'error');
             playError(); haptic('error');
             shakeInput();
             return;
@@ -1179,7 +1221,7 @@
 
         updateScoreDisplay();
         clearCurrentWord();
-        document.getElementById('ag-words-count').textContent = `${foundWords.size} / ${allPossibleWords.length} möglich`;
+        document.getElementById('ag-words-count').textContent = `${foundWords.size} gefunden`;
 
         // Status message
         const bonuses = ['👏 Gut!', '🔥 Super!', '⚡ Stark!', '🌟 Brillant!'];
@@ -1487,7 +1529,7 @@
     document.addEventListener('keydown', (e) => {
         if (document.activeElement && ['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
         if (!gameActive) return;
-        if (e.key === 'Enter') submitWord();
+        if (e.key === 'Enter') { e.preventDefault(); submitWord(); }
         else if (e.key === 'Backspace') {
             if (currentInput.length > 0) removeInputLetter(currentInput.length - 1);
         } else if (e.key === ' ') { e.preventDefault(); shuffleLetters(); }
